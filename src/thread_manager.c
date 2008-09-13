@@ -32,6 +32,16 @@ typedef struct manager_actor_s {
 	LIST_ENTRY(manager_actor_s) next;
 } manager_actor_t;
 
+/* list of cursor in scene
+ */
+LIST_HEAD(s_cursor_head, manager_cursor_s) manager_cursors_list;
+typedef struct manager_cursor_s {
+	unsigned int	id;
+	ClutterActor	*actor;
+	char			label[10];
+	LIST_ENTRY(manager_cursor_s) next;
+} manager_cursor_t;
+
 static void manager_event_object_new(unsigned short type, void *data)
 {
 	tuio_object_t *o = (tuio_object_t *)data;
@@ -120,6 +130,85 @@ static void manager_event_object_set(unsigned short type, void *data)
 	clutter_threads_leave();
 }
 
+static void manager_event_cursor_new(unsigned short type, void *data)
+{
+	tuio_cursor_t *o = (tuio_cursor_t *)data;
+	manager_cursor_t *el;
+	ClutterActor *stage, *ac;
+	unsigned int wx, wy;
+
+	assert( data != NULL );
+
+	stage = clutter_stage_get_default ();
+	clutter_actor_get_size(stage, &wx, &wy);
+
+	el = malloc(sizeof(struct manager_cursor_s));
+	LIST_INSERT_HEAD(&manager_cursors_list, el, next);
+
+	el->id = o->s_id;
+	snprintf(el->label, sizeof(el->label), "%d", o->s_id);
+	el->actor = clutter_group_new();
+
+	/* create rectangle
+	 */
+	ac = clutter_rectangle_new_with_color(&obj_background);
+	clutter_rectangle_set_border_color((ClutterRectangle *)ac, &obj_border);
+	clutter_rectangle_set_border_width((ClutterRectangle *)ac, 2);
+	clutter_actor_set_height(ac, 10);
+	clutter_actor_set_width(ac, 10);
+
+	clutter_container_add_actor(CLUTTER_CONTAINER(el->actor), ac);
+
+	/* some position
+	 */
+	clutter_actor_set_position(el->actor, o->xpos * (float)wx, o->ypos * (float)wy);
+
+	clutter_actor_show(el->actor);
+
+	clutter_threads_enter();
+	clutter_container_add_actor(CLUTTER_CONTAINER(stage), el->actor);
+	clutter_threads_leave();
+}
+
+static void manager_event_cursor_del(unsigned short type, void *data)
+{
+	tuio_cursor_t	*o = (tuio_cursor_t *)data;
+	manager_cursor_t	*it = NULL;
+
+	for ( it = manager_cursors_list.lh_first; it != NULL; it = it->next.le_next )
+		if ( it->id == o->s_id )
+			break;
+
+	if ( it == NULL )
+		return;
+
+	clutter_actor_destroy(it->actor);
+	LIST_REMOVE(it, next);
+	free(it);
+}
+
+static void manager_event_cursor_set(unsigned short type, void *data)
+{
+	tuio_cursor_t	*o = (tuio_cursor_t *)data;
+	manager_cursor_t	*it;
+	ClutterActor *stage;
+	unsigned wx, wy;
+
+	for ( it = manager_cursors_list.lh_first; it != NULL; it = it->next.le_next )
+		if ( it->id == o->s_id )
+			break;
+
+	if ( it == NULL )
+		return;
+
+	stage = clutter_stage_get_default ();
+	clutter_actor_get_size(stage, &wx, &wy);
+
+	clutter_threads_enter();
+	clutter_actor_set_position(it->actor, o->xpos * (float)wx, o->ypos * (float)wy);
+	clutter_threads_leave();
+}
+
 static void *thread_manager_run(void *arg)
 {
 	manager_actor_t	*it = NULL;
@@ -139,6 +228,10 @@ static void *thread_manager_run(void *arg)
 				event_observe(EV_OBJECT_NEW, manager_event_object_new);
 				event_observe(EV_OBJECT_SET, manager_event_object_set);
 				event_observe(EV_OBJECT_DEL, manager_event_object_del);
+
+				event_observe(EV_CURSOR_NEW, manager_event_cursor_new);
+				event_observe(EV_CURSOR_SET, manager_event_cursor_set);
+				event_observe(EV_CURSOR_DEL, manager_event_cursor_del);
 
 				break;
 
