@@ -3,6 +3,8 @@
 #include <pthread.h>
 #include <signal.h>
 #include <unistd.h>
+#include <string.h>
+#include <errno.h>
 
 #include "noya.h"
 
@@ -58,6 +60,14 @@ int main(int argc, char **argv)
 	/* prepare signals
 	 */
 	signal(SIGINT, signal_leave);
+
+	/* read config
+	 */
+	if ( config_init(NOYA_CONFIG_FN) )
+	{
+		l_printf("Error while reading %s : %s", NOYA_CONFIG_FN, strerror(errno));
+		return -1;
+	}
 
 	/* start INPUT service
 	 */

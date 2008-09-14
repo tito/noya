@@ -299,6 +299,7 @@ int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg **argv, 
 
 static void *thread_input_run(void *arg)
 {
+	char				*port;
     int					lo_fd;
     fd_set				rfds;
     int					retval;
@@ -315,11 +316,21 @@ static void *thread_input_run(void *arg)
 				l_printf(" - INPUT start...");
 				c_state = THREAD_STATE_RUNNING;
 
-				s = lo_server_new(NOYA_TUIO_PORT, _lo_error);
+				/* get osc port
+				 */
+				port = config_get("noya.net.port");
 
+				/* instanciate service
+				 */
+				s = lo_server_new(port, _lo_error);
+
+				/* register callback
+				 */
 				lo_server_add_method(s, TUIO_CURSOR_OSCPATH, NULL, _lo_tuio_cursor_handler, NULL);
 				lo_server_add_method(s, TUIO_OBJECT_OSCPATH, NULL, _lo_tuio_object_handler, NULL);
-				lo_server_add_method(s, "/quit", "", _lo_quit_handler, NULL);
+
+				/* get socket
+				 */
 				lo_fd = lo_server_get_socket_fd(s);
 				if ( lo_fd <= 0 )
 				{

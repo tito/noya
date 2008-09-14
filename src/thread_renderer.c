@@ -25,6 +25,11 @@ static short		c_state			= THREAD_STATE_START;
 static ClutterColor stage_color		= { 0x33, 0x09, 0x3b, 0xff };
 static ClutterActor *stage			= NULL;
 
+/* config
+ */
+static int	ui_width		= 640;
+static int	ui_height		= 480;
+
 void renderer_click_handle(void)
 {
 	g_want_leave = 1;
@@ -43,22 +48,26 @@ static void *thread_renderer_run(void *arg)
 				l_printf(" - RENDERER start...");
 				c_state = THREAD_STATE_RUNNING;
 
+				/* read config
+				 */
+				ui_width	= config_get_int("noya.ui.width");
+				ui_height	= config_get_int("noya.ui.height");
+
 				/* init clutter
 				 */
-				clutter_init (NULL, NULL);
+				clutter_init(NULL, NULL);
 
 				/* get the stage and set its size and color
 				 */
 				stage = clutter_stage_get_default();
-				clutter_actor_set_size(stage, 600, 600);
+				clutter_actor_set_size(stage, ui_width, ui_height);
 				clutter_stage_set_color(CLUTTER_STAGE(stage), &stage_color);
 				clutter_stage_set_title(CLUTTER_STAGE(stage), NOYA_TITLE);
 
 				/* prepare signals
 				 */
-				g_signal_connect(stage,
-					"button-press-event", G_CALLBACK (renderer_click_handle),
-					NULL
+				g_signal_connect(stage, "button-press-event",
+					G_CALLBACK(renderer_click_handle),	NULL
 				);
 
 				l_printf("Default Framerate are %d", clutter_get_default_frame_rate());
