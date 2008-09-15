@@ -13,6 +13,7 @@
 #include "noya.h"
 #include "thread_input.h"
 
+LOG_DECLARE("INPUT");
 MUTEX_DECLARE(m_input);
 pthread_t	thread_input;
 static sig_atomic_t	c_want_leave	= 0;

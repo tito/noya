@@ -12,7 +12,7 @@
 #include "thread_renderer.h"
 #include "thread_manager.h"
 
-
+LOG_DECLARE("MAIN");
 MUTEX_DECLARE(g_thread_mutex);
 sig_atomic_t		g_threads		= 0;
 sig_atomic_t		g_want_leave	= 0;

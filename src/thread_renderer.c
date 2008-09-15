@@ -10,6 +10,7 @@
 #include "noya.h"
 #include "thread_renderer.h"
 
+LOG_DECLARE("RENDERER");
 MUTEX_DECLARE(m_renderer);
 pthread_t	thread_renderer;
 

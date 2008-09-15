@@ -8,6 +8,8 @@
 
 #include "noya.h"
 
+LOG_DECLARE("CONFIG");
+
 #define LINE_MAX	512
 
 /* list of object in scene

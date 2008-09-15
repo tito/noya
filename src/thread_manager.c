@@ -13,6 +13,7 @@
 
 #define TUIO_PI_TO_DEG(a)	((a - 3.1416) * 57.2957795)    //360 / 2 x PI
 
+LOG_DECLARE("MANAGER");
 MUTEX_DECLARE(m_manager);
 pthread_t	thread_manager;
 static sig_atomic_t	c_want_leave	= 0;

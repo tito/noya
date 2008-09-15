@@ -28,12 +28,13 @@
 /* Log
  */
 #ifdef NOYA_DEBUG
-#define l_printf(...) do {		\
-		THREAD_GLOBAL_LOCK;		\
-		printf(">>> ");			\
-		printf(__VA_ARGS__);	\
-		printf("\n");			\
-		THREAD_GLOBAL_UNLOCK;	\
+#define LOG_DECLARE(a)			static char *log_module = a;
+#define l_printf(...) do {						\
+		THREAD_GLOBAL_LOCK;						\
+		printf("[%-8s] ", log_module);			\
+		printf(__VA_ARGS__);					\
+		printf("\n");							\
+		THREAD_GLOBAL_UNLOCK;					\
 	} while(0);
 #else
 #define l_printf(...)
