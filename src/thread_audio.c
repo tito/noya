@@ -14,6 +14,7 @@
 
 #define BUFFER_LEN		2048
 #define MAX_CHANNELS	2
+#define MAX_SOUNDS		128
 
 LOG_DECLARE("AUDIO");
 MUTEX_DECLARE(m_audio);
@@ -32,6 +33,7 @@ typedef struct audio_entry_s
 {
 #define AUDIO_ENTRY_FL_USED		0x01
 #define	AUDIO_ENTRY_FL_LOADED	0x02
+#define AUDIO_ENTRY_FL_PLAY		0x04
 	sig_atomic_t	flags;
 
 	unsigned int	id;
@@ -148,9 +150,11 @@ static int audio_output_callback(
 	PaStreamCallbackFlags statusFlags,
 	void *userData)
 {
-	audio_entry_t	*entry;
-	float			*out = (float*)outputBuffer;
-	unsigned long	i;
+	static audio_entry_t	entries[MAX_SOUNDS];
+	static int				entries_count = 0;
+	audio_entry_t			*entry;
+	float					*out = (float *)outputBuffer;
+	unsigned long			i, j;
 
 	(void) timeInfo; /* Prevent unused variable warnings. */
 	(void) statusFlags;
@@ -158,25 +162,35 @@ static int audio_output_callback(
 	(void) userData;
 	int readcount;
 
+	/* check which sound are played
+	 */
 	for ( entry = audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
 	{
 		if ( !(entry->flags & AUDIO_ENTRY_FL_USED) )
 			continue;
 		if ( !(entry->flags & AUDIO_ENTRY_FL_LOADED) )
 			continue;
+		if ( !(entry->flags & AUDIO_ENTRY_FL_PLAY) )
+			continue;
 
 		if ( (entry->dataidx / 2) + (framesPerBuffer * 2) >= entry->totalframes)
 			continue;
 
-		for ( i = 0; i < framesPerBuffer; i++ )
-		{
-			*out++ = entry->data[entry->dataidx + i * 2];
-			*out++ = entry->data[entry->dataidx + 1 + i * 2];
-		}
-		entry->dataidx += framesPerBuffer * 2;
-
-		break; /* FIXME, we can only read one file :/ */
+		entries[entries_count++] = entry;
 	}
+
+	for ( i = 0; i < framesPerBuffer; i++ )
+	{
+		for ( j = 0, entry = entries; j < entries_count; j++, entry++ )
+		{
+			*out		= entry->data[entry->dataidx + i * 2];
+			*(out + 1)	= entry->data[entry->dataidx + 1 + i * 2];
+		}
+		out += 2;
+	}
+
+	for ( j = 0, entry = entries; j < entries_count; j++, entry++ )
+		entry->dataidx += framesPerBuffer * 2;
 
 	return paContinue;
 }
