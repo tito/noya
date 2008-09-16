@@ -150,7 +150,7 @@ static int audio_output_callback(
 	PaStreamCallbackFlags statusFlags,
 	void *userData)
 {
-	static audio_entry_t	entries[MAX_SOUNDS];
+	static audio_entry_t	*entries[MAX_SOUNDS];
 	static int				entries_count = 0;
 	audio_entry_t			*entry;
 	float					*out = (float *)outputBuffer;
@@ -181,7 +181,7 @@ static int audio_output_callback(
 
 	for ( i = 0; i < framesPerBuffer; i++ )
 	{
-		for ( j = 0, entry = entries; j < entries_count; j++, entry++ )
+		for ( j = 0, entry = entries[0]; j < entries_count; j++, entry++ )
 		{
 			*out		= entry->data[entry->dataidx + i * 2];
 			*(out + 1)	= entry->data[entry->dataidx + 1 + i * 2];
@@ -189,7 +189,7 @@ static int audio_output_callback(
 		out += 2;
 	}
 
-	for ( j = 0, entry = entries; j < entries_count; j++, entry++ )
+	for ( j = 0, entry = entries[0]; j < entries_count; j++, entry++ )
 		entry->dataidx += framesPerBuffer * 2;
 
 	return paContinue;
