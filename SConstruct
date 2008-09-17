@@ -30,5 +30,9 @@ env = Environment()
 for lib_file in lib_files:
 	env.ParseConfig('pkg-config %s --cflags --libs' % lib_file)
 
+# Debug
+env['CFLAGS'].append('-ggdb')
+env['CFLAGS'].append('-O0')
+
 # Output
 env.Program('noya', src_files)

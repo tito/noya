@@ -27,8 +27,8 @@ typedef struct
 	int	is_started;
 } service_t;
 service_t services[] = {
-	{	thread_input_start,		thread_input_stop,		0	},
 	{	thread_audio_start,		thread_audio_stop,		0	},
+	{	thread_input_start,		thread_input_stop,		0	},
 	{	thread_renderer_start,	thread_renderer_stop,	0	},
 	{	thread_manager_start,	thread_manager_stop,	0	},
 	{	NULL,					NULL,					0	}
