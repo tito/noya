@@ -11,7 +11,7 @@ typedef struct
 	unsigned short	flags;
 
 	unsigned int	s_id;
-	unsigned int	f_id;
+	unsigned int	f_id;				/*< ficudial identifiant */
 	float			xpos;
 	float			ypos;
 	float			angle;

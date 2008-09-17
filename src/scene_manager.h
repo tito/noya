@@ -14,7 +14,7 @@
 #define SCENE_CONTROL_NONE			0x00
 #define SCENE_CONTROL_VOLUME		0x01
 
-typedef char color_t[8];
+typedef char color_t[4];
 
 typedef struct scene_actor_base_s
 {
@@ -25,8 +25,8 @@ typedef struct scene_actor_base_s
 
 	int		width;						/*< width */
 	int		height;						/*< height */
-	char	background_color[8];		/*< background color */
-	char	border_color[8];			/*< border color */
+	color_t	background_color;			/*< background color */
+	color_t	border_color;				/*< border color */
 	int		border_width;				/*< border width */
 
 	short	is_loop;					/*< indicate if actor animation is looping */
@@ -54,10 +54,10 @@ typedef struct scene_actor_head_s
 
 typedef struct
 {
-	char				*name;			/*< name of scene */
-	char				background_color[8]; /*< scene background color */
-	scene_actor_base_t	def_actor;		/*< default params for actor */
-	scene_actor_head_t	actors;
+	char				*name;				/*< name of scene */
+	color_t				background_color;	/*< scene background color */
+	scene_actor_base_t	def_actor;			/*< default params for actor */
+	scene_actor_head_t	actors;				/*< actors list */
 } scene_t;
 
 scene_t	*noya_scene_load(char *filename);

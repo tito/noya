@@ -14,6 +14,7 @@
 #include "scene_manager.h"
 
 #define TUIO_PI_TO_DEG(a)	((a - 3.1416) * 57.2957795)    //360 / 2 x PI
+#define PI2					6.2832
 
 LOG_DECLARE("MANAGER");
 MUTEX_DECLARE(m_manager);
@@ -70,10 +71,10 @@ static void manager_event_object_new(unsigned short type, void *data)
 
 	/* search actor from scene
 	 */
-	actor = noya_scene_actor_get(c_scene, o->s_id);
+	actor = noya_scene_actor_get(c_scene, o->f_id);
 	if ( actor == NULL )
 	{
-		l_printf("Error : actor %d not found in scene", o->s_id);
+		l_printf("Error : actor %d not found in scene", o->f_id);
 		return;
 	}
 
@@ -109,7 +110,7 @@ static void manager_event_object_new(unsigned short type, void *data)
 	/* create text
 	 */
 	ac = clutter_label_new_with_text ("Mono 12", el->label);
-	clutter_actor_set_position(ac, actor->width-6, actor->height-6);
+	clutter_actor_set_position(ac, actor->width / 2 -6, actor->height / 2 -6);
 
 	clutter_container_add_actor(CLUTTER_CONTAINER(el->clutter_actor), ac);
 
@@ -140,16 +141,16 @@ static void manager_event_object_del(unsigned short type, void *data)
 
 	/* scene
 	 */
-	if ( it->scene_actor != NULL )
+	switch ( it->scene_actor->type )
 	{
-		switch ( it->scene_actor->type )
-		{
-			case SCENE_ACTOR_TYPE_SAMPLE:
-				audio = SCENE_ACTOR_SAMPLE(it->scene_actor)->audio;
-				if ( audio )
-					noya_audio_stop(audio);
-				break;
-		}
+		case SCENE_ACTOR_TYPE_SAMPLE:
+			audio = SCENE_ACTOR_SAMPLE(it->scene_actor)->audio;
+			if ( audio )
+			{
+				noya_audio_stop(audio);
+				noya_audio_seek(audio, 0);
+			}
+			break;
 	}
 
 	clutter_actor_destroy(it->clutter_actor);
@@ -174,25 +175,26 @@ static void manager_event_object_set(unsigned short type, void *data)
 
 	/* scene
 	 */
-	if ( it->scene_actor != NULL )
+	switch ( it->scene_actor->type )
 	{
-		switch ( it->scene_actor->type )
-		{
-			case SCENE_ACTOR_TYPE_SAMPLE:
-				audio = SCENE_ACTOR_SAMPLE(it->scene_actor)->audio;
-				if ( audio )
+		case SCENE_ACTOR_TYPE_SAMPLE:
+			audio = SCENE_ACTOR_SAMPLE(it->scene_actor)->audio;
+			if ( audio )
+			{
+				if ( !noya_audio_is_play(audio) )
 				{
-					if ( !noya_audio_is_play(audio) )
-						noya_audio_play(audio);
-					switch ( it->scene_actor->ctl_angle )
-					{
-						case SCENE_CONTROL_VOLUME:
-							noya_audio_set_volume(audio, TUIO_PI_TO_DEG(o->angle) / 360.0f);
-							break;
-					}
+					noya_audio_play(audio);
+					noya_audio_set_loop(audio, it->scene_actor->is_loop);
 				}
-				break;
-		}
+
+				switch ( it->scene_actor->ctl_angle )
+				{
+					case SCENE_CONTROL_VOLUME:
+						noya_audio_set_volume(audio, o->angle / PI2);
+						break;
+				}
+			}
+			break;
 	}
 
 	/* rendering
@@ -202,7 +204,7 @@ static void manager_event_object_set(unsigned short type, void *data)
 
 	clutter_threads_enter();
 	clutter_actor_set_position(it->clutter_actor, o->xpos * (float)wx, o->ypos * (float)wy);
-	clutter_actor_set_rotation(it->clutter_actor, CLUTTER_Z_AXIS, TUIO_PI_TO_DEG(o->angle), 30, 30, 0);
+	clutter_actor_set_rotation(it->clutter_actor, CLUTTER_Z_AXIS, TUIO_PI_TO_DEG(o->angle), it->scene_actor->width / 2, it->scene_actor->height / 2, 0);
 	clutter_threads_leave();
 }
 

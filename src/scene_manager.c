@@ -13,6 +13,27 @@ LOG_DECLARE("SCENE");
 
 #define MAX_PATH	128
 
+static void noya_scene_color_read(color_t *color, char *in)
+{
+	char	buf[2] = {0};
+	char	*dst = (char *)color;
+
+	if ( strlen(in) < 8 )
+	{
+		l_printf("Invalid color : %s", in);
+		return;
+	}
+
+	buf[0] = in[0], buf[1] = in[1];
+	dst[0] = (char)strtol(buf, NULL, 16);
+	buf[0] = in[2], buf[1] = in[3];
+	dst[1] = strtol(buf, NULL, 16);
+	buf[0] = in[4], buf[1] = in[5];
+	dst[2] = strtol(buf, NULL, 16);
+	buf[0] = in[6], buf[1] = in[7];
+	dst[3] = strtol(buf, NULL, 16);
+}
+
 scene_t *noya_scene_load(char *name)
 {
 	scene_t			*scene;
@@ -62,12 +83,7 @@ scene_t *noya_scene_load(char *name)
 		 */
 		if ( strcmp(it->k, "scene.background.color") == 0 )
 		{
-			if ( strlen(it->v) < sizeof(color_t) )
-			{
-				l_printf("Error : invalid scene.background.color size");
-				continue;
-			}
-			memcpy(scene->background_color, it->v, sizeof(color_t));
+			noya_scene_color_read(&scene->background_color, it->v);
 			continue;
 		}
 
@@ -200,17 +216,9 @@ void noya_scene_prop_set(scene_t *scene, scene_actor_base_t *actor, char *key, c
 		}
 	}
 	else if ( strcmp(key, "background.color") == 0 )
-	{
-		if ( strlen(value) < sizeof(color_t) )
-			goto noya_scene_prop_set_invalid_size;
-		memcpy(actor->background_color, value, sizeof(color_t));
-	}
+		noya_scene_color_read(&actor->background_color, value);
 	else if ( strcmp(key, "border.color") == 0 )
-	{
-		if ( strlen(value) < sizeof(color_t) )
-			goto noya_scene_prop_set_invalid_size;
-		memcpy(actor->border_color, value, sizeof(color_t));
-	}
+		noya_scene_color_read(&actor->border_color, value);
 	else if ( strcmp(key, "border.width") == 0 )
 		actor->border_width = strtol(value, NULL, 10);
 	else if ( strcmp(key, "width") == 0 )
@@ -219,11 +227,11 @@ void noya_scene_prop_set(scene_t *scene, scene_actor_base_t *actor, char *key, c
 		actor->height = strtol(value, NULL, 10);
 	else if ( strcmp(key, "loop") == 0 )
 		actor->is_loop = strtol(value, NULL, 10) > 0 ? 1 : 0;
-	else if ( strcmp(key, "ctl_angle") == 0 )
+	else if ( strcmp(key, "ctl.angle") == 0 )
 		actor->ctl_angle = noya_scene_ctl_get_id(value);
-	else if ( strcmp(key, "ctl_x") == 0 )
+	else if ( strcmp(key, "ctl.x") == 0 )
 		actor->ctl_x = noya_scene_ctl_get_id(value);
-	else if ( strcmp(key, "ctl_y") == 0 )
+	else if ( strcmp(key, "ctl.y") == 0 )
 		actor->ctl_y = noya_scene_ctl_get_id(value);
 
 	/* sample type

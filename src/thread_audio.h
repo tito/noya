@@ -23,7 +23,7 @@ typedef struct audio_entry_s
 	unsigned int	totalframes;
 	float			*data;
 	float			*datacur;
-	int				dataidx;
+	long			dataidx;
 	float			datalen;
 
 	/* effects
@@ -42,6 +42,7 @@ void noya_audio_set_loop(audio_entry_t *entry, short isloop);
 void noya_audio_set_volume(audio_entry_t *entry, float volume);
 void noya_audio_play(audio_entry_t *entry);
 void noya_audio_stop(audio_entry_t *entry);
+void noya_audio_seek(audio_entry_t *entry, long position);
 short noya_audio_is_play(audio_entry_t *entry);
 
 /* thread management

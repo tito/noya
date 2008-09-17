@@ -128,6 +128,11 @@ short noya_audio_is_play(audio_entry_t *entry)
 	return entry->flags & AUDIO_ENTRY_FL_PLAY;
 }
 
+void noya_audio_seek(audio_entry_t *entry, long position)
+{
+	entry->dataidx = position;
+}
+
 /* thread functions
  */
 
@@ -251,7 +256,7 @@ static int audio_output_callback(
 		*out		= .0f;
 		*(out+1)	= .0f;
 
-		for ( j = 0; j < entries_count; j++ )
+		for ( j = 0; j <= entries_count; j++ )
 		{
 			entry = entries[j];
 
@@ -271,7 +276,7 @@ static int audio_output_callback(
 
 	/* advance idx 
 	 */
-	for ( j = 0; j < entries_count; j++ )
+	for ( j = 0; j <= entries_count; j++ )
 		entries[j]->dataidx += framesPerBuffer * 2;
 
 	return paContinue;
