@@ -5,7 +5,7 @@
 
 /* list of object to play
  */
-LIST_HEAD(s_actor_head, audio_entry_s) audio_entries;
+LIST_HEAD(audio_head_s, audio_entry_s) audio_entries;
 typedef struct audio_entry_s
 {
 #define AUDIO_ENTRY_FL_USED		0x01

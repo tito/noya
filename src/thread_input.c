@@ -319,7 +319,7 @@ static void *thread_input_run(void *arg)
 
 				/* get osc port
 				 */
-				port = config_get("noya.net.port");
+				port = config_get(CONFIG_DEFAULT, "noya.net.port");
 
 				/* instanciate service
 				 */

@@ -51,8 +51,8 @@ static void *thread_renderer_run(void *arg)
 
 				/* read config
 				 */
-				ui_width	= config_get_int("noya.ui.width");
-				ui_height	= config_get_int("noya.ui.height");
+				ui_width	= config_get_int(CONFIG_DEFAULT, "noya.ui.width");
+				ui_height	= config_get_int(CONFIG_DEFAULT, "noya.ui.height");
 
 				/* init clutter
 				 */

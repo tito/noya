@@ -308,8 +308,8 @@ static void *thread_audio_run(void *arg)
 
 				/* get some configs
 				 */
-				cfg_samplerate = config_get_int("noya.audio.samplerate");
-				cfg_frames = config_get_int("noya.audio.frames");
+				cfg_samplerate = config_get_int(CONFIG_DEFAULT, "noya.audio.samplerate");
+				cfg_frames = config_get_int(CONFIG_DEFAULT, "noya.audio.frames");
 
 				/* open stream
 				 */
@@ -345,12 +345,6 @@ static void *thread_audio_run(void *arg)
 					g_want_leave = 1;
 					continue;
 				}
-
-				/* read some files
-				 */
-				noya_audio_load("audio/drums.wav", 1);
-				noya_audio_load("audio/bass.wav", 2);
-				noya_audio_load("audio/pad.wav", 3);
 
 				break;
 
