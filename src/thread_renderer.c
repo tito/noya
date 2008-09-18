@@ -30,11 +30,31 @@ static ClutterActor *stage			= NULL;
  */
 static int	ui_width		= 640;
 static int	ui_height		= 480;
+static sig_atomic_t	clutter_running = 0;
 
-void renderer_click_handle(void)
+static gboolean renderer_key_handle(
+	ClutterActor	*actor,
+	ClutterKeyEvent	*event,
+	gpointer		data)
 {
-	g_want_leave = 1;
-	return;
+	gboolean is_fullscreen = FALSE;
+	switch (event->keyval)
+	{
+		case CLUTTER_f:
+			g_object_get (G_OBJECT (stage), "fullscreen", &is_fullscreen, NULL);
+			if ( is_fullscreen )
+				clutter_stage_unfullscreen(CLUTTER_STAGE(stage));
+			else
+				clutter_stage_fullscreen(CLUTTER_STAGE(stage));
+			break;
+		case CLUTTER_q:
+			clutter_main_quit();
+			break;
+		default:
+			return TRUE;
+	}
+
+	return TRUE;
 }
 
 static void *thread_renderer_run(void *arg)
@@ -67,8 +87,8 @@ static void *thread_renderer_run(void *arg)
 
 				/* prepare signals
 				 */
-				g_signal_connect(stage, "button-press-event",
-					G_CALLBACK(renderer_click_handle),	NULL
+				g_signal_connect(stage, "key-press-event",
+					G_CALLBACK(renderer_key_handle), NULL
 				);
 
 				l_printf("Default Framerate are %d", clutter_get_default_frame_rate());
@@ -104,12 +124,15 @@ static void *thread_renderer_run(void *arg)
 				/* run loop for clutter
 				 */
 				clutter_threads_enter();
+				clutter_running = 1;
 				clutter_main();
 				clutter_threads_leave();
 
 				/* if we leave... stop app ?
 				 */
 				g_want_leave = 1;
+				c_want_leave = 1;
+				clutter_running = 0;
 
 				break;
 		}
@@ -152,9 +175,12 @@ int thread_renderer_start(void)
 int thread_renderer_stop(void)
 {
 	c_want_leave = 1;
-	MUTEX_LOCK(m_renderer);
-	clutter_main_quit();
-	MUTEX_UNLOCK(m_renderer);
+	if ( clutter_running )
+	{
+		MUTEX_LOCK(m_renderer);
+		clutter_main_quit();
+		MUTEX_UNLOCK(m_renderer);
+	}
 
 	while ( c_running )
 		usleep(1000);
