@@ -25,7 +25,7 @@ static void noya_scene_color_read(color_t *color, char *in)
 	}
 
 	buf[0] = in[0], buf[1] = in[1];
-	dst[0] = (char)strtol(buf, NULL, 16);
+	dst[0] = strtol(buf, NULL, 16);
 	buf[0] = in[2], buf[1] = in[3];
 	dst[1] = strtol(buf, NULL, 16);
 	buf[0] = in[4], buf[1] = in[5];

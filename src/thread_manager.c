@@ -35,8 +35,13 @@ LIST_HEAD(s_actor_head, manager_actor_s) manager_actors_list;
 typedef struct manager_actor_s
 {
 	unsigned int		id;
+
 	ClutterActor		*clutter_actor;
+	ClutterActor		*volume_actor;
+	ClutterActor		*object_actor;
+
 	scene_actor_base_t	*scene_actor;
+
 	char				label[10];
 	LIST_ENTRY(manager_actor_s) next;
 } manager_actor_t;
@@ -92,8 +97,10 @@ static void manager_event_object_new(unsigned short type, void *data)
 
 	el->id = o->s_id;
 	snprintf(el->label, sizeof(el->label), "%d", o->f_id);
-	el->clutter_actor = clutter_group_new();
 	el->scene_actor = actor;
+	el->clutter_actor = clutter_group_new();
+	el->object_actor = clutter_group_new();
+	clutter_container_add_actor(CLUTTER_CONTAINER(el->clutter_actor), el->object_actor);
 
 	/* create object
 	 */
@@ -102,22 +109,38 @@ static void manager_event_object_new(unsigned short type, void *data)
 	ac = clutter_rectangle_new_with_color(&col_background);
 	clutter_rectangle_set_border_color((ClutterRectangle *)ac, &col_border);
 	clutter_rectangle_set_border_width((ClutterRectangle *)ac, actor->border_width);
-	clutter_actor_set_height(ac, actor->width);
-	clutter_actor_set_width(ac, actor->height);
+	clutter_actor_set_width(ac, actor->width);
+	clutter_actor_set_height(ac, actor->height);
 
-	clutter_container_add_actor(CLUTTER_CONTAINER(el->clutter_actor), ac);
+	clutter_container_add_actor(CLUTTER_CONTAINER(el->object_actor), ac);
 
 	/* create text
 	 */
-	ac = clutter_label_new_with_text ("Mono 12", el->label);
-	clutter_actor_set_position(ac, actor->width / 2 -6, actor->height / 2 -6);
+	ac = clutter_label_new_with_text ("Lucida 12", el->label);
+	clutter_actor_set_position(ac, actor->width / 2 -6, actor->height / 2 -10);
 
+	clutter_container_add_actor(CLUTTER_CONTAINER(el->object_actor), ac);
+
+	/* create volume object
+	 */
+	ac = clutter_rectangle_new_with_color(&col_background);
+	clutter_actor_set_width(ac, actor->width);
+	clutter_actor_set_height(ac, 10);
+	clutter_actor_set_y(ac, actor->height + 16);
 	clutter_container_add_actor(CLUTTER_CONTAINER(el->clutter_actor), ac);
+
+	ac = clutter_rectangle_new_with_color(&col_border);
+	clutter_actor_set_width(ac, actor->width - 4);
+	clutter_actor_set_height(ac, 6);
+	clutter_actor_set_x(ac, 2);
+	clutter_actor_set_y(ac, actor->height + 18);
+	clutter_container_add_actor(CLUTTER_CONTAINER(el->clutter_actor), ac);
+	el->volume_actor = ac;
 
 	/* some position
 	 */
 	clutter_actor_set_position(el->clutter_actor, o->xpos * (float)wx, o->ypos * (float)wy);
-	clutter_actor_set_rotation(el->clutter_actor, CLUTTER_Z_AXIS, TUIO_PI_TO_DEG(o->angle), actor->width / 2, actor->height / 2, 0);
+	clutter_actor_set_rotation(el->object_actor, CLUTTER_Z_AXIS, TUIO_PI_TO_DEG(o->angle), actor->width / 2, actor->height / 2, 0);
 
 	clutter_actor_show(el->clutter_actor);
 
@@ -203,8 +226,11 @@ static void manager_event_object_set(unsigned short type, void *data)
 	clutter_actor_get_size(stage, &wx, &wy);
 
 	clutter_threads_enter();
+
 	clutter_actor_set_position(it->clutter_actor, o->xpos * (float)wx, o->ypos * (float)wy);
-	clutter_actor_set_rotation(it->clutter_actor, CLUTTER_Z_AXIS, TUIO_PI_TO_DEG(o->angle), it->scene_actor->width / 2, it->scene_actor->height / 2, 0);
+	clutter_actor_set_rotation(it->object_actor, CLUTTER_Z_AXIS, TUIO_PI_TO_DEG(o->angle), it->scene_actor->width / 2, it->scene_actor->height / 2, 0);
+
+	clutter_actor_set_width(it->volume_actor, it->scene_actor->width * o->angle / PI2);
 	clutter_threads_leave();
 }
 
@@ -329,7 +355,6 @@ static void *thread_manager_run(void *arg)
 				while ( manager_actors_list.lh_first != NULL )
 				{
 					it = manager_actors_list.lh_first;
-					//clutter_actor_destroy(it->actor);
 					LIST_REMOVE(manager_actors_list.lh_first, next);
 					free(it);
 				}
@@ -354,8 +379,10 @@ static void *thread_manager_run(void *arg)
 					break;
 				}
 
-				/* TODO write running
+				/* nothing to do, just sleep :)
 				 */
+				usleep(500000);
+
 				break;
 		}
 	}
