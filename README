@@ -1,0 +1,33 @@
+Noya
+====
+Noya is a live multitouch sequencer
+
+Requirements
+------------
+In order to build noya, you need header files and libs of:
+ - scons
+ - libsndfile
+ - libsamplerate
+ - clutter (>= 0.8)
+ - portaudio (>= 0.19)
+
+Building and installation
+-------------------------
+After extracting the dist tarball, run:
+
+  scons
+
+Running noya
+------------
+Just run:
+
+ ./noya
+
+Troubleshooting
+---------------
+Noya is in development, no stable version is released yet.
+If you have bugs or features, open a ticket on :
+
+ http://noya.txzone.net/
+
+
