@@ -11,7 +11,7 @@
 #include "thread_manager.h"
 #include "thread_input.h"
 #include "thread_audio.h"
-#include "scene_manager.h"
+#include "scene.h"
 
 #define TUIO_PI_TO_DEG(a)	((a - 3.1416) * 57.2957795)    //360 / 2 x PI
 #define PI2					6.2832
@@ -23,45 +23,14 @@ static sig_atomic_t	c_want_leave	= 0;
 static sig_atomic_t	c_running		= 0;
 static short		c_state			= THREAD_STATE_START;
 scene_t				*c_scene		= NULL;
+manager_actor_list_t	manager_actors_list;
+manager_cursor_list_t	manager_cursors_list;
 
 extern sig_atomic_t	g_want_leave;
 
 ClutterColor obj_background	= { 0xff, 0xff, 0xff, 0x99 };
 ClutterColor obj_border		= { 0xff, 0xff, 0xff, 0xff };
 
-/* list of object in scene
- */
-LIST_HEAD(s_actor_head, manager_actor_s) manager_actors_list;
-typedef struct manager_actor_s
-{
-	unsigned int		id;
-
-	ClutterActor		*clutter_actor;
-	ClutterActor		*volume_actor;
-	ClutterActor		*object_actor;
-
-	scene_actor_base_t	*scene_actor;
-
-	char				label[10];
-	LIST_ENTRY(manager_actor_s) next;
-} manager_actor_t;
-
-/* list of cursor in scene
- */
-LIST_HEAD(s_cursor_head, manager_cursor_s) manager_cursors_list;
-typedef struct manager_cursor_s
-{
-	unsigned int	id;
-	ClutterActor	*actor;
-	char			label[10];
-	LIST_ENTRY(manager_cursor_s) next;
-} manager_cursor_t;
-
-inline void _copy_color(ClutterColor *dst, color_t *src)
-{
-	assert( sizeof(ClutterColor) == sizeof(color_t) );
-	memcpy(dst, src, sizeof(color_t));
-}
 
 static void manager_event_object_new(unsigned short type, void *data)
 {
@@ -83,9 +52,16 @@ static void manager_event_object_new(unsigned short type, void *data)
 		return;
 	}
 
-	stage = clutter_stage_get_default ();
-	clutter_actor_get_size(stage, &wx, &wy);
+	/* check rendering module
+	 */
+	if ( actor->mod == NULL )
+	{
+		l_printf("Error : no object associated for actor %d", o->f_id);
+		return;
+	}
 
+	/* create manager actor
+	 */
 	el = malloc(sizeof(struct manager_actor_s));
 	if ( el == NULL )
 	{
@@ -93,57 +69,49 @@ static void manager_event_object_new(unsigned short type, void *data)
 		return;
 	}
 	bzero(el, sizeof(struct manager_actor_s));
+
+	el->id				= o->s_id;
+	el->fid				= o->f_id;
+	el->scene_actor		= actor;
+	el->clutter_actor	= clutter_group_new();
+	el->rotate_actor	= clutter_group_new();
+
+	clutter_container_add_actor(CLUTTER_CONTAINER(el->clutter_actor), el->rotate_actor);
+
+	/* use associed module for rendering
+	 */
+	(*actor->mod->object_prepare)(actor->data_mod, el);
+
+	/* insert actor into list
+	 */
 	LIST_INSERT_HEAD(&manager_actors_list, el, next);
 
-	el->id = o->s_id;
-	snprintf(el->label, sizeof(el->label), "%d", o->f_id);
-	el->scene_actor = actor;
-	el->clutter_actor = clutter_group_new();
-	el->object_actor = clutter_group_new();
-	clutter_container_add_actor(CLUTTER_CONTAINER(el->clutter_actor), el->object_actor);
-
-	/* create object
+	/* retreive last dimensions
 	 */
-	_copy_color(&col_background, &actor->background_color);
-	_copy_color(&col_border, &actor->border_color);
-	ac = clutter_rectangle_new_with_color(&col_background);
-	clutter_rectangle_set_border_color((ClutterRectangle *)ac, &col_border);
-	clutter_rectangle_set_border_width((ClutterRectangle *)ac, actor->border_width);
-	clutter_actor_set_width(ac, actor->width);
-	clutter_actor_set_height(ac, actor->height);
-
-	clutter_container_add_actor(CLUTTER_CONTAINER(el->object_actor), ac);
-
-	/* create text
-	 */
-	ac = clutter_label_new_with_text ("Lucida 12", el->label);
-	clutter_actor_set_position(ac, actor->width / 2 -6, actor->height / 2 -10);
-
-	clutter_container_add_actor(CLUTTER_CONTAINER(el->object_actor), ac);
-
-	/* create volume object
-	 */
-	ac = clutter_rectangle_new_with_color(&col_background);
-	clutter_actor_set_width(ac, actor->width);
-	clutter_actor_set_height(ac, 10);
-	clutter_actor_set_y(ac, actor->height + 16);
-	clutter_container_add_actor(CLUTTER_CONTAINER(el->clutter_actor), ac);
-
-	ac = clutter_rectangle_new_with_color(&col_border);
-	clutter_actor_set_width(ac, actor->width - 4);
-	clutter_actor_set_height(ac, 6);
-	clutter_actor_set_x(ac, 2);
-	clutter_actor_set_y(ac, actor->height + 18);
-	clutter_container_add_actor(CLUTTER_CONTAINER(el->clutter_actor), ac);
-	el->volume_actor = ac;
+	stage = clutter_stage_get_default();
+	clutter_actor_get_size(stage, &wx, &wy);
 
 	/* some position
 	 */
-	clutter_actor_set_position(el->clutter_actor, o->xpos * (float)wx, o->ypos * (float)wy);
-	clutter_actor_set_rotation(el->object_actor, CLUTTER_Z_AXIS, TUIO_PI_TO_DEG(o->angle), actor->width / 2, actor->height / 2, 0);
+	clutter_actor_set_position(el->clutter_actor,
+		o->xpos * (float)wx,
+		o->ypos * (float)wy
+	);
+	clutter_actor_set_rotation(el->rotate_actor,
+		CLUTTER_Z_AXIS,
+		TUIO_PI_TO_DEG(o->angle),
+		actor->width * 0.5,
+		actor->height * 0.5,
+		0
+	);
 
+	/* show actor
+	 * FIXME not needed ?
+	 */
 	clutter_actor_show(el->clutter_actor);
 
+	/* add to stage
+	 */
 	clutter_threads_enter();
 	clutter_container_add_actor(CLUTTER_CONTAINER(stage), el->clutter_actor);
 	clutter_threads_leave();
@@ -152,7 +120,7 @@ static void manager_event_object_new(unsigned short type, void *data)
 static void manager_event_object_del(unsigned short type, void *data)
 {
 	tuio_object_t	*o = (tuio_object_t *)data;
-	audio_entry_t	*audio;
+	audio_t	*audio;
 	manager_actor_t	*it = NULL;
 
 	for ( it = manager_actors_list.lh_first; it != NULL; it = it->next.le_next )
@@ -162,28 +130,26 @@ static void manager_event_object_del(unsigned short type, void *data)
 	if ( it == NULL )
 		return;
 
-	/* scene
+	/* unprepare object
 	 */
-	switch ( it->scene_actor->type )
-	{
-		case SCENE_ACTOR_TYPE_SAMPLE:
-			audio = SCENE_ACTOR_SAMPLE(it->scene_actor)->audio;
-			if ( audio )
-			{
-				noya_audio_stop(audio);
-				noya_audio_seek(audio, 0);
-			}
-			break;
-	}
+	(*it->scene_actor->mod->object_unprepare)(it->scene_actor->data_mod);
 
+	/* remove clutter actor
+	 */
 	clutter_actor_destroy(it->clutter_actor);
+
+	/* remove from list
+	 */
 	LIST_REMOVE(it, next);
+
+	/* free entry
+	 */
 	free(it);
 }
 
 static void manager_event_object_set(unsigned short type, void *data)
 {
-	audio_entry_t	*audio;
+	audio_t	*audio;
 	tuio_object_t	*o = (tuio_object_t *)data;
 	manager_actor_t	*it;
 	ClutterActor *stage;
@@ -196,41 +162,40 @@ static void manager_event_object_set(unsigned short type, void *data)
 	if ( it == NULL )
 		return;
 
-	/* scene
+	/* update control
 	 */
-	switch ( it->scene_actor->type )
-	{
-		case SCENE_ACTOR_TYPE_SAMPLE:
-			audio = SCENE_ACTOR_SAMPLE(it->scene_actor)->audio;
-			if ( audio )
-			{
-				if ( !noya_audio_is_play(audio) )
-				{
-					noya_audio_play(audio);
-					noya_audio_set_loop(audio, it->scene_actor->is_loop);
-				}
+	if ( it->scene_actor->ctl_angle )
+		(*it->scene_actor->ctl_angle)(it->scene_actor->data_mod, o->angle / PI2);
+	if ( it->scene_actor->ctl_x )
+		(*it->scene_actor->ctl_x)(it->scene_actor->data_mod, o->xpos);
+	if ( it->scene_actor->ctl_y )
+		(*it->scene_actor->ctl_y)(it->scene_actor->data_mod, o->ypos);
 
-				switch ( it->scene_actor->ctl_angle )
-				{
-					case SCENE_CONTROL_VOLUME:
-						noya_audio_set_volume(audio, o->angle / PI2);
-						break;
-				}
-			}
-			break;
-	}
-
-	/* rendering
+	/* retreive last dimensions
 	 */
-	stage = clutter_stage_get_default ();
+	stage = clutter_stage_get_default();
 	clutter_actor_get_size(stage, &wx, &wy);
 
+	/* update rendering
+	 */
 	clutter_threads_enter();
 
-	clutter_actor_set_position(it->clutter_actor, o->xpos * (float)wx, o->ypos * (float)wy);
-	clutter_actor_set_rotation(it->object_actor, CLUTTER_Z_AXIS, TUIO_PI_TO_DEG(o->angle), it->scene_actor->width / 2, it->scene_actor->height / 2, 0);
+	clutter_actor_set_position(it->clutter_actor,
+		o->xpos * (float)wx,
+		o->ypos * (float)wy
+	);
+	clutter_actor_set_rotation(it->rotate_actor,
+		CLUTTER_Z_AXIS,
+		TUIO_PI_TO_DEG(o->angle),
+		it->scene_actor->width * 0.5,
+		it->scene_actor->height * 0.5,
+		0
+	);
 
-	clutter_actor_set_width(it->volume_actor, it->scene_actor->width * o->angle / PI2);
+	/* update object
+	 */
+	(*it->scene_actor->mod->object_update)(it->scene_actor->data_mod);
+
 	clutter_threads_leave();
 }
 

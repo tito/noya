@@ -8,6 +8,7 @@
 
 #include "noya.h"
 
+#include "module.h"
 #include "thread_input.h"
 #include "thread_renderer.h"
 #include "thread_audio.h"
@@ -71,6 +72,10 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	/* load modules
+	 */
+	noya_modules_init();
+
 	/* start INPUT service
 	 */
 	l_printf("Starting services...");
@@ -101,6 +106,9 @@ cleaning:;
 
 	while ( g_threads > 0 )
 		usleep(100);
+
+	l_printf("Freeing module...");
+	noya_modules_free();
 
 	l_printf("Done.");
 	return 0;

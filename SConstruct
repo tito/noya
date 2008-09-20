@@ -3,6 +3,7 @@
 
 # Enumerate sources and libraries
 src_files = Glob('src/*.c')
+mod_files = Glob('modules/*.c');
 lib_files = [
 	# handle OSC message
 	# http://liblo.sourceforge.net/
@@ -28,11 +29,22 @@ lib_files = [
 # Add library
 env = Environment()
 for lib_file in lib_files:
-	env.ParseConfig('pkg-config %s --cflags --libs' % lib_file)
+	env.ParseConfig('pkg-config %s --cflags' % lib_file)
 
 # Debug
-env['CFLAGS'].append('-ggdb')
-env['CFLAGS'].append('-O0')
+env.AppendUnique(CCFLAGS='-ggdb')
+env.AppendUnique(CCFLAGS='-O0')
+
+# Libs
+import os
+for mod in mod_files:
+	out = str(mod)[:-2] + '.so'
+	env.SharedLibrary(target=out, source = mod, SHLIBPREFIX='')
+
+# Links
+penv = env.Copy()
+for lib_file in lib_files:
+	penv.ParseConfig('pkg-config %s --libs' % lib_file)
 
 # Output
-env.Program('noya', src_files)
+penv.Program('noya', src_files)

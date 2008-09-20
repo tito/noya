@@ -10,6 +10,7 @@
 #include <sndfile.h>
 
 #include "noya.h"
+#include "audio.h"
 #include "thread_audio.h"
 
 #define BUFFER_LEN		2048
@@ -26,129 +27,22 @@ static PaStream		*c_stream		= NULL;
 
 extern sig_atomic_t	g_want_leave;
 
-audio_entry_t *noya_audio_get_by_filename(char *filename)
-{
-	audio_entry_t	*it;
-
-	assert( filename != NULL );
-
-	for ( it = audio_entries.lh_first; it != NULL; it = it->next.le_next )
-	{
-		if ( !(it->flags & AUDIO_ENTRY_FL_USED) )
-			continue;
-		if ( strcmp(filename, it->filename) == 0 )
-			return it;
-	}
-
-	return NULL;
-}
-
-audio_entry_t *noya_audio_get_by_id(unsigned int id)
-{
-	audio_entry_t	*it;
-
-	for ( it = audio_entries.lh_first; it != NULL; it = it->next.le_next )
-	{
-		if ( !(it->flags & AUDIO_ENTRY_FL_USED) )
-			continue;
-		if ( it->id == id )
-			return it;
-	}
-
-	return NULL;
-}
-
-audio_entry_t *noya_audio_load(char *filename, unsigned int id)
-{
-	SNDFILE			*sfp = NULL;
-	SF_INFO			sinfo;
-	audio_entry_t	*entry;
-
-	assert( filename != NULL );
-
-	entry = malloc(sizeof(audio_entry_t));
-	if ( entry == NULL )
-		goto noya_audio_load_clean;
-	bzero(entry, sizeof(audio_entry_t));
-
-	entry->filename = strdup(filename);
-	if ( entry->filename == NULL )
-		goto noya_audio_load_clean;
-
-	entry->flags = AUDIO_ENTRY_FL_USED;
-
-	LIST_INSERT_HEAD(&audio_entries, entry, next);
-
-	return entry;
-
-noya_audio_load_clean:;
-	if ( entry != NULL )
-	{
-		if ( sfp != NULL )
-			sf_close(sfp);
-		if ( entry->filename != NULL )
-			free(entry->filename), entry->filename = NULL;
-		if ( entry->data != NULL )
-			free(entry->data), entry->data = NULL;
-		free(entry);
-	}
-	return NULL;
-}
-
-void noya_audio_play(audio_entry_t *entry)
-{
-	assert( entry != NULL );
-	entry->flags |= AUDIO_ENTRY_FL_PLAY;
-}
-
-void noya_audio_stop(audio_entry_t *entry)
-{
-	assert( entry != NULL );
-	entry->flags &= ~AUDIO_ENTRY_FL_PLAY;
-}
-
-void noya_audio_set_loop(audio_entry_t *entry, short isloop)
-{
-	assert( entry != NULL );
-	if ( isloop )
-		entry->flags |= AUDIO_ENTRY_FL_ISLOOP;
-	else
-		entry->flags &= ~AUDIO_ENTRY_FL_ISLOOP;
-}
-
-void noya_audio_set_volume(audio_entry_t *entry, float volume)
-{
-	assert( entry != NULL );
-	entry->volume = volume;
-}
-
-short noya_audio_is_play(audio_entry_t *entry)
-{
-	assert( entry != NULL );
-	return entry->flags & AUDIO_ENTRY_FL_PLAY;
-}
-
-void noya_audio_seek(audio_entry_t *entry, long position)
-{
-	entry->dataidx = position;
-}
-
 /* thread functions
  */
 
-static void noya_audio_preload(void)
+static void thread_audio_preload(void)
 {
 	SNDFILE			*sfp = NULL;
 	SF_INFO			sinfo;
-	audio_entry_t	*entry;
+	audio_t	*entry;
 
 	for ( entry = audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
 	{
-		if ( !(entry->flags & AUDIO_ENTRY_FL_USED) )
+		if ( !(entry->flags & audio_FL_USED) )
 			continue;
-		if ( entry->flags & AUDIO_ENTRY_FL_LOADED )
+		if ( entry->flags & audio_FL_LOADED )
 			continue;
-		if ( entry->flags & AUDIO_ENTRY_FL_FAILED )
+		if ( entry->flags & audio_FL_FAILED )
 			continue;
 
 		l_printf("Load %s", entry->filename);
@@ -173,7 +67,7 @@ static void noya_audio_preload(void)
 
 		sf_close(sfp), sfp = NULL;
 
-		entry->flags |= AUDIO_ENTRY_FL_LOADED;
+		entry->flags |= audio_FL_LOADED;
 
 		continue;
 
@@ -183,7 +77,7 @@ noya_audio_preload_clean:;
 			sf_close(sfp), sfp = NULL;
 		if ( entry->data != NULL )
 			free(entry->data), entry->data = NULL;
-		entry->flags |= AUDIO_ENTRY_FL_FAILED;
+		entry->flags |= audio_FL_FAILED;
 		continue;
 	}
 }
@@ -195,9 +89,9 @@ static int audio_output_callback(
 	PaStreamCallbackFlags statusFlags,
 	void *userData)
 {
-	static audio_entry_t	*entries[MAX_SOUNDS];
+	static audio_t	*entries[MAX_SOUNDS];
 	int						entries_count = -1;
-	audio_entry_t			*entry;
+	audio_t			*entry;
 	float					*out = (float *)outputBuffer;
 	unsigned long			i, j;
 
@@ -211,16 +105,16 @@ static int audio_output_callback(
 	 */
 	for ( entry = audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
 	{
-		if ( !(entry->flags & AUDIO_ENTRY_FL_USED) )
+		if ( !(entry->flags & audio_FL_USED) )
 			continue;
-		if ( !(entry->flags & AUDIO_ENTRY_FL_LOADED) )
+		if ( !(entry->flags & audio_FL_LOADED) )
 			continue;
-		if ( !(entry->flags & AUDIO_ENTRY_FL_PLAY) )
+		if ( !(entry->flags & audio_FL_PLAY) )
 			continue;
 
 		if ( (entry->dataidx / 2) + (framesPerBuffer * 2) >= entry->totalframes)
 		{
-			if ( !(entry->flags & AUDIO_ENTRY_FL_ISLOOP) )
+			if ( !(entry->flags & audio_FL_ISLOOP) )
 			{
 				noya_audio_stop(entry);
 				continue;
@@ -277,7 +171,14 @@ static int audio_output_callback(
 	/* advance idx 
 	 */
 	for ( j = 0; j <= entries_count; j++ )
-		entries[j]->dataidx += framesPerBuffer * 2;
+	{
+		entry = entries[j];
+		entry->dataidx += framesPerBuffer * 2;
+		if ( entry->totalframes > 0 )
+			entry->position = (entry->dataidx * 0.5) /  entry->totalframes;
+		else
+			entry->position = 0;
+	}
 
 	return paContinue;
 }
@@ -286,7 +187,7 @@ static int audio_output_callback(
 
 static void *thread_audio_run(void *arg)
 {
-	audio_entry_t	*entry;
+	audio_t	*entry;
 	unsigned int	ret,
 					cfg_samplerate,
 					cfg_frames;
@@ -392,7 +293,7 @@ static void *thread_audio_run(void *arg)
 
 				/* preload needed audio file
 				 */
-				noya_audio_preload();
+				thread_audio_preload();
 
 				usleep(1000000);
 

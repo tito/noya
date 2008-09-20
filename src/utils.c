@@ -1,3 +1,7 @@
+#include <string.h>
+#include <assert.h>
+#include <clutter/clutter.h>
+
 #include "utils.h"
 
 void trim(char *s)
@@ -13,5 +17,11 @@ void trim(char *s)
 		*p++ = *s;
 	}
 	*p = 0;
+}
+
+void noya_color_copy(ClutterColor *dst, color_t *src)
+{
+	assert( sizeof(ClutterColor) == sizeof(color_t) );
+	memcpy(dst, src, sizeof(color_t));
 }
 

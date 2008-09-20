@@ -11,8 +11,6 @@
 
 LOG_DECLARE("CONFIG");
 
-#define LINE_MAX	512
-
 config_t	config_entries;
 
 int config_init(char *filename)
@@ -28,7 +26,7 @@ int config_init(char *filename)
 
 int config_load(config_t *head, char *filename)
 {
-	char line[LINE_MAX];
+	char line[512];
 	char *key, *value;
 	FILE *fd;
 
@@ -42,7 +40,7 @@ int config_load(config_t *head, char *filename)
 
 	while ( !feof(fd) )
 	{
-		fgets(line, LINE_MAX, fd);
+		fgets(line, sizeof(line), fd);
 
 		/* skip comment
 		 */
