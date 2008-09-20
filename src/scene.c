@@ -7,7 +7,7 @@
 #include <assert.h>
 
 #include "noya.h"
-#include "scene_manager.h"
+#include "scene.h"
 
 LOG_DECLARE("SCENE");
 
@@ -40,6 +40,7 @@ scene_t *noya_scene_load(char *name)
 	scene_actor_base_t *actor;
 	config_t		config = {NULL}, config_init = {NULL};
 	config_entry_t	*it;
+	module_t		*module;
 	char			*k_idx, *k_prop,
 					filename[MAX_PATH];
 	int				act_idx;
@@ -87,6 +88,27 @@ scene_t *noya_scene_load(char *name)
 			continue;
 		}
 
+		/* handle types
+		 */
+		if ( strstr(it->k, "scene.object.") == it->k )
+		{
+			/* extract index object
+			 */
+			k_idx = strtok(it->k + strlen("scene.object."), ".");
+			if ( k_idx == NULL )
+				continue;
+
+			k_prop = strtok(NULL, "");
+			if ( k_prop == NULL )
+				continue;
+
+			module = noya_module_get(k_idx, MODULE_TYPE_OBJECT);
+			if ( module == NULL )
+				continue;
+
+			(*module->object_global_config)(k_prop, it->v);
+		}
+
 		/* handle actors
 		 */
 		if ( strstr(it->k, "scene.act.") == it->k )
@@ -120,6 +142,7 @@ scene_t *noya_scene_load(char *name)
 				}
 				noya_scene_prop_set(scene, actor, k_prop, it->v);
 			}
+			continue;
 		}
 	}
 
@@ -167,16 +190,6 @@ scene_actor_base_t *noya_scene_actor_get(scene_t *scene, int idx)
 	return NULL;
 }
 
-static short noya_scene_ctl_get_id(char *ctl)
-{
-	if ( strcmp(ctl, "volume") == 0 )
-		return SCENE_CONTROL_VOLUME;
-	else if ( strcmp(ctl, "none") == 0 )
-		return SCENE_CONTROL_NONE;
-	l_printf("Invalid control %s", ctl);
-	return SCENE_CONTROL_NONE;
-}
-
 void noya_scene_prop_set(scene_t *scene, scene_actor_base_t *actor, char *key, char *value)
 {
 	void	*data;
@@ -184,34 +197,21 @@ void noya_scene_prop_set(scene_t *scene, scene_actor_base_t *actor, char *key, c
 
 	assert( actor != NULL );
 
-	/* base type
+	/* base object
 	 */
-	if ( strcmp(key, "type") == 0 )
+	if ( strcmp(key, "object") == 0 )
 	{
-		if ( actor->type != SCENE_ACTOR_TYPE_BASE )
+		actor->mod = noya_module_get(value, MODULE_TYPE_OBJECT);
+		if ( actor->mod == NULL )
 		{
-			l_printf("Error : actor type already specified");
+			l_printf("Error: no object %s found !", value);
 			return;
 		}
 
-		if ( strcmp(value, "sample") == 0 )
+		actor->data_mod = (*actor->mod->object_new)(scene);
+		if ( actor->data_mod == NULL )
 		{
-			LIST_REMOVE(actor, next);
-
-			data = realloc(actor, sizeof(scene_actor_sample_t));
-			if ( data == NULL )
-			{
-				l_printf("Can't realloc actor for %s", value);
-				LIST_INSERT_HEAD(&scene->actors, actor, next);
-				return;
-			}
-			actor = data;
-			actor->type = SCENE_ACTOR_TYPE_SAMPLE;
-			LIST_INSERT_HEAD(&scene->actors, actor, next);
-		}
-		else
-		{
-			l_printf("Unknown actor type %s", value);
+			l_printf("Error: unable to create %s object", value);
 			return;
 		}
 	}
@@ -227,31 +227,14 @@ void noya_scene_prop_set(scene_t *scene, scene_actor_base_t *actor, char *key, c
 		actor->height = strtol(value, NULL, 10);
 	else if ( strcmp(key, "loop") == 0 )
 		actor->is_loop = strtol(value, NULL, 10) > 0 ? 1 : 0;
-	else if ( strcmp(key, "ctl.angle") == 0 )
-		actor->ctl_angle = noya_scene_ctl_get_id(value);
-	else if ( strcmp(key, "ctl.x") == 0 )
-		actor->ctl_x = noya_scene_ctl_get_id(value);
-	else if ( strcmp(key, "ctl.y") == 0 )
-		actor->ctl_y = noya_scene_ctl_get_id(value);
-
-	/* sample type
-	 */
-	else if ( actor->type == SCENE_ACTOR_TYPE_SAMPLE )
-	{
-		if ( strcmp(key, "file") == 0 )
-		{
-			snprintf(filename, sizeof(filename), "%s/%s/%s",
-				config_get(CONFIG_DEFAULT, "noya.path.scenes"),
-				scene->name,
-				value
-			);
-			SCENE_ACTOR_SAMPLE(actor)->filename = strdup(value);
-			SCENE_ACTOR_SAMPLE(actor)->audio = noya_audio_load(filename, actor->id);
-		}
-	}
-
-	/* others
-	 */
+	else if ( strcmp(key, "ctl.angle") == 0 && actor->mod)
+		actor->ctl_angle = (*actor->mod->object_get_control)(value);
+	else if ( strcmp(key, "ctl.x") == 0 && actor->mod )
+		actor->ctl_x = (*actor->mod->object_get_control)(value);
+	else if ( strcmp(key, "ctl.y") == 0 && actor->mod )
+		actor->ctl_y = (*actor->mod->object_get_control)(value);
+	else if ( actor->mod )
+		(*actor->mod->object_config)(actor->data_mod, key, value);
 	else
 		l_printf("Error : unknown key property %s", key);
 	return;
@@ -279,25 +262,10 @@ void noya_scene_free(scene_t *scene)
 
 void noya_scene_actor_free(scene_actor_base_t *actor)
 {
-	scene_actor_sample_t *p;
-	switch ( actor->type )
+	if ( actor->mod )
 	{
-		case SCENE_ACTOR_TYPE_BASE:
-			/* nothing to free here */
-			break;
-
-		case SCENE_ACTOR_TYPE_SAMPLE:
-			p = SCENE_ACTOR_SAMPLE(actor);
-			if ( p->filename != NULL )
-				free(p->filename);
-			if ( p->audio != NULL )
-				free(p->audio);
-			break;
-
-		default:
-			/* should never append */
-			assert( 0 );
-			break;
+		if ( actor->data_mod )
+			(*actor->mod->object_free)(actor->data_mod);
 	}
 
 	free(actor);
