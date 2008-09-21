@@ -18,7 +18,7 @@ typedef struct scene_actor_base_s
 	int		border_width;				/*< border width */
 
 	short	is_loop;					/*< indicate if actor animation is looping */
-
+	
 	_fn_control ctl_angle;				/*< indicate control for angle */
 	_fn_control ctl_x;					/*< indicate control for X axis */
 	_fn_control ctl_y;					/*< indicate control for Y axis */
@@ -41,6 +41,12 @@ typedef struct
 	color_t				background_color;	/*< scene background color */
 	scene_actor_base_t	def_actor;			/*< default params for actor */
 	scene_actor_list_t	actors;				/*< actors list */
+
+	/* general scene config
+	 */
+	short	precision;					/*< precision in bpm */
+	short	bpm;						/*< bpm ! */
+
 } scene_t;
 
 scene_t	*noya_scene_load(char *filename);

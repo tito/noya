@@ -59,6 +59,8 @@ scene_t *noya_scene_load(char *name)
 	bzero(scene, sizeof(scene_t));
 
 	scene->name = strdup(name);
+	scene->bpm = 125;
+	scene->precision = 4;
 
 	if ( config_load(&config_init, filename) )
 		goto noya_scene_load_error;
@@ -86,6 +88,20 @@ scene_t *noya_scene_load(char *name)
 		{
 			noya_scene_color_read(&scene->background_color, it->v);
 			continue;
+		}
+
+		if ( strstr(it->k, "scene.config.") == it->k )
+		{
+			/* extract index object
+			 */
+			k_prop = strtok(it->k + strlen("scene.object."), ".");
+			if ( k_prop == NULL )
+				continue;
+
+			if ( strcmp(k_prop, "bpm") == 0 )
+				scene->bpm = strtol(it->v, NULL, 10);
+			else if ( strcmp(k_prop, "precision") == 0 )
+				scene->precision = strtol(it->v, NULL, 10);
 		}
 
 		/* handle types
