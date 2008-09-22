@@ -299,7 +299,7 @@ static void *thread_manager_run(void *arg)
 				l_printf(" - MANAGER start...");
 				c_state = THREAD_STATE_RUNNING;
 
-				c_scene = noya_scene_load("demo");
+				c_scene = noya_scene_load(g_options.scene_fn);
 				if ( c_scene == NULL )
 				{
 					l_printf("Error while loading scene");

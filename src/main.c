@@ -58,7 +58,7 @@ void usage(void)
 {
 	printf("Usage: noya [OPTIONS]...\n");
 	printf("  -h                         Show usage\n");
-	printf("  -s <filename>              Load a scene\n");
+	printf("  -s <name>                  Load a scene\n");
 	printf("\n");
 
 	exit(EXIT_SUCCESS);
