@@ -18,6 +18,7 @@ LOG_DECLARE("MAIN");
 MUTEX_DECLARE(g_thread_mutex);
 sig_atomic_t		g_threads		= 0;
 sig_atomic_t		g_want_leave	= 0;
+options_t			g_options		= {0};
 
 /* services declaration
  */
@@ -51,6 +52,53 @@ void signal_leave(int sig)
 	g_want_leave = 1;
 }
 
+/* show usage
+ */
+void usage(void)
+{
+	printf("Usage: noya [OPTIONS]...\n");
+	printf("  -h                         Show usage\n");
+	printf("  -s <filename>              Load a scene\n");
+	printf("\n");
+
+	exit(EXIT_SUCCESS);
+}
+
+/* read options from command line
+ */
+void options_read(int argc, char **argv)
+{
+	int opt;
+
+	while ( (opt = getopt(argc, argv, "s:")) != -1 )
+	{
+		switch ( opt )
+		{
+			case 's':
+				g_options.scene_fn = strdup(optarg);
+				break;
+			default:
+				usage();
+				break;
+		}
+	}
+
+	/* don't start noya if we don't have scene
+	 */
+	if ( g_options.scene_fn == NULL )
+	{
+		usage();
+		return;
+	}
+}
+
+/* clean options
+ */
+void options_free(void)
+{
+	if ( g_options.scene_fn != NULL )
+		free(g_options.scene_fn);
+}
 
 /* start point !
  */
@@ -58,7 +106,11 @@ int main(int argc, char **argv)
 {
 	service_t	*service;
 
-	l_printf(NOYA_BANNER);
+	printf("%s\n\n", NOYA_BANNER);
+
+	/* read options
+	 */
+	options_read(argc, argv);
 
 	/* prepare signals
 	 */
@@ -113,6 +165,8 @@ cleaning:;
 
 	l_printf("Free events...");
 	noya_event_free();
+
+	options_free();
 
 	l_printf("Done.");
 	return 0;

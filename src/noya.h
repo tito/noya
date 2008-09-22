@@ -40,6 +40,14 @@
 #define l_printf(...)
 #endif
 
+/* Options
+ */
+typedef struct
+{
+	char			*scene_fn;
+} options_t;
+extern options_t g_options;
+
 /* Globals
  */
 extern sig_atomic_t g_threads;
