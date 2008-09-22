@@ -11,6 +11,7 @@
 #include <lo/lo.h>
 
 #include "noya.h"
+#include "event.h"
 #include "thread_input.h"
 
 LOG_DECLARE("INPUT");
@@ -28,7 +29,6 @@ static short		c_state			= THREAD_STATE_START;
 
 #define		TUIO_OBJECT_MAX					128
 #define		TUIO_CURSOR_MAX					64
-#define		TUIO_EVENT_MAX					64
 #define		TUIO_CURSOR_THRESHOLD_CLICK		3
 
 tuio_object_t	t_objs[TUIO_OBJECT_MAX];				/*< object info */
@@ -41,9 +41,6 @@ unsigned int	t_curs_alive[TUIO_CURSOR_MAX],			/*< actual cursor alive */
 				t_curs_alive_o[TUIO_CURSOR_MAX];		/*< old alive cursor (needed for event) */
 unsigned int	t_curs_alive_count				= 0,	/*< actual counter of cursor alive */
 				t_curs_alive_count_o			= 0;	/*< old counter of cursor alive (needed for event) */
-tuio_event_t	t_events[TUIO_EVENT_MAX];
-unsigned int	t_events_count					= 0;
-
 
 void _lo_error(int num, const char *msg, const char *path)
 {
@@ -100,9 +97,9 @@ int _lo_tuio_object_handler(const char *path, const char *types, lo_arg **argv, 
 		/* send new object event
 		 */
 		if ( (o->flags & TUIO_OBJECT_FL_INIT) == TUIO_OBJECT_FL_INIT )
-			event_send(EV_OBJECT_SET, o);
+			noya_event_send(EV_OBJECT_SET, o);
 		else
-			event_send(EV_OBJECT_NEW, o);
+			noya_event_send(EV_OBJECT_NEW, o);
 
 		o->flags	|= TUIO_OBJECT_FL_INIT;
 		MUTEX_UNLOCK(m_input);
@@ -163,7 +160,7 @@ int _lo_tuio_object_handler(const char *path, const char *types, lo_arg **argv, 
 				/* send end object event
 				 */
 				o->flags = 0;
-				event_send(EV_OBJECT_DEL, (void *)o);
+				noya_event_send(EV_OBJECT_DEL, (void *)o);
 			}
 		}
 
@@ -230,9 +227,9 @@ int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg **argv, 
 		/* send cursor new event
 		 */
 		if ( c->flags == TUIO_CURSOR_FL_INIT )
-			event_send(EV_CURSOR_NEW, (void *)c);
+			noya_event_send(EV_CURSOR_NEW, (void *)c);
 		else
-			event_send(EV_CURSOR_SET, (void *)c);
+			noya_event_send(EV_CURSOR_SET, (void *)c);
 		MUTEX_UNLOCK(m_input);
 	}
 
@@ -282,10 +279,10 @@ int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg **argv, 
 
 			/* send click cursor event ! */
 			if ( c->mov < TUIO_CURSOR_THRESHOLD_CLICK )
-				event_send(EV_CURSOR_CLICK, (void *)c);
+				noya_event_send(EV_CURSOR_CLICK, (void *)c);
 
 			/* send blur cursor event ! */
-			event_send(EV_CURSOR_DEL, (void *)c);
+			noya_event_send(EV_CURSOR_DEL, (void *)c);
 
 			/* delete cursor
 			 */
@@ -411,22 +408,4 @@ int thread_input_stop(void)
 	while ( c_running )
 		usleep(1000);
 	return NOYA_OK;
-}
-
-void event_observe(unsigned short ev_type, event_callback callback)
-{
-	if ( t_events_count >= TUIO_EVENT_MAX )
-		return;
-	t_events[t_events_count].type		= ev_type;
-	t_events[t_events_count].callback	= callback;
-	t_events_count++;
-}
-
-void event_send(unsigned short ev_type, void *data)
-{
-	unsigned int	idx;
-
-	for ( idx = 0; idx < t_events_count; idx++ )
-		if ( t_events[idx].type == ev_type )
-			(*t_events[idx].callback)(ev_type, data);
 }

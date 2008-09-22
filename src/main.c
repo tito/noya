@@ -74,6 +74,7 @@ int main(int argc, char **argv)
 
 	/* load modules
 	 */
+	noya_event_init();
 	noya_modules_init();
 
 	/* start INPUT service

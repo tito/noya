@@ -19,7 +19,7 @@ audio_t *noya_audio_get_by_filename(char *filename)
 
 	for ( it = audio_entries.lh_first; it != NULL; it = it->next.le_next )
 	{
-		if ( !(it->flags & audio_FL_USED) )
+		if ( !(it->flags & AUDIO_FL_USED) )
 			continue;
 		if ( strcmp(filename, it->filename) == 0 )
 			return it;
@@ -45,7 +45,7 @@ audio_t *noya_audio_load(char *filename)
 	if ( entry->filename == NULL )
 		goto noya_audio_load_clean;
 
-	entry->flags = audio_FL_USED;
+	entry->flags = AUDIO_FL_USED;
 
 	LIST_INSERT_HEAD(&audio_entries, entry, next);
 
@@ -68,22 +68,23 @@ noya_audio_load_clean:;
 void noya_audio_play(audio_t *entry)
 {
 	assert( entry != NULL );
-	entry->flags |= audio_FL_PLAY;
+	entry->flags |= AUDIO_FL_PLAY;
 }
 
 void noya_audio_stop(audio_t *entry)
 {
 	assert( entry != NULL );
-	entry->flags &= ~audio_FL_PLAY;
+	entry->flags &= ~AUDIO_FL_PLAY;
+	entry->flags &= ~AUDIO_FL_WANTPLAY;
 }
 
 void noya_audio_set_loop(audio_t *entry, short isloop)
 {
 	assert( entry != NULL );
 	if ( isloop )
-		entry->flags |= audio_FL_ISLOOP;
+		entry->flags |= AUDIO_FL_ISLOOP;
 	else
-		entry->flags &= ~audio_FL_ISLOOP;
+		entry->flags &= ~AUDIO_FL_ISLOOP;
 }
 
 void noya_audio_set_volume(audio_t *entry, float volume)
@@ -95,7 +96,7 @@ void noya_audio_set_volume(audio_t *entry, float volume)
 short noya_audio_is_play(audio_t *entry)
 {
 	assert( entry != NULL );
-	return entry->flags & audio_FL_PLAY;
+	return entry->flags & AUDIO_FL_WANTPLAY;
 }
 
 void noya_audio_seek(audio_t *entry, long position)

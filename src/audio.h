@@ -8,11 +8,12 @@
  */
 typedef struct audio_s
 {
-#define audio_FL_USED		0x01
-#define	audio_FL_LOADED	0x02
-#define audio_FL_FAILED	0x04
-#define audio_FL_PLAY		0x10
-#define audio_FL_ISLOOP	0x20
+#define AUDIO_FL_USED		0x01
+#define	AUDIO_FL_LOADED		0x02
+#define AUDIO_FL_FAILED		0x04
+#define	AUDIO_FL_WANTPLAY	0x10
+#define AUDIO_FL_PLAY		0x20
+#define AUDIO_FL_ISLOOP		0x40
 	sig_atomic_t	flags;
 
 	char			*filename;
@@ -25,10 +26,15 @@ typedef struct audio_s
 	long			dataidx;
 	float			datalen;
 
-	/* effects
+	/* control
 	 */
-	float			volume;
-	float			position;
+	float			volume;				/*< RW : 0 - 1 (percent) */
+	float			position;			/*< R  : 0 - 1 (percent) */
+	float			duration;			/*< R  : 0 - n (seconds) */
+	unsigned int	bpmduration;		/*< R  : 0 - n (bpm) */
+	unsigned int	bpmidx;				/*< RW : 0 - n (bpm from dataidx) */
+
+
 
 	LIST_ENTRY(audio_s) next;
 } audio_t;

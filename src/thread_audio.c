@@ -38,11 +38,11 @@ static void thread_audio_preload(void)
 
 	for ( entry = audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
 	{
-		if ( !(entry->flags & audio_FL_USED) )
+		if ( !(entry->flags & AUDIO_FL_USED) )
 			continue;
-		if ( entry->flags & audio_FL_LOADED )
+		if ( entry->flags & AUDIO_FL_LOADED )
 			continue;
-		if ( entry->flags & audio_FL_FAILED )
+		if ( entry->flags & AUDIO_FL_FAILED )
 			continue;
 
 		l_printf("Load %s", entry->filename);
@@ -57,7 +57,9 @@ static void thread_audio_preload(void)
 		);
 
 		entry->totalframes = sf_seek(sfp, (sf_count_t) 0, SEEK_END);
-		sf_seek(sfp, 0, SEEK_SET);
+		sf_seek(sfp,r0, SEEK_SET);
+
+		entry->duration = sinfo.frames / sinfo.samplerate;
 
 		entry->data = (float *)malloc(entry->totalframes * sizeof(float) * MAX_CHANNELS);
 		if ( entry->data == NULL )
@@ -67,7 +69,7 @@ static void thread_audio_preload(void)
 
 		sf_close(sfp), sfp = NULL;
 
-		entry->flags |= audio_FL_LOADED;
+		entry->flags |= AUDIO_FL_LOADED;
 
 		continue;
 
@@ -77,7 +79,7 @@ noya_audio_preload_clean:;
 			sf_close(sfp), sfp = NULL;
 		if ( entry->data != NULL )
 			free(entry->data), entry->data = NULL;
-		entry->flags |= audio_FL_FAILED;
+		entry->flags |= AUDIO_FL_FAILED;
 		continue;
 	}
 }
@@ -105,22 +107,20 @@ static int audio_output_callback(
 	 */
 	for ( entry = audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
 	{
-		if ( !(entry->flags & audio_FL_USED) )
+		if ( !(entry->flags & AUDIO_FL_USED) )
 			continue;
-		if ( !(entry->flags & audio_FL_LOADED) )
+		if ( !(entry->flags & AUDIO_FL_LOADED) )
 			continue;
-		if ( !(entry->flags & audio_FL_PLAY) )
+		if ( !(entry->flags & AUDIO_FL_PLAY) )
 			continue;
 
+		/* if we don't have enought data for this frame, don't play sound.
+		 * don't reset data here, let manager reset data with current scene BPM.
+		 *
+		 * FIXME: try to play all rest data
+		 */
 		if ( (entry->dataidx / 2) + (framesPerBuffer * 2) >= entry->totalframes)
-		{
-			if ( !(entry->flags & audio_FL_ISLOOP) )
-			{
-				noya_audio_stop(entry);
-				continue;
-			}
-			entry->dataidx = 0;
-		}
+			continue;
 
 		entries_count++;
 		entries[entries_count] = entry;

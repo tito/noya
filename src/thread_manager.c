@@ -8,6 +8,7 @@
 #include <clutter/clutter.h>
 
 #include "noya.h"
+#include "event.h"
 #include "thread_manager.h"
 #include "thread_input.h"
 #include "thread_audio.h"
@@ -25,6 +26,11 @@ static short		c_state			= THREAD_STATE_START;
 scene_t				*c_scene		= NULL;
 manager_actor_list_t	manager_actors_list;
 manager_cursor_list_t	manager_cursors_list;
+struct timeval		st_beat;
+double				t_lastbeat		= 0,
+					t_beat			= 0,
+					t_beatinterval	= 0;
+long				t_bpm			= 0;
 
 extern sig_atomic_t	g_want_leave;
 
@@ -281,6 +287,7 @@ static void manager_event_cursor_set(unsigned short type, void *data)
 static void *thread_manager_run(void *arg)
 {
 	manager_actor_t	*it = NULL;
+	audio_t			*entry;
 
 	THREAD_ENTER;
 
@@ -302,13 +309,13 @@ static void *thread_manager_run(void *arg)
 
 				LIST_INIT(&manager_actors_list);
 
-				event_observe(EV_OBJECT_NEW, manager_event_object_new);
-				event_observe(EV_OBJECT_SET, manager_event_object_set);
-				event_observe(EV_OBJECT_DEL, manager_event_object_del);
+				noya_event_observe(EV_OBJECT_NEW, manager_event_object_new);
+				noya_event_observe(EV_OBJECT_SET, manager_event_object_set);
+				noya_event_observe(EV_OBJECT_DEL, manager_event_object_del);
 
-				event_observe(EV_CURSOR_NEW, manager_event_cursor_new);
-				event_observe(EV_CURSOR_SET, manager_event_cursor_set);
-				event_observe(EV_CURSOR_DEL, manager_event_cursor_del);
+				noya_event_observe(EV_CURSOR_NEW, manager_event_cursor_new);
+				noya_event_observe(EV_CURSOR_SET, manager_event_cursor_set);
+				noya_event_observe(EV_CURSOR_DEL, manager_event_cursor_del);
 
 				break;
 
@@ -344,10 +351,54 @@ static void *thread_manager_run(void *arg)
 					break;
 				}
 
-				/* nothing to do, just sleep :)
+				/* let's do the beat !
 				 */
-				usleep(500000);
+				t_lastbeat = t_beat;
+				gettimeofday(&st_beat, NULL);
+				t_beat = st_beat.tv_sec + st_beat.tv_usec * 0.000001;
+				t_beatinterval = 1.0 / c_scene->bpm;
 
+				if ( t_beat > (1.0 / c_scene->bpm) )
+				{
+					t_bpm++;
+
+					for ( entry = audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
+					{
+						if ( !(entry->flags & AUDIO_FL_USED) )
+							continue;
+						if ( entry->flags & AUDIO_FL_LOADED )
+							continue;
+						if ( entry->flags & AUDIO_FL_FAILED )
+							continue;
+
+						if ( entry->flags & AUDIO_FL_WANTPLAY )
+							continue;
+
+						/* start play.
+						 */
+						entry->flags |= AUDIO_FL_PLAY;
+
+						/* increment bpm idx
+						 */
+						audio->bpmduration = audio->duration / t_beatinterval;
+						audio->bpmidx++;
+
+						/* play ?
+						 */
+						if ( audio->bpmidx <= audio->bpmduration )
+							continue;
+
+						audio->bpmidx = 0;
+						audio->dataidx = 0;
+
+						/* if it's not a loop, stop it.
+						 */
+						if ( !audio->isloop )
+							noya_audio_stop(audio);
+				}
+
+
+				usleep(10);
 				break;
 		}
 	}
