@@ -304,6 +304,7 @@ static void *thread_manager_run(void *arg)
 				{
 					l_printf("Error while loading scene");
 					g_want_leave = 1;
+					c_want_leave = 1;
 					break;
 				}
 

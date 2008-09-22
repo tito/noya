@@ -209,6 +209,7 @@ static void *thread_audio_run(void *arg)
 				{
 					l_printf("Error while initialize PA : %s", Pa_GetErrorText(ret));
 					g_want_leave = 1;
+					c_want_leave = 1;
 					continue;
 				}
 
@@ -239,6 +240,7 @@ static void *thread_audio_run(void *arg)
 				{
 					l_printf("Error while opening default stream : %s", Pa_GetErrorText(ret));
 					g_want_leave = 1;
+					c_want_leave = 1;
 					continue;
 				}
 

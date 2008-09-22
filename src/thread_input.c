@@ -332,7 +332,7 @@ static void *thread_input_run(void *arg)
 				lo_fd = lo_server_get_socket_fd(s);
 				if ( lo_fd <= 0 )
 				{
-					l_printf(" - lo_server_get_socket_fd() error...");
+					l_printf("Error: lo_server_get_socket_fd() error...");
 					c_state = THREAD_STATE_RESTART;
 					usleep(100);
 					continue;
@@ -364,7 +364,7 @@ static void *thread_input_run(void *arg)
 
 				if ( retval == -1 )
 				{
-					l_printf(" - select() error...");
+					l_printf("Error: select() error...");
 					c_state = THREAD_STATE_RESTART;
 					usleep(100);
 					continue;
