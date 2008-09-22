@@ -1,11 +1,12 @@
 #ifndef __EVENT_H
 #define __EVENT_H
 
-typedef void (*event_callback)(unsigned short ev_type, void *object);
+typedef void (*event_callback)(unsigned short ev_type, void *userdata, void *object);
 typedef struct event_s
 {
 	unsigned short		type;
 	event_callback		callback;
+	void				*userdata;
 	LIST_ENTRY(event_s)	next;
 } event_t;
 
@@ -25,7 +26,7 @@ typedef struct
 
 void noya_event_init(void);
 void noya_event_free(void);
-void noya_event_observe(unsigned short ev_type, event_callback callback);
+void noya_event_observe(unsigned short ev_type, event_callback callback, void *userdata);
 void noya_event_send(unsigned short ev_type, void *data);
 void noya_event_remove(unsigned short ev_type, event_callback callback);
 

@@ -38,7 +38,7 @@ ClutterColor obj_background	= { 0xff, 0xff, 0xff, 0x99 };
 ClutterColor obj_border		= { 0xff, 0xff, 0xff, 0xff };
 
 
-static void manager_event_object_new(unsigned short type, void *data)
+static void manager_event_object_new(unsigned short type, void *userdata, void *data)
 {
 	ClutterColor	col_background, col_border;
 	scene_actor_base_t	*actor;
@@ -123,7 +123,7 @@ static void manager_event_object_new(unsigned short type, void *data)
 	clutter_threads_leave();
 }
 
-static void manager_event_object_del(unsigned short type, void *data)
+static void manager_event_object_del(unsigned short type, void *userdata, void *data)
 {
 	tuio_object_t	*o = (tuio_object_t *)data;
 	audio_t	*audio;
@@ -153,7 +153,7 @@ static void manager_event_object_del(unsigned short type, void *data)
 	free(it);
 }
 
-static void manager_event_object_set(unsigned short type, void *data)
+static void manager_event_object_set(unsigned short type, void *userdata, void *data)
 {
 	audio_t	*audio;
 	tuio_object_t	*o = (tuio_object_t *)data;
@@ -205,7 +205,7 @@ static void manager_event_object_set(unsigned short type, void *data)
 	clutter_threads_leave();
 }
 
-static void manager_event_cursor_new(unsigned short type, void *data)
+static void manager_event_cursor_new(unsigned short type, void *userdata, void *data)
 {
 	tuio_cursor_t *o = (tuio_cursor_t *)data;
 	manager_cursor_t *el;
@@ -245,7 +245,7 @@ static void manager_event_cursor_new(unsigned short type, void *data)
 	clutter_threads_leave();
 }
 
-static void manager_event_cursor_del(unsigned short type, void *data)
+static void manager_event_cursor_del(unsigned short type, void *userdata, void *data)
 {
 	tuio_cursor_t	*o = (tuio_cursor_t *)data;
 	manager_cursor_t	*it = NULL;
@@ -262,7 +262,7 @@ static void manager_event_cursor_del(unsigned short type, void *data)
 	free(it);
 }
 
-static void manager_event_cursor_set(unsigned short type, void *data)
+static void manager_event_cursor_set(unsigned short type, void *userdata, void *data)
 {
 	tuio_cursor_t	*o = (tuio_cursor_t *)data;
 	manager_cursor_t	*it;
@@ -309,13 +309,13 @@ static void *thread_manager_run(void *arg)
 
 				LIST_INIT(&manager_actors_list);
 
-				noya_event_observe(EV_OBJECT_NEW, manager_event_object_new);
-				noya_event_observe(EV_OBJECT_SET, manager_event_object_set);
-				noya_event_observe(EV_OBJECT_DEL, manager_event_object_del);
+				noya_event_observe(EV_OBJECT_NEW, manager_event_object_new, NULL);
+				noya_event_observe(EV_OBJECT_SET, manager_event_object_set, NULL);
+				noya_event_observe(EV_OBJECT_DEL, manager_event_object_del, NULL);
 
-				noya_event_observe(EV_CURSOR_NEW, manager_event_cursor_new);
-				noya_event_observe(EV_CURSOR_SET, manager_event_cursor_set);
-				noya_event_observe(EV_CURSOR_DEL, manager_event_cursor_del);
+				noya_event_observe(EV_CURSOR_NEW, manager_event_cursor_new, NULL);
+				noya_event_observe(EV_CURSOR_SET, manager_event_cursor_set, NULL);
+				noya_event_observe(EV_CURSOR_DEL, manager_event_cursor_del, NULL);
 
 				break;
 

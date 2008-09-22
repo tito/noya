@@ -132,7 +132,7 @@ void lib_object_global_config(char *key, char *value)
 	{
 		if ( *module == NULL )
 		{
-			l_printf("Invalid module configuration");
+			l_printf("Error : %s invalid configuration for %s module", key, MODULE_NAME);
 			return;
 		}
 
