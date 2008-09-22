@@ -362,6 +362,10 @@ static void *thread_manager_run(void *arg)
 				{
 					t_bpm++;
 
+					/* send bpm event
+					 */
+					noya_event_send(EV_BPM, &t_bpm);
+
 					for ( entry = audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
 					{
 						if ( !(entry->flags & AUDIO_FL_USED) )
