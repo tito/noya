@@ -384,21 +384,22 @@ static void *thread_manager_run(void *arg)
 
 						/* increment bpm idx
 						 */
-						audio->bpmduration = audio->duration / t_beatinterval;
-						audio->bpmidx++;
+						entry->bpmduration = entry->duration / t_beatinterval;
+						entry->bpmidx++;
 
 						/* play ?
 						 */
-						if ( audio->bpmidx <= audio->bpmduration )
+						if ( entry->bpmidx <= entry->bpmduration )
 							continue;
 
-						audio->bpmidx = 0;
-						audio->dataidx = 0;
+						entry->bpmidx = 0;
+						entry->dataidx = 0;
 
 						/* if it's not a loop, stop it.
 						 */
-						if ( !audio->isloop )
-							noya_audio_stop(audio);
+						if ( entry->flags & AUDIO_FL_ISLOOP )
+							noya_audio_stop(entry);
+					}
 				}
 
 

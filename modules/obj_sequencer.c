@@ -3,6 +3,7 @@
 #include <assert.h>
 
 #include "../src/noya.h"
+#include "../src/event.h"
 #include "../src/audio.h"
 #include "../src/module.h"
 #include "../src/config.h"
@@ -33,7 +34,7 @@ typedef struct
 
 	/* entries
 	 */
-	short			entries_count;
+	short			entry_count;
 	obj_entry_t		**entries;
 
 	unsigned int	bpmidx;
@@ -181,7 +182,7 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 static void lib_object_ev_bpm(unsigned short type, obj_t *obj, void *data)
 {
 	unsigned int	oldidx = obj->bpmidx;
-	obj_entry_t		*entry, oldentry;
+	obj_entry_t		*entry, *oldentry;
 
 	/* increment idx
 	 */
@@ -275,7 +276,7 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 
 	/* observe bpm
 	 */
-	noya_event_observe(EV_BPM, lib_object_ev_bpm, obj);
+	noya_event_observe(EV_BPM, (event_callback)lib_object_ev_bpm, obj);
 
 	/* RENDERING !
 	 */
@@ -317,7 +318,7 @@ void lib_object_unprepare(obj_t *obj)
 
 	/* remove bpm event
 	 */
-	noya_event_remove(EV_BPM, lib_object_ev_bpm, obj);
+	noya_event_remove(EV_BPM, (event_callback)lib_object_ev_bpm);
 
 	/* stop audio
 	 */
@@ -325,7 +326,7 @@ void lib_object_unprepare(obj_t *obj)
 	{
 		entry = obj->bpmentries[obj->bpmidx];
 		noya_audio_stop(entry->audio);
-		noya_audio_seek(obj->audio, 0);
+		noya_audio_seek(entry->audio, 0);
 	}
 
 	obj->bpmidx		= 0;

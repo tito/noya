@@ -5,7 +5,12 @@
 #include <pthread.h>
 #include <assert.h>
 
-event_list_t	event_list;
+#include "noya.h"
+#include "event.h"
+
+LOG_DECLARE("EVENT")
+
+static event_list_t	event_list;
 
 void noya_event_init(void)
 {

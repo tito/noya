@@ -1,6 +1,8 @@
 #ifndef __EVENT_H
 #define __EVENT_H
 
+#include <sys/queue.h>
+
 typedef void (*event_callback)(unsigned short ev_type, void *userdata, void *object);
 typedef struct event_s
 {
