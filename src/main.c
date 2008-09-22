@@ -108,8 +108,11 @@ cleaning:;
 	while ( g_threads > 0 )
 		usleep(100);
 
-	l_printf("Freeing module...");
+	l_printf("Free modules...");
 	noya_modules_free();
+
+	l_printf("Free events...");
+	noya_event_free();
 
 	l_printf("Done.");
 	return 0;

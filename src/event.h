@@ -23,6 +23,7 @@ typedef struct
 #define EV_OBJECT_SET		0x07
 
 void noya_event_init(void);
+void noya_event_free(void);
 void noya_event_observe(unsigned short ev_type, event_callback callback);
 void noya_event_send(unsigned short ev_type, void *data);
 void noya_event_remove(unsigned short ev_type, event_callback callback);

@@ -12,6 +12,17 @@ void noya_event_init(void)
 	LIST_INIT(&event_list);
 }
 
+void noya_event_free(void)
+{
+	event_t *event;
+	while ( !LIST_EMPTY(&event_list) )
+	{
+		event = LIST_FIRST(&event_list);
+		LIST_REMOVE(event, next);
+		free(event);
+	}
+}
+
 void noya_event_observe(unsigned short ev_type, event_callback callback)
 {
 	event_t *event;
