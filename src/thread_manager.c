@@ -79,6 +79,9 @@ static void manager_event_object_new(unsigned short type, void *userdata, void *
 	el->id				= o->s_id;
 	el->fid				= o->f_id;
 	el->scene_actor		= actor;
+
+	clutter_threads_enter();
+
 	el->clutter_actor	= clutter_group_new();
 	el->rotate_actor	= clutter_group_new();
 
@@ -118,8 +121,8 @@ static void manager_event_object_new(unsigned short type, void *userdata, void *
 
 	/* add to stage
 	 */
-	clutter_threads_enter();
 	clutter_container_add_actor(CLUTTER_CONTAINER(stage), el->clutter_actor);
+
 	clutter_threads_leave();
 }
 
@@ -136,6 +139,8 @@ static void manager_event_object_del(unsigned short type, void *userdata, void *
 	if ( it == NULL )
 		return;
 
+	clutter_threads_enter();
+
 	/* unprepare object
 	 */
 	(*it->scene_actor->mod->object_unprepare)(it->scene_actor->data_mod);
@@ -143,6 +148,8 @@ static void manager_event_object_del(unsigned short type, void *userdata, void *
 	/* remove clutter actor
 	 */
 	clutter_actor_destroy(it->clutter_actor);
+
+	clutter_threads_leave();
 
 	/* remove from list
 	 */
@@ -177,14 +184,14 @@ static void manager_event_object_set(unsigned short type, void *userdata, void *
 	if ( it->scene_actor->ctl_y )
 		(*it->scene_actor->ctl_y)(it->scene_actor->data_mod, o->ypos);
 
+	/* update rendering
+	 */
+	clutter_threads_enter();
+
 	/* retreive last dimensions
 	 */
 	stage = clutter_stage_get_default();
 	clutter_actor_get_size(stage, &wx, &wy);
-
-	/* update rendering
-	 */
-	clutter_threads_enter();
 
 	clutter_actor_set_position(it->clutter_actor,
 		o->xpos * (float)wx,
@@ -214,15 +221,17 @@ static void manager_event_cursor_new(unsigned short type, void *userdata, void *
 
 	assert( data != NULL );
 
-	stage = clutter_stage_get_default ();
-	clutter_actor_get_size(stage, &wx, &wy);
-
 	el = malloc(sizeof(struct manager_cursor_s));
 	LIST_INSERT_HEAD(&manager_cursors_list, el, next);
 
 	el->id = o->s_id;
 	snprintf(el->label, sizeof(el->label), "%d", o->s_id);
 	el->actor = clutter_group_new();
+
+	clutter_threads_enter();
+
+	stage = clutter_stage_get_default();
+	clutter_actor_get_size(stage, &wx, &wy);
 
 	/* create rectangle
 	 */
@@ -240,7 +249,6 @@ static void manager_event_cursor_new(unsigned short type, void *userdata, void *
 
 	clutter_actor_show(el->actor);
 
-	clutter_threads_enter();
 	clutter_container_add_actor(CLUTTER_CONTAINER(stage), el->actor);
 	clutter_threads_leave();
 }
@@ -257,7 +265,10 @@ static void manager_event_cursor_del(unsigned short type, void *userdata, void *
 	if ( it == NULL )
 		return;
 
+	clutter_threads_enter();
 	clutter_actor_destroy(it->actor);
+	clutter_threads_leave();
+
 	LIST_REMOVE(it, next);
 	free(it);
 }
@@ -276,11 +287,13 @@ static void manager_event_cursor_set(unsigned short type, void *userdata, void *
 	if ( it == NULL )
 		return;
 
+	clutter_threads_enter();
+
 	stage = clutter_stage_get_default ();
 	clutter_actor_get_size(stage, &wx, &wy);
 
-	clutter_threads_enter();
 	clutter_actor_set_position(it->actor, o->xpos * (float)wx, o->ypos * (float)wy);
+
 	clutter_threads_leave();
 }
 

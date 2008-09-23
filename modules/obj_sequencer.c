@@ -35,7 +35,7 @@ typedef struct
 	/* entries
 	 */
 	short			entry_count;
-	obj_entry_t		**entries;
+	obj_entry_t		*entries;
 
 	unsigned int	bpmidx;
 	unsigned int	entryidx;
@@ -164,14 +164,14 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 				obj->scene->name,
 				value
 			);
-			entry = obj->entries[idx];
+			entry = &obj->entries[idx];
 
 			entry->filename = strdup(value);
 			entry->audio = noya_audio_load(filename);
 		}
 		else if ( strcmp(k_prop, "bpm") == 0 )
 		{
-			entry = obj->entries[idx];
+			entry = &obj->entries[idx];
 			entry->bpm = strtol(value, NULL, 10);
 		}
 		else
@@ -192,8 +192,8 @@ static void lib_object_ev_bpm(unsigned short type, obj_t *obj, void *data)
 
 	/* get entries
 	 */
-	oldentry	= obj->entries[oldidx];
-	entry		= obj->entries[obj->bpmidx];
+	oldentry	= &obj->entries[oldidx];
+	entry		= &obj->entries[obj->bpmidx];
 
 	/* need to stop old entry ?
 	 */
@@ -211,7 +211,7 @@ static void lib_object_ev_bpm(unsigned short type, obj_t *obj, void *data)
 	/* start current entry
 	 */
 	if ( !noya_audio_is_play(entry->audio) )
-		noya_audio_start(entry->audio);
+		noya_audio_play(entry->audio);
 
 	/* update index
 	 */
@@ -224,7 +224,7 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 					obj_border;
 	ClutterActor	*ac;
 	char			number[5];
-	int				idx, bpmidx, bpmmax;
+	int				idx, idx2, bpmidx, bpmmax;
 	obj_entry_t		*entry;
 
 	assert( obj != NULL );
@@ -239,9 +239,9 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 	bpmmax = 0;
 	for ( idx = 0; idx < obj->entry_count; idx++ )
 	{
-		entry		= obj->entries[idx];
+		entry		= &obj->entries[idx];
 		entry->idx	= idx;
-		bpmmax		= entry->bpm;
+		bpmmax		+= entry->bpm;
 
 		/* force loop
 		 */
@@ -266,11 +266,17 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 			return;
 		}
 
-		for ( idx = 0, bpmidx = 0; idx < obj->entry_count; idx++ )
+		bpmidx = 0;
+		for ( idx = 0; idx < obj->entry_count; idx++ )
 		{
-			entry = obj->entries[idx];
-			for ( ; bpmidx < bpmidx + entry->bpm ; bpmidx++ )
+			entry = &obj->entries[idx];
+			l_printf("entry %d, bpmmax = %d, bpm = %d", idx, obj->bpmmax, entry->bpm);
+			for ( idx2 = 0; idx2 < entry->bpm ; idx2++ )
+			{
 				obj->bpmentries[bpmidx] = entry;
+				l_printf("bpmidx = %d", bpmidx);
+				bpmidx++;
+			}
 		}
 	}
 
@@ -282,7 +288,6 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 	 */
 
 	obj->group_cube = clutter_group_new();
-	clutter_container_add_actor(CLUTTER_CONTAINER(actor->rotate_actor), obj->group_cube);
 
 	/* create object
 	 */
@@ -304,6 +309,7 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 
 	clutter_container_add_actor(CLUTTER_CONTAINER(obj->group_cube), ac);
 
+	clutter_container_add_actor(CLUTTER_CONTAINER(actor->rotate_actor), obj->group_cube);
 }
 
 void lib_object_unprepare(obj_t *obj)
