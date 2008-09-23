@@ -5,6 +5,5 @@
 #include "thread_manager.h"
 
 void trim(char *s);
-void noya_color_copy(ClutterColor *dst, color_t *src);
 
 #endif
