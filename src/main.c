@@ -70,10 +70,13 @@ void options_read(int argc, char **argv)
 {
 	int opt;
 
-	while ( (opt = getopt(argc, argv, "s:")) != -1 )
+	while ( (opt = getopt(argc, argv, "s:d")) != -1 )
 	{
 		switch ( opt )
 		{
+			case 'd':
+				g_options.dump = 1;
+				break;
 			case 's':
 				g_options.scene_fn = strdup(optarg);
 				break;

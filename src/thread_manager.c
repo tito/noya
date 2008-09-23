@@ -13,6 +13,7 @@
 #include "thread_input.h"
 #include "thread_audio.h"
 #include "scene.h"
+#include "dump.h"
 
 #define TUIO_PI_TO_DEG(a)	((a - 3.1416) * 57.2957795)    //360 / 2 x PI
 #define PI2					6.2832
@@ -315,7 +316,16 @@ static void *thread_manager_run(void *arg)
 				c_scene = noya_scene_load(g_options.scene_fn);
 				if ( c_scene == NULL )
 				{
-					l_printf("Error while loading scene");
+					l_printf("Error : unable to load scene");
+					g_want_leave = 1;
+					c_want_leave = 1;
+					break;
+				}
+
+				if ( g_options.dump )
+				{
+					l_printf("Dump scene !");
+					noya_dump(scene);
 					g_want_leave = 1;
 					c_want_leave = 1;
 					break;

@@ -13,27 +13,6 @@ LOG_DECLARE("SCENE");
 
 #define MAX_PATH	128
 
-static void noya_scene_color_read(color_t *color, char *in)
-{
-	char	buf[2] = {0};
-	char	*dst = (char *)color;
-
-	if ( strlen(in) < 8 )
-	{
-		l_printf("Invalid color : %s", in);
-		return;
-	}
-
-	buf[0] = in[0], buf[1] = in[1];
-	dst[0] = strtol(buf, NULL, 16);
-	buf[0] = in[2], buf[1] = in[3];
-	dst[1] = strtol(buf, NULL, 16);
-	buf[0] = in[4], buf[1] = in[5];
-	dst[2] = strtol(buf, NULL, 16);
-	buf[0] = in[6], buf[1] = in[7];
-	dst[3] = strtol(buf, NULL, 16);
-}
-
 scene_t *noya_scene_load(char *name)
 {
 	scene_t			*scene;
@@ -86,7 +65,7 @@ scene_t *noya_scene_load(char *name)
 		 */
 		if ( strcmp(it->k, "scene.background.color") == 0 )
 		{
-			noya_scene_color_read(&scene->background_color, it->v);
+			noya_color_read(&scene->background_color, it->v);
 			continue;
 		}
 
@@ -232,9 +211,9 @@ void noya_scene_prop_set(scene_t *scene, scene_actor_base_t *actor, char *key, c
 		}
 	}
 	else if ( strcmp(key, "background.color") == 0 )
-		noya_scene_color_read(&actor->background_color, value);
+		noya_color_read(&actor->background_color, value);
 	else if ( strcmp(key, "border.color") == 0 )
-		noya_scene_color_read(&actor->border_color, value);
+		noya_color_read(&actor->border_color, value);
 	else if ( strcmp(key, "border.width") == 0 )
 		actor->border_width = strtol(value, NULL, 10);
 	else if ( strcmp(key, "width") == 0 )

@@ -45,6 +45,7 @@
 typedef struct
 {
 	char			*scene_fn;
+	short			dump;
 } options_t;
 extern options_t g_options;
 

@@ -3,9 +3,8 @@
 
 #include <sys/queue.h>
 #include "audio.h"
+#include "utils.h"
 #include "module.h"
-
-typedef char color_t[4];
 
 typedef struct scene_actor_base_s
 {
