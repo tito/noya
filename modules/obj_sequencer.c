@@ -192,8 +192,8 @@ static void lib_object_ev_bpm(unsigned short type, obj_t *obj, void *data)
 
 	/* get entries
 	 */
-	oldentry	= &obj->entries[oldidx];
-	entry		= &obj->entries[obj->bpmidx];
+	oldentry	= obj->bpmentries[oldidx];
+	entry		= obj->bpmentries[obj->bpmidx];
 
 	/* need to stop old entry ?
 	 */
@@ -291,8 +291,8 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 
 	/* create object
 	 */
-	noya_color_copy(&obj_background, &actor->scene_actor->background_color);
-	noya_color_copy(&obj_border, &actor->scene_actor->border_color);
+	memcpy(&obj_background, &actor->scene_actor->background_color, sizeof(obj_background));
+	memcpy(&obj_border, &actor->scene_actor->border_color, sizeof(obj_border));
 	ac = clutter_rectangle_new_with_color(&obj_background);
 	clutter_rectangle_set_border_color((ClutterRectangle *)ac, &obj_border);
 	clutter_rectangle_set_border_width((ClutterRectangle *)ac, actor->scene_actor->border_width);

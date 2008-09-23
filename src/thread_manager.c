@@ -30,7 +30,8 @@ manager_cursor_list_t	manager_cursors_list;
 struct timeval		st_beat;
 double				t_lastbeat		= 0,
 					t_beat			= 0,
-					t_beatinterval	= 0;
+					t_beatinterval	= 0,
+					t_current		= 0;
 long				t_bpm			= 0;
 
 extern sig_atomic_t	g_want_leave;
@@ -325,7 +326,7 @@ static void *thread_manager_run(void *arg)
 				if ( g_options.dump )
 				{
 					l_printf("Dump scene !");
-					noya_dump(scene);
+					noya_dump(NULL, c_scene);
 					g_want_leave = 1;
 					c_want_leave = 1;
 					break;
@@ -377,14 +378,18 @@ static void *thread_manager_run(void *arg)
 
 				/* let's do the beat !
 				 */
-				t_lastbeat = t_beat;
 				gettimeofday(&st_beat, NULL);
 				t_beat = st_beat.tv_sec + st_beat.tv_usec * 0.000001;
-				t_beatinterval = 1.0 / c_scene->bpm;
+				t_beatinterval = 60.0 / c_scene->bpm;
 
-				if ( t_beat > (1.0 / c_scene->bpm) )
+				if ( t_beat - t_lastbeat > t_beatinterval )
 				{
+					l_printf("BPM = %lu", t_bpm);
 					t_bpm++;
+
+					/* FIXME : how to handle lag ?
+					 */
+					t_lastbeat = t_beat;
 
 					/* send bpm event
 					 */

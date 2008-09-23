@@ -84,8 +84,8 @@ void lib_widget_prepare(widget_t *widget, manager_actor_t *actor)
 					obj_border;
 	ClutterActor	*ac;
 
-	noya_color_copy(&obj_background, &actor->scene_actor->background_color);
-	noya_color_copy(&obj_border, &actor->scene_actor->border_color);
+	memcpy(&obj_background, &actor->scene_actor->background_color, sizeof(obj_background));
+	memcpy(&obj_border, &actor->scene_actor->border_color, sizeof(obj_border));
 
 	/* save actor
 	 */

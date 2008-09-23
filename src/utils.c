@@ -21,25 +21,23 @@ void trim(char *s)
 
 void noya_color_write(char *buffer, int len, color_t *color)
 {
+	char *scolor = (char *)color;
 	snprintf(buffer, sizeof(buffer),
-		"%x%x%x%x",
-		color[0],
-		color[1],
-		color[2],
-		color[3]
+		"%02hhx%02hhx%02hhx%02hhx",
+		scolor[0],
+		scolor[1],
+		scolor[2],
+		scolor[3]
 	);
 }
 
-void noya_color_read(color_t *color, char *in)
+int noya_color_read(color_t *color, char *in)
 {
 	char	buf[2] = {0};
 	char	*dst = (char *)color;
 
 	if ( strlen(in) < 8 )
-	{
-		l_printf("Invalid color : %s", in);
-		return;
-	}
+		return -1;
 
 	buf[0] = in[0], buf[1] = in[1];
 	dst[0] = strtol(buf, NULL, 16);
@@ -49,4 +47,6 @@ void noya_color_read(color_t *color, char *in)
 	dst[2] = strtol(buf, NULL, 16);
 	buf[0] = in[6], buf[1] = in[7];
 	dst[3] = strtol(buf, NULL, 16);
+
+	return 0;
 }

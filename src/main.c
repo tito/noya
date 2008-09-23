@@ -57,6 +57,7 @@ void signal_leave(int sig)
 void usage(void)
 {
 	printf("Usage: noya [OPTIONS]...\n");
+	printf("  -d                         Dump scene and quit\n");
 	printf("  -h                         Show usage\n");
 	printf("  -s <name>                  Load a scene\n");
 	printf("\n");
