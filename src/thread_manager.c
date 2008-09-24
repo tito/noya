@@ -421,7 +421,7 @@ static void *thread_manager_run(void *arg)
 						if ( entry->bpmidx <= entry->bpmduration )
 							continue;
 
-						entry->bpmidx = 0;
+						entry->bpmidx = -1;
 						entry->dataidx = 0;
 
 						/* if it's not a loop, stop it.

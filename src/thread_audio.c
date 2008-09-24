@@ -297,7 +297,7 @@ static void *thread_audio_run(void *arg)
 				 */
 				thread_audio_preload();
 
-				usleep(1000000);
+				usleep(200000);
 
 				break;
 		}

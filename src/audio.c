@@ -41,11 +41,12 @@ audio_t *noya_audio_load(char *filename)
 		goto noya_audio_load_clean;
 	bzero(entry, sizeof(audio_t));
 
-	entry->filename = strdup(filename);
+	entry->filename	= strdup(filename);
 	if ( entry->filename == NULL )
 		goto noya_audio_load_clean;
 
-	entry->flags = AUDIO_FL_USED;
+	entry->flags	= AUDIO_FL_USED;
+	entry->bpmidx	= -1;
 
 	LIST_INSERT_HEAD(&audio_entries, entry, next);
 
@@ -101,6 +102,17 @@ short noya_audio_is_play(audio_t *entry)
 
 void noya_audio_seek(audio_t *entry, long position)
 {
-	entry->dataidx = position;
+	if ( position == 0 )
+	{
+		entry->dataidx	= position;
+		entry->bpmidx	= -1;
+	}
+	else
+	{
+		l_printf("Error : seek in another position than 0 is not yet implemented.");
+		/* FIXME : handle seek in another position than 0.
+		 * This is due to the manager loop.
+		 */
+	}
 }
 

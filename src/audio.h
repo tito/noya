@@ -32,9 +32,7 @@ typedef struct audio_s
 	float			position;			/*< R  : 0 - 1 (percent) */
 	float			duration;			/*< R  : 0 - n (seconds) */
 	unsigned int	bpmduration;		/*< R  : 0 - n (bpm) */
-	unsigned int	bpmidx;				/*< RW : 0 - n (bpm from dataidx) */
-
-
+	int				bpmidx;				/*< RW : 0 - n (bpm from dataidx) */
 
 	LIST_ENTRY(audio_s) next;
 } audio_t;
