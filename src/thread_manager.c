@@ -399,12 +399,12 @@ static void *thread_manager_run(void *arg)
 					{
 						if ( !(entry->flags & AUDIO_FL_USED) )
 							continue;
-						if ( entry->flags & AUDIO_FL_LOADED )
+						if ( !(entry->flags & AUDIO_FL_LOADED) )
 							continue;
 						if ( entry->flags & AUDIO_FL_FAILED )
 							continue;
 
-						if ( entry->flags & AUDIO_FL_WANTPLAY )
+						if ( !(entry->flags & AUDIO_FL_WANTPLAY) )
 							continue;
 
 						/* start play.

@@ -42,6 +42,7 @@ typedef struct
 	unsigned int	bpmmax;
 	obj_entry_t		**bpmentries;
 
+	double			volume;
 } obj_t;
 
 obj_t def_obj = {0};
@@ -128,6 +129,10 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 
 		bzero(obj->entries, sizeof(obj_entry_t) * obj->entry_count);
 	}
+	else if ( strcmp(key, "volume") == 0 )
+	{
+		obj->volume = strtof(value, NULL, 10);
+	}
 	else
 	{
 		if ( obj->entries == NULL )
@@ -168,6 +173,7 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 
 			entry->filename = strdup(value);
 			entry->audio = noya_audio_load(filename);
+			noya_audio_set_volume(entry->audio, obj->volume);
 		}
 		else if ( strcmp(k_prop, "bpm") == 0 )
 		{
@@ -212,6 +218,8 @@ static void lib_object_ev_bpm(unsigned short type, obj_t *obj, void *data)
 	 */
 	if ( !noya_audio_is_play(entry->audio) )
 		noya_audio_play(entry->audio);
+
+	l_printf("SET entry=%s, flags=%d", entry->filename, entry->audio->flags);
 
 	/* update index
 	 */

@@ -68,7 +68,7 @@ noya_audio_load_clean:;
 void noya_audio_play(audio_t *entry)
 {
 	assert( entry != NULL );
-	entry->flags |= AUDIO_FL_PLAY;
+	entry->flags |= AUDIO_FL_WANTPLAY;
 }
 
 void noya_audio_stop(audio_t *entry)
@@ -96,7 +96,7 @@ void noya_audio_set_volume(audio_t *entry, float volume)
 short noya_audio_is_play(audio_t *entry)
 {
 	assert( entry != NULL );
-	return entry->flags & AUDIO_FL_WANTPLAY;
+	return entry->flags & AUDIO_FL_PLAY;
 }
 
 void noya_audio_seek(audio_t *entry, long position)
