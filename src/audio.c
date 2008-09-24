@@ -9,6 +9,8 @@
 #include "noya.h"
 #include "audio.h"
 
+LOG_DECLARE("AUDIO");
+
 audio_list_t audio_entries;
 
 audio_t *noya_audio_get_by_filename(char *filename)
