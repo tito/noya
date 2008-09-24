@@ -46,7 +46,7 @@ void noya_modules_init()
 
 		l_printf("Load %s", dl_name);
 
-		dl_handle = dlopen (dl_name, RTLD_LAZY| RTLD_NODELETE);
+		dl_handle = dlopen (dl_name, RTLD_LAZY);
 		if ( dl_handle == NULL )
 		{
 			l_printf("Error while loading %s: %s", name, dlerror());
@@ -63,6 +63,7 @@ void noya_modules_init()
 
 		bzero(module, sizeof(module_t));
 
+		module->dl_handle = dl_handle;
 		module->init = dlsym(dl_handle, "lib_init");
 		module->exit = dlsym(dl_handle, "lib_exit");
 
@@ -104,6 +105,8 @@ void noya_modules_init()
 
 		LIST_INSERT_HEAD(&module_list, module, next);
 
+		dl_handle = NULL;
+
 module_init_failed:;
 		if ( dl_handle != NULL )
 			dlclose(dl_handle);
@@ -125,6 +128,8 @@ static void module_free(module_t *module)
 	assert( module->exit != NULL );
 
 	(*module->exit)();
+
+	dlclose(module->dl_handle);
 
 	if ( module->name != NULL )
 		free(module->name);

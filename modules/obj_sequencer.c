@@ -131,7 +131,7 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 	}
 	else if ( strcmp(key, "volume") == 0 )
 	{
-		obj->volume = strtof(value, NULL, 10);
+		obj->volume = strtof(value, NULL);
 	}
 	else
 	{

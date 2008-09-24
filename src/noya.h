@@ -1,6 +1,7 @@
 #ifndef __NOYA_H
 #define __NOYA_H
 
+#include <pthread.h>
 #include <signal.h>
 #include "config.h"
 

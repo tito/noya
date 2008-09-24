@@ -10,6 +10,7 @@ typedef struct module_s
 {
 	char	*name;
 	int		type;
+	void	*dl_handle;
 
 	/* init lib
 	 * arg: return name, return type
