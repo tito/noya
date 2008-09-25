@@ -424,7 +424,7 @@ static void *thread_manager_run(void *arg)
 
 						/* if it's not a loop, stop it.
 						 */
-						if ( entry->flags & AUDIO_FL_ISLOOP )
+						if ( !(entry->flags & AUDIO_FL_ISLOOP) )
 							noya_audio_stop(entry);
 					}
 				}
