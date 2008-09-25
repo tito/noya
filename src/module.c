@@ -25,7 +25,7 @@ void noya_modules_init()
 	char			dl_name[1024];
 	int				scandir_entries,
 					libs_to_scan, i;
-	char			*path = "modules",
+	char			*path,
 					*name;
 	struct dirent	**scandir_list;
 	void			*dl_handle = NULL;
@@ -34,6 +34,13 @@ void noya_modules_init()
 	LIST_INIT(&module_list);
 
 	l_printf("Load modules...");
+
+	path = config_get(CONFIG_DEFAULT, "noya.path.modules");
+	if ( path == NULL )
+	{
+		l_printf("Error: no noya.path.modules config set !");
+		return;
+	}
 
 	scandir_entries = scandir(path,  &scandir_list, module_filter, alphasort);
 	if ( scandir_entries <= 0 )
