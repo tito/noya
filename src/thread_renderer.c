@@ -91,13 +91,6 @@ static void *thread_renderer_run(void *arg)
 					G_CALLBACK(renderer_key_handle), NULL
 				);
 
-				l_printf("Default Framerate are %d", clutter_get_default_frame_rate());
-				if ( clutter_get_default_frame_rate() != NOYA_DEFAULT_FRAMERATE )
-				{
-					l_printf("Set Framerate to %d", NOYA_DEFAULT_FRAMERATE);
-					clutter_set_default_frame_rate(NOYA_DEFAULT_FRAMERATE);
-				}
-
 				/* show the stage
 				 */
 				clutter_actor_show (stage);
