@@ -32,8 +32,6 @@ audio_t *noya_audio_get_by_filename(char *filename)
 
 audio_t *noya_audio_load(char *filename)
 {
-	SNDFILE			*sfp = NULL;
-	SF_INFO			sinfo;
 	audio_t	*entry;
 
 	assert( filename != NULL );
@@ -57,8 +55,6 @@ audio_t *noya_audio_load(char *filename)
 noya_audio_load_clean:;
 	if ( entry != NULL )
 	{
-		if ( sfp != NULL )
-			sf_close(sfp);
 		if ( entry->filename != NULL )
 			free(entry->filename), entry->filename = NULL;
 		if ( entry->data != NULL )
@@ -111,7 +107,7 @@ void noya_audio_seek(audio_t *entry, long position)
 	}
 	else
 	{
-		l_printf("Error : seek in another position than 0 is not yet implemented.");
+		l_errorf("seek in another position than 0 is not yet implemented.");
 		/* FIXME : handle seek in another position than 0.
 		 * This is due to the manager loop.
 		 */

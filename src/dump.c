@@ -51,7 +51,7 @@ void noya_dump(char *filename, scene_t *scene)
 		fp = fopen(filename, "w");
 		if ( fp == NULL )
 		{
-			l_printf("Error : unable to open %s", filename);
+			l_errorf("unable to open %s", filename);
 			return;
 		}
 	}

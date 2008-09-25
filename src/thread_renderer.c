@@ -154,7 +154,7 @@ int thread_renderer_start(void)
 	ret = pthread_create(&thread_renderer, NULL, thread_renderer_run, NULL);
 	if ( ret )
 	{
-		l_printf("Cannot create RENDERER thread");
+		l_errorf("unable to create RENDERER thread");
 		return NOYA_ERR;
 	}
 

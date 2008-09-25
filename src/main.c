@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 	 */
 	if ( config_init(NOYA_CONFIG_FN) )
 	{
-		l_printf("Error while reading %s : %s", NOYA_CONFIG_FN, strerror(errno));
+		l_errorf("config file %s : %s", NOYA_CONFIG_FN, strerror(errno));
 		return -1;
 	}
 

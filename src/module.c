@@ -38,7 +38,7 @@ void noya_modules_init()
 	path = config_get(CONFIG_DEFAULT, "noya.path.modules");
 	if ( path == NULL )
 	{
-		l_printf("Error: no noya.path.modules config set !");
+		l_errorf("no noya.path.modules config set !");
 		return;
 	}
 
@@ -56,7 +56,7 @@ void noya_modules_init()
 		dl_handle = dlopen (dl_name, RTLD_LAZY);
 		if ( dl_handle == NULL )
 		{
-			l_printf("Error while loading %s: %s", name, dlerror());
+			l_errorf("unable to load %s: %s", name, dlerror());
 			goto module_init_failed;
 		}
 
@@ -64,7 +64,7 @@ void noya_modules_init()
 		if ( module == NULL )
 		{
 			free(module);
-			l_printf("Error while creating module %s", name);
+			l_errorf("no enough memory to create module %s", name);
 			goto module_init_failed;
 		}
 
@@ -76,7 +76,7 @@ void noya_modules_init()
 
 		if ( module->init == NULL || module->exit == NULL )
 		{
-			l_printf("Missing lib_[init|exit]() functions in %s", name);
+			l_errorf("Missing lib_[init|exit]() functions in %s", name);
 			goto module_init_failed;
 		}
 
@@ -169,7 +169,7 @@ module_t *noya_module_get(char *name, int type)
 			return module;
 	}
 
-	l_printf("Module %s not found", name);
+	l_errorf("unable to found %s", name);
 
 	return NULL;
 }

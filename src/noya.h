@@ -37,8 +37,16 @@
 		printf("\n");							\
 		THREAD_GLOBAL_UNLOCK;					\
 	} while(0);
+#define l_errorf(...) do {						\
+		THREAD_GLOBAL_LOCK;						\
+		printf("[%-8s] \033[31m\033[1mERROR : ", log_module);			\
+		printf(__VA_ARGS__);					\
+		printf("\033[0m\n");						\
+		THREAD_GLOBAL_UNLOCK;					\
+	} while(0);
 #else
 #define l_printf(...)
+#define l_errorw(...)
 #endif
 
 /* Options

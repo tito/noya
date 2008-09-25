@@ -54,7 +54,7 @@ static void manager_event_object_new(unsigned short type, void *userdata, void *
 	actor = noya_scene_actor_get(c_scene, o->f_id);
 	if ( actor == NULL )
 	{
-		l_printf("Error : actor %d not found in scene", o->f_id);
+		l_errorf("actor %d not found in scene", o->f_id);
 		return;
 	}
 
@@ -62,7 +62,7 @@ static void manager_event_object_new(unsigned short type, void *userdata, void *
 	 */
 	if ( actor->mod == NULL )
 	{
-		l_printf("Error : no object associated for actor %d", o->f_id);
+		l_errorf("no object associated for actor %d", o->f_id);
 		return;
 	}
 
@@ -71,7 +71,7 @@ static void manager_event_object_new(unsigned short type, void *userdata, void *
 	el = malloc(sizeof(struct manager_actor_s));
 	if ( el == NULL )
 	{
-		l_printf("Error while creating manager actor");
+		l_errorf("no enough memory to create manager actor");
 		return;
 	}
 	bzero(el, sizeof(struct manager_actor_s));
@@ -315,7 +315,7 @@ static void *thread_manager_run(void *arg)
 				c_scene = noya_scene_load(g_options.scene_fn);
 				if ( c_scene == NULL )
 				{
-					l_printf("Error : unable to load scene");
+					l_errorf("unable to load scene");
 					g_want_leave = 1;
 					c_want_leave = 1;
 					break;
@@ -447,7 +447,7 @@ int thread_manager_start(void)
 	ret = pthread_create(&thread_manager, NULL, thread_manager_run, NULL);
 	if ( ret )
 	{
-		l_printf("Cannot create MANAGER thread");
+		l_errorf("unable to create MANAGER thread");
 		return NOYA_ERR;
 	}
 

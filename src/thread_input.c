@@ -44,7 +44,7 @@ unsigned int	t_curs_alive_count				= 0,	/*< actual counter of cursor alive */
 
 void _lo_error(int num, const char *msg, const char *path)
 {
-    l_printf("liblo server error %d in path %s: %s\n", num, path, msg);
+    l_errorf("liblo server error %d in path %s: %s\n", num, path, msg);
 }
 
 int _lo_quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
@@ -332,7 +332,7 @@ static void *thread_input_run(void *arg)
 				lo_fd = lo_server_get_socket_fd(s);
 				if ( lo_fd <= 0 )
 				{
-					l_printf("Error: lo_server_get_socket_fd() error...");
+					l_errorf("lo_server_get_socket_fd() error...");
 					c_state = THREAD_STATE_RESTART;
 					usleep(100);
 					continue;
@@ -364,7 +364,7 @@ static void *thread_input_run(void *arg)
 
 				if ( retval == -1 )
 				{
-					l_printf("Error: select() error...");
+					l_errorf("select() error...");
 					c_state = THREAD_STATE_RESTART;
 					usleep(100);
 					continue;
@@ -395,7 +395,7 @@ int thread_input_start(void)
 	ret = pthread_create(&thread_input, NULL, thread_input_run, NULL);
 	if ( ret )
 	{
-		l_printf("Cannot create INPUT thread");
+		l_errorf("unable to create INPUT thread");
 		return NOYA_ERR;
 	}
 

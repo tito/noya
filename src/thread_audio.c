@@ -205,7 +205,7 @@ static void *thread_audio_run(void *arg)
 				ret = Pa_Initialize();
 				if ( ret != paNoError )
 				{
-					l_printf("Error while initialize PA : %s", Pa_GetErrorText(ret));
+					l_errorf("unable to initialize PA : %s", Pa_GetErrorText(ret));
 					g_want_leave = 1;
 					c_want_leave = 1;
 					continue;
@@ -236,7 +236,7 @@ static void *thread_audio_run(void *arg)
 				);
 				if ( ret != paNoError )
 				{
-					l_printf("Error while opening default stream : %s", Pa_GetErrorText(ret));
+					l_errorf("unable to open default stream : %s", Pa_GetErrorText(ret));
 					g_want_leave = 1;
 					c_want_leave = 1;
 					continue;
@@ -247,7 +247,7 @@ static void *thread_audio_run(void *arg)
 				ret = Pa_StartStream(c_stream);
 				if ( ret != paNoError )
 				{
-					l_printf("Error while starting stream : %s", Pa_GetErrorText(ret));
+					l_errorf("unable to start stream : %s", Pa_GetErrorText(ret));
 					g_want_leave = 1;
 					continue;
 				}
@@ -263,7 +263,7 @@ static void *thread_audio_run(void *arg)
 
 				ret = Pa_Terminate();
 				if ( ret != paNoError )
-					l_printf("Error while terminate PA : %s", Pa_GetErrorText(ret));
+					l_errorf("unable to terminate PA : %s", Pa_GetErrorText(ret));
 
 				/* freeing all audio
 				 */
@@ -315,7 +315,7 @@ int thread_audio_start(void)
 	ret = pthread_create(&thread_audio, NULL, thread_audio_run, NULL);
 	if ( ret )
 	{
-		l_printf("Cannot create AUDIO thread");
+		l_errorf("unable to create AUDIO thread");
 		return NOYA_ERR;
 	}
 

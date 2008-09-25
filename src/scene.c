@@ -132,7 +132,7 @@ scene_t *noya_scene_load(char *name)
 					actor = noya_scene_actor_new(scene, act_idx);
 				if ( actor == NULL )
 				{
-					l_printf("Error while creating new actor %d", act_idx);
+					l_errorf("unable to create actor %d", act_idx);
 					continue;
 				}
 				noya_scene_prop_set(scene, actor, k_prop, it->v);
@@ -146,7 +146,7 @@ scene_t *noya_scene_load(char *name)
 	return scene;
 
 noya_scene_load_error:;
-	l_printf("Error while loading scene");
+	l_errorf("unable to load scene");
 
 	if ( scene )
 		noya_scene_free(scene);
@@ -199,14 +199,14 @@ void noya_scene_prop_set(scene_t *scene, scene_actor_base_t *actor, char *key, c
 		actor->mod = noya_module_get(value, MODULE_TYPE_OBJECT);
 		if ( actor->mod == NULL )
 		{
-			l_printf("Error: no object %s found !", value);
+			l_errorf("no object %s found !", value);
 			return;
 		}
 
 		actor->data_mod = (*actor->mod->object_new)(scene);
 		if ( actor->data_mod == NULL )
 		{
-			l_printf("Error: unable to create %s object", value);
+			l_errorf("unable to create %s object", value);
 			return;
 		}
 	}
@@ -231,11 +231,11 @@ void noya_scene_prop_set(scene_t *scene, scene_actor_base_t *actor, char *key, c
 	else if ( actor->mod )
 		(*actor->mod->object_config)(actor->data_mod, key, value);
 	else
-		l_printf("Error : unknown key property %s", key);
+		l_errorf("unknown key property %s", key);
 	return;
 
 noya_scene_prop_set_invalid_size:;
-	l_printf("Error : invalid size for %s", key);
+	l_errorf("invalid size for %s", key);
 	return;
 }
 

@@ -35,7 +35,7 @@ void noya_event_observe(unsigned short ev_type, event_callback callback, void *u
 	event = malloc(sizeof(event_t));
 	if ( event == NULL )
 	{
-		l_printf("Unable to create event observer !");
+		l_errorf("unable to create event observer !");
 		return;
 	}
 
