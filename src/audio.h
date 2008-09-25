@@ -14,7 +14,7 @@ typedef struct audio_s
 #define	AUDIO_FL_WANTPLAY	0x10
 #define AUDIO_FL_PLAY		0x20
 #define AUDIO_FL_ISLOOP		0x40
-	sig_atomic_t	flags;
+	volatile sig_atomic_t	flags;
 
 	char			*filename;
 

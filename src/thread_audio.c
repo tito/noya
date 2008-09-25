@@ -20,12 +20,10 @@
 LOG_DECLARE("AUDIO");
 MUTEX_DECLARE(m_audio);
 pthread_t	thread_audio;
-static sig_atomic_t	c_want_leave	= 0;
-static sig_atomic_t	c_running		= 0;
+static volatile sig_atomic_t	c_want_leave	= 0;
+static volatile sig_atomic_t	c_running		= 0;
 static short		c_state			= THREAD_STATE_START;
 static PaStream		*c_stream		= NULL;
-
-extern sig_atomic_t	g_want_leave;
 
 /* thread functions
  */

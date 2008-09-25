@@ -14,23 +14,19 @@ LOG_DECLARE("RENDERER");
 MUTEX_DECLARE(m_renderer);
 pthread_t	thread_renderer;
 
-/* extern
- */
-extern sig_atomic_t g_want_leave;
-
 /* static
  */
-static sig_atomic_t	c_want_leave	= 0;
-static sig_atomic_t	c_running		= 0;
-static short		c_state			= THREAD_STATE_START;
-static ClutterColor stage_color		= { 0x33, 0x09, 0x3b, 0xff };
-static ClutterActor *stage			= NULL;
+static volatile sig_atomic_t	c_want_leave	= 0;
+static volatile sig_atomic_t	c_running		= 0;
+static short					c_state			= THREAD_STATE_START;
+static ClutterColor				stage_color		= { 0x33, 0x09, 0x3b, 0xff };
+static ClutterActor				*stage			= NULL;
 
 /* config
  */
-static int	ui_width		= 640;
-static int	ui_height		= 480;
-static sig_atomic_t	clutter_running = 0;
+static int						ui_width		= 640;
+static int						ui_height		= 480;
+static volatile sig_atomic_t	clutter_running = 0;
 
 static gboolean renderer_key_handle(
 	ClutterActor	*actor,

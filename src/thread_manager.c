@@ -21,8 +21,8 @@
 LOG_DECLARE("MANAGER");
 MUTEX_DECLARE(m_manager);
 pthread_t	thread_manager;
-static sig_atomic_t	c_want_leave	= 0;
-static sig_atomic_t	c_running		= 0;
+static volatile sig_atomic_t	c_want_leave	= 0;
+static volatile sig_atomic_t	c_running		= 0;
 static short		c_state			= THREAD_STATE_START;
 scene_t				*c_scene		= NULL;
 manager_actor_list_t	manager_actors_list;
@@ -33,8 +33,6 @@ double				t_lastbeat		= 0,
 					t_beatinterval	= 0,
 					t_current		= 0;
 long				t_bpm			= 0;
-
-extern sig_atomic_t	g_want_leave;
 
 ClutterColor obj_background	= { 0xff, 0xff, 0xff, 0x99 };
 ClutterColor obj_border		= { 0xff, 0xff, 0xff, 0xff };

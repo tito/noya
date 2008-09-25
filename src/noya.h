@@ -52,7 +52,8 @@ extern options_t g_options;
 
 /* Globals
  */
-extern sig_atomic_t g_threads;
+extern volatile sig_atomic_t g_threads;
+extern volatile sig_atomic_t g_want_leave;
 MUTEX_IMPORT(g_thread_mutex);
 
 #endif

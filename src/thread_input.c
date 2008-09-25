@@ -17,8 +17,8 @@
 LOG_DECLARE("INPUT");
 MUTEX_DECLARE(m_input);
 pthread_t	thread_input;
-static sig_atomic_t	c_want_leave	= 0;
-static sig_atomic_t	c_running		= 0;
+static volatile sig_atomic_t	c_want_leave	= 0;
+static volatile sig_atomic_t	c_running		= 0;
 static short		c_state			= THREAD_STATE_START;
 
 #define		BUFFER_LEN			512
