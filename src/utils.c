@@ -6,17 +6,28 @@
 
 void trim(char *s)
 {
-	char *p;
+	char *p, *os = s;
+	short start = 0;
 
 	for ( p = s; *s; s++ )
 	{
-		if ( isspace((unsigned char)*s) )
+		if ( !start && isspace((unsigned char)*s) )
 			continue;
-		if ( *s == '\\' && *(s + 1) )
+		start = 1;
+		if ( (*s == '\\' || *s == '"') && *(s + 1) )
 			s++;
 		*p++ = *s;
 	}
 	*p = 0;
+
+	s = os + strlen(os) - 1;
+	while ( s >= os )
+	{
+		if ( !isspace((unsigned char)*s) )
+			break;
+		*s = 0;
+		s--;
+	}
 }
 
 void noya_color_write(char *buffer, int len, color_t *color)
