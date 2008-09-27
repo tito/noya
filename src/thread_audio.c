@@ -53,6 +53,12 @@ static void thread_audio_preload(void)
 			entry->filename, sinfo.samplerate,
 			sinfo.channels, sinfo.frames
 		);
+
+		if ( sinfo.channels <= 0 || sinfo.channels > 2 )
+		{
+			l_errorf("Only mono or stereo sample are accepted !");
+			goto noya_audio_preload_clean;
+		}
 		entry->channels = sinfo.channels;
 
 		entry->totalframes = sf_seek(sfp, (sf_count_t) 0, SEEK_END);
