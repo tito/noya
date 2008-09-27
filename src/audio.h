@@ -20,6 +20,7 @@ typedef struct audio_s
 
 	/* data
 	 */
+	short			channels;
 	unsigned int	totalframes;
 	float			*data;
 	float			*datacur;

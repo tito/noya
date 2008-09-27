@@ -53,6 +53,7 @@ static void thread_audio_preload(void)
 			entry->filename, sinfo.samplerate,
 			sinfo.channels, sinfo.frames
 		);
+		entry->channels = sinfo.channels;
 
 		entry->totalframes = sf_seek(sfp, (sf_count_t) 0, SEEK_END);
 		sf_seek(sfp, 0, SEEK_SET);
@@ -91,8 +92,9 @@ static int audio_output_callback(
 {
 	static audio_t	*entries[MAX_SOUNDS];
 	int						entries_count = -1;
-	audio_t			*entry;
-	float					*out = (float *)outputBuffer;
+	audio_t					*entry;
+	float					*out = (float *)outputBuffer,
+							*out_s;
 	unsigned long			i, j;
 
 	(void) timeInfo; /* Prevent unused variable warnings. */
@@ -143,27 +145,57 @@ static int audio_output_callback(
 
 	/* got entries, play !
 	 */
-	for ( i = 0; i < framesPerBuffer; i++ )
+	out_s = out;
+
+	/* first, empty out
+	 */
+	bzero(out, sizeof(float) * framesPerBuffer * 2);
+
+	/* and play
+	 */
+	for ( j = 0; j <= entries_count; j++ )
 	{
-		*out		= .0f;
-		*(out+1)	= .0f;
+		entry = entries[j];
 
-		for ( j = 0; j <= entries_count; j++ )
+		/* stereo audio ?
+		 */
+		if ( entry->channels == 2 )
 		{
-			entry = entries[j];
+			for ( i = 0; i < framesPerBuffer; i++ )
+			{
+				/* left
+				 */
+				*out		+= *(entry->datacur) * entry->volume;
+				entry->datacur++;
 
-			/* left
-			 */
-			*out		+= *(entry->datacur) * entry->volume;
-			entry->datacur++;
+				/* right
+				 */
+				*(out+1)	+= *(entry->datacur) * entry->volume;
+				entry->datacur++;
 
-			/* right
-			 */
-			*(out+1)	+= *(entry->datacur) * entry->volume;
-			entry->datacur++;
+				out += 2;
+			}
 		}
 
-		out += 2;
+		/* mono audio ?
+		 */
+		else if ( entry->channels == 1 )
+		{
+			for ( i = 0; i < framesPerBuffer; i++ )
+			{
+				/* left & right
+				 */
+				*out		+= *(entry->datacur) * entry->volume;
+				*(out+1)	+= *(entry->datacur) * entry->volume;
+				entry->datacur++;
+
+				out += 2;
+			}
+		}
+
+		/* rewind for next entry
+		 */
+		out = out_s;
 	}
 
 	/* advance idx 
@@ -171,7 +203,7 @@ static int audio_output_callback(
 	for ( j = 0; j <= entries_count; j++ )
 	{
 		entry = entries[j];
-		entry->dataidx += framesPerBuffer * 2;
+		entry->dataidx += framesPerBuffer * entry->channels;
 		if ( entry->totalframes > 0 )
 			entry->position = (entry->dataidx * 0.5) /  entry->totalframes;
 		else
