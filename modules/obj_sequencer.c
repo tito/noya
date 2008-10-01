@@ -218,7 +218,7 @@ static void lib_object_ev_bpm(unsigned short type, obj_t *obj, void *data)
 	/* start current entry
 	 */
 	if ( !noya_audio_is_play(entry->audio) )
-		noya_audio_play(entry->audio);
+		noya_audio_wantplay(entry->audio);
 
 	l_printf("SET entry=%s, flags=%d", entry->filename, entry->audio->flags);
 

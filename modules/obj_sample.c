@@ -234,7 +234,7 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 
 	/* do first thing : play audio !
 	 */
-	noya_audio_play(obj->audio);
+	noya_audio_wantplay(obj->audio);
 	noya_audio_set_loop(obj->audio, actor->scene_actor->is_loop);
 
 	/* RENDERING !

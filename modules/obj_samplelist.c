@@ -318,7 +318,7 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 
 	/* do first thing : play audio !
 	 */
-	noya_audio_play(obj->entries[obj->idx].audio);
+	noya_audio_wantplay(obj->entries[obj->idx].audio);
 	noya_audio_set_loop(obj->entries[obj->idx].audio, actor->scene_actor->is_loop);
 
 	/* RENDERING !
@@ -431,8 +431,8 @@ void ctl_sampleidx(obj_t *obj, float value)
 
 	if ( last_idx != obj->idx )
 	{
-		noya_audio_stop(obj->entries[last_idx].audio);
-		noya_audio_play(obj->entries[obj->idx].audio);
+		noya_audio_wantstop(obj->entries[last_idx].audio);
+		noya_audio_wantplay(obj->entries[obj->idx].audio);
 		noya_audio_set_volume(obj->entries[obj->idx].audio, 0.7); //obj->cfg_volume);
 		noya_audio_set_loop(obj->entries[obj->idx].audio, 1);
 	}

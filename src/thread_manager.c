@@ -402,30 +402,37 @@ static void *thread_manager_run(void *arg)
 						if ( entry->flags & AUDIO_FL_FAILED )
 							continue;
 
-						if ( !(entry->flags & AUDIO_FL_WANTPLAY) )
-							continue;
+						if ( entry->flags & AUDIO_FL_WANTPLAY )
+						{
+							/* play audio
+							 */
+							noya_audio_play(entry);
 
-						/* start play.
-						 */
-						entry->flags |= AUDIO_FL_PLAY;
+							/* increment bpm idx
+							 */
+							entry->bpmduration = entry->duration / t_beatinterval;
+							entry->bpmidx++;
 
-						/* increment bpm idx
-						 */
-						entry->bpmduration = entry->duration / t_beatinterval;
-						entry->bpmidx++;
+							/* enough data for play ?
+							 */
+							if ( entry->bpmidx <= entry->bpmduration )
+								continue;
 
-						/* play ?
-						 */
-						if ( entry->bpmidx <= entry->bpmduration )
-							continue;
+							/* back to start of sample
+							 */
+							noya_audio_seek(entry, 0);
 
-						entry->bpmidx = -1;
-						entry->dataidx = 0;
+							/* if it's not a loop, stop it.
+							 */
+							if ( !(entry->flags & AUDIO_FL_ISLOOP) )
+								noya_audio_stop(entry);
+						}
 
-						/* if it's not a loop, stop it.
-						 */
-						if ( !(entry->flags & AUDIO_FL_ISLOOP) )
+						if ( entry->flags & AUDIO_FL_WANTSTOP )
+						{
 							noya_audio_stop(entry);
+							noya_audio_seek(entry, 0);
+						}
 					}
 				}
 

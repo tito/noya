@@ -67,7 +67,19 @@ noya_audio_load_clean:;
 void noya_audio_play(audio_t *entry)
 {
 	assert( entry != NULL );
+	entry->flags |= AUDIO_FL_PLAY;
+}
+
+void noya_audio_wantplay(audio_t *entry)
+{
+	assert( entry != NULL );
 	entry->flags |= AUDIO_FL_WANTPLAY;
+}
+
+void noya_audio_wantstop(audio_t *entry)
+{
+	assert( entry != NULL );
+	entry->flags |= AUDIO_FL_WANTSTOP;
 }
 
 void noya_audio_stop(audio_t *entry)
@@ -75,6 +87,7 @@ void noya_audio_stop(audio_t *entry)
 	assert( entry != NULL );
 	entry->flags &= ~AUDIO_FL_PLAY;
 	entry->flags &= ~AUDIO_FL_WANTPLAY;
+	entry->flags &= ~AUDIO_FL_WANTSTOP;
 }
 
 void noya_audio_set_loop(audio_t *entry, short isloop)
