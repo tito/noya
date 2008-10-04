@@ -84,30 +84,35 @@ void noya_modules_init()
 		 */
 		(*module->init)((void **)&module->name, (void *)&module->type);
 
+#define MODULE_LOAD_DEF(def) \
+		module->def = dlsym(dl_handle, "lib_"#def);	\
+		if ( module->def == NULL ) { \
+			l_printf("Unable to load %s, symbol %s is missing", module->name, #def); \
+			goto module_init_failed; \
+		}
 
 		if ( module->type & MODULE_TYPE_OBJECT )
 		{
-			module->object_new = dlsym(dl_handle, "lib_object_new");
-			module->object_free = dlsym(dl_handle, "lib_object_free");
-			module->object_config = dlsym(dl_handle, "lib_object_config");
-			module->object_global_config = dlsym(dl_handle, "lib_object_global_config");
-			module->object_update = dlsym(dl_handle, "lib_object_update");
-			module->object_prepare = dlsym(dl_handle, "lib_object_prepare");
-			module->object_unprepare = dlsym(dl_handle, "lib_object_unprepare");
-			module->object_render = dlsym(dl_handle, "lib_object_render");
-			module->object_get_control = dlsym(dl_handle, "lib_object_get_control");
+			MODULE_LOAD_DEF(object_new);
+			MODULE_LOAD_DEF(object_free);
+			MODULE_LOAD_DEF(object_config);
+			MODULE_LOAD_DEF(object_global_config);
+			MODULE_LOAD_DEF(object_update);
+			MODULE_LOAD_DEF(object_prepare);
+			MODULE_LOAD_DEF(object_unprepare);
+			MODULE_LOAD_DEF(object_get_control);
 		}
 
 		if ( module->type & MODULE_TYPE_WIDGET )
 		{
-			module->widget_new = dlsym(dl_handle, "lib_widget_new");
-			module->widget_free = dlsym(dl_handle, "lib_widget_free");
-			module->widget_clone = dlsym(dl_handle, "lib_widget_clone");
-			module->widget_config = dlsym(dl_handle, "lib_widget_config");
-			module->widget_update = dlsym(dl_handle, "lib_widget_update");
-			module->widget_prepare = dlsym(dl_handle, "lib_widget_prepare");
-			module->widget_unprepare = dlsym(dl_handle, "lib_widget_unprepare");
-			module->widget_set_data = dlsym(dl_handle, "lib_widget_set_data");
+			MODULE_LOAD_DEF(widget_new);
+			MODULE_LOAD_DEF(widget_free);
+			MODULE_LOAD_DEF(widget_clone);
+			MODULE_LOAD_DEF(widget_config);
+			MODULE_LOAD_DEF(widget_update);
+			MODULE_LOAD_DEF(widget_prepare);
+			MODULE_LOAD_DEF(widget_unprepare);
+			MODULE_LOAD_DEF(widget_set_data);
 		}
 
 		LIST_INSERT_HEAD(&module_list, module, next);

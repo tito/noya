@@ -60,11 +60,6 @@ typedef struct module_s
 	 */
 	void (*object_update)(void *);
 
-	/* render
-	 * args: object data
-	 */
-	void (*object_render)(void *);
-
 	/* controls
 	 * args: name
 	 */
