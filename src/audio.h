@@ -15,14 +15,14 @@ typedef struct audio_s
 #define	AUDIO_FL_WANTPLAY	0x10
 #define AUDIO_FL_PLAY		0x20
 #define AUDIO_FL_ISLOOP		0x40
-	volatile sig_atomic_t	flags;
+	__atomic__		flags;
 
 	char			*filename;
 
 	/* data
 	 */
 	short			channels;
-	unsigned int	totalframes;
+	uint			totalframes;
 	float			*data;
 	float			*datacur;
 	long			dataidx;
@@ -33,7 +33,7 @@ typedef struct audio_s
 	float			volume;				/*< RW : 0 - 1 (percent) */
 	float			position;			/*< R  : 0 - 1 (percent) */
 	float			duration;			/*< R  : 0 - n (seconds) */
-	unsigned int	bpmduration;		/*< R  : 0 - n (bpm) */
+	uint			bpmduration;		/*< R  : 0 - n (bpm) */
 	int				bpmidx;				/*< RW : 0 - n (bpm from dataidx) */
 
 	LIST_ENTRY(audio_s) next;

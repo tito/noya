@@ -49,6 +49,8 @@
 #define l_errorw(...)
 #endif
 
+typedef volatile sig_atomic_t  __atomic__;
+
 /* Options
  */
 typedef struct
@@ -60,8 +62,8 @@ extern options_t g_options;
 
 /* Globals
  */
-extern volatile sig_atomic_t g_threads;
-extern volatile sig_atomic_t g_want_leave;
+extern __atomic__ g_threads;
+extern __atomic__ g_want_leave;
 MUTEX_IMPORT(g_thread_mutex);
 
 #endif

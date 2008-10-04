@@ -17,8 +17,8 @@
 LOG_DECLARE("INPUT");
 MUTEX_DECLARE(m_input);
 pthread_t	thread_input;
-static volatile sig_atomic_t	c_want_leave	= 0;
-static volatile sig_atomic_t	c_running		= 0;
+static __atomic__	c_want_leave	= 0;
+static __atomic__	c_running		= 0;
 static short		c_state			= THREAD_STATE_START;
 
 #define		BUFFER_LEN			512
@@ -31,32 +31,32 @@ static short		c_state			= THREAD_STATE_START;
 #define		TUIO_CURSOR_MAX					64
 #define		TUIO_CURSOR_THRESHOLD_CLICK		3
 
-tuio_object_t	t_objs[TUIO_OBJECT_MAX];				/*< object info */
-unsigned int	t_objs_alive[TUIO_OBJECT_MAX],			/*< actual object alive */
-				t_objs_alive_o[TUIO_OBJECT_MAX];		/*< old alive object (needed for event) */
-unsigned int	t_objs_alive_count				= 0,	/*< actual counter of object alive */
-				t_objs_alive_count_o			= 0;
-tuio_cursor_t	t_curs[TUIO_CURSOR_MAX];				/*< cursor info */
-unsigned int	t_curs_alive[TUIO_CURSOR_MAX],			/*< actual cursor alive */
-				t_curs_alive_o[TUIO_CURSOR_MAX];		/*< old alive cursor (needed for event) */
-unsigned int	t_curs_alive_count				= 0,	/*< actual counter of cursor alive */
-				t_curs_alive_count_o			= 0;	/*< old counter of cursor alive (needed for event) */
+static tuio_object_t	t_objs[TUIO_OBJECT_MAX];				/*< object info */
+static uint				t_objs_alive[TUIO_OBJECT_MAX],			/*< actual object alive */
+						t_objs_alive_o[TUIO_OBJECT_MAX];		/*< old alive object (needed for event) */
+static uint				t_objs_alive_count				= 0,	/*< actual counter of object alive */
+						t_objs_alive_count_o			= 0;
+static tuio_cursor_t	t_curs[TUIO_CURSOR_MAX];				/*< cursor info */
+static uint				t_curs_alive[TUIO_CURSOR_MAX],			/*< actual cursor alive */
+						t_curs_alive_o[TUIO_CURSOR_MAX];		/*< old alive cursor (needed for event) */
+static uint				t_curs_alive_count				= 0,	/*< actual counter of cursor alive */
+						t_curs_alive_count_o			= 0;	/*< old counter of cursor alive (needed for event) */
 
-void _lo_error(int num, const char *msg, const char *path)
+static void _lo_error(int num, const char *msg, const char *path)
 {
     l_errorf("liblo server error %d in path %s: %s\n", num, path, msg);
 }
 
-int _lo_quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
+static int _lo_quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 void *data, void *user_data)
 {
 	c_want_leave = 1;
     return 0;
 }
 
-inline tuio_object_t *_tuio_object_get_by_idx(unsigned int id)
+static inline tuio_object_t *_tuio_object_get_by_idx(uint id)
 {
-	unsigned int	idx;
+	uint	idx;
 
 	for ( idx = 0; idx < TUIO_OBJECT_MAX; idx++ )
 	{
@@ -68,10 +68,10 @@ inline tuio_object_t *_tuio_object_get_by_idx(unsigned int id)
 }
 
 
-int _lo_tuio_object_handler(const char *path, const char *types, lo_arg **argv, int argc,
+static int _lo_tuio_object_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 void *data, void *user_data)
 {
-	unsigned int	i;
+	uint	i;
 	tuio_object_t	*o;
 
 	if ( argc <= 0 )
@@ -173,9 +173,9 @@ int _lo_tuio_object_handler(const char *path, const char *types, lo_arg **argv, 
 	return 1;
 }
 
-inline tuio_cursor_t *_tuio_cursor_get_free_slot(void)
+static inline tuio_cursor_t *_tuio_cursor_get_free_slot(void)
 {
-	unsigned int	idx;
+	uint	idx;
 
 	for ( idx = 0; idx < TUIO_CURSOR_MAX; idx++ )
 		if ( t_curs[idx].flags == 0 )
@@ -184,9 +184,9 @@ inline tuio_cursor_t *_tuio_cursor_get_free_slot(void)
 	return NULL;
 }
 
-inline tuio_cursor_t *_tuio_cursor_get_by_id(unsigned int id)
+static inline tuio_cursor_t *_tuio_cursor_get_by_id(uint id)
 {
-	unsigned int	idx;
+	uint	idx;
 
 	for ( idx = 0; idx < TUIO_CURSOR_MAX; idx++ )
 	{
@@ -197,10 +197,10 @@ inline tuio_cursor_t *_tuio_cursor_get_by_id(unsigned int id)
 	return NULL;
 }
 
-int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg **argv, int argc,
+static int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 void *data, void *user_data)
 {
-	unsigned int	i;
+	uint	i;
 	tuio_cursor_t	*c;
 
 	if ( argc <= 0 )

@@ -16,8 +16,8 @@
 
 LOG_DECLARE("MAIN");
 MUTEX_DECLARE(g_thread_mutex);
-volatile sig_atomic_t	g_threads		= 0;
-volatile sig_atomic_t	g_want_leave	= 0;
+__atomic__				g_threads		= 0;
+__atomic__				g_want_leave	= 0;
 options_t				g_options		= {0};
 
 /* services declaration

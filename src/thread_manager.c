@@ -21,8 +21,8 @@
 LOG_DECLARE("MANAGER");
 MUTEX_DECLARE(m_manager);
 pthread_t	thread_manager;
-static volatile sig_atomic_t	c_want_leave	= 0;
-static volatile sig_atomic_t	c_running		= 0;
+static __atomic__	c_want_leave	= 0;
+static __atomic__	c_running		= 0;
 static short		c_state			= THREAD_STATE_START;
 scene_t				*c_scene		= NULL;
 manager_actor_list_t	manager_actors_list;
@@ -45,7 +45,7 @@ static void manager_event_object_new(unsigned short type, void *userdata, void *
 	tuio_object_t	*o = (tuio_object_t *)data;
 	manager_actor_t	*el;
 	ClutterActor	*stage, *ac;
-	unsigned int	wx, wy;
+	uint	wx, wy;
 
 	assert( data != NULL );
 
@@ -217,7 +217,7 @@ static void manager_event_cursor_new(unsigned short type, void *userdata, void *
 	tuio_cursor_t *o = (tuio_cursor_t *)data;
 	manager_cursor_t *el;
 	ClutterActor *stage, *ac;
-	unsigned int wx, wy;
+	uint wx, wy;
 
 	assert( data != NULL );
 

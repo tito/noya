@@ -16,8 +16,8 @@ pthread_t	thread_renderer;
 
 /* static
  */
-static volatile sig_atomic_t	c_want_leave	= 0;
-static volatile sig_atomic_t	c_running		= 0;
+static __atomic__	c_want_leave	= 0;
+static __atomic__	c_running		= 0;
 static short					c_state			= THREAD_STATE_START;
 static ClutterColor				stage_color		= { 0x33, 0x09, 0x3b, 0xff };
 static ClutterActor				*stage			= NULL;
@@ -26,7 +26,7 @@ static ClutterActor				*stage			= NULL;
  */
 static int						ui_width		= 640;
 static int						ui_height		= 480;
-static volatile sig_atomic_t	clutter_running = 0;
+static __atomic__				clutter_running = 0;
 
 static gboolean renderer_key_handle(
 	ClutterActor	*actor,

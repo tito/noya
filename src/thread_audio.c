@@ -20,8 +20,8 @@
 LOG_DECLARE("AUDIO");
 MUTEX_DECLARE(m_audio);
 pthread_t	thread_audio;
-static volatile sig_atomic_t	c_want_leave	= 0;
-static volatile sig_atomic_t	c_running		= 0;
+static __atomic__	c_want_leave	= 0;
+static __atomic__	c_running		= 0;
 static short		c_state			= THREAD_STATE_START;
 static PaStream		*c_stream		= NULL;
 
@@ -224,9 +224,9 @@ static int audio_output_callback(
 static void *thread_audio_run(void *arg)
 {
 	audio_t	*entry;
-	unsigned int	ret,
-					cfg_samplerate,
-					cfg_frames;
+	uint	ret,
+			cfg_samplerate,
+			cfg_frames;
 
 	THREAD_ENTER;
 

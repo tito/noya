@@ -10,8 +10,8 @@ typedef struct
 #define TUIO_OBJECT_FL_TRYFREE	0x04	/*< used for blur event */
 	unsigned short	flags;
 
-	unsigned int	s_id;
-	unsigned int	f_id;				/*< ficudial identifiant */
+	uint			s_id;
+	uint			f_id;				/*< ficudial identifiant */
 	float			xpos;
 	float			ypos;
 	float			angle;
@@ -29,10 +29,10 @@ typedef struct
 #define TUIO_CURSOR_FL_TRYFREE	0x04	/*< used for blur event */
 	unsigned short	flags;
 
-	unsigned int	s_id;				/*< id of cursor */
+	uint			s_id;				/*< id of cursor */
 	float			xpos;				/*< X position of cursor */
 	float			ypos;				/*< Y position of cursor */
-	unsigned int	mov;				/*< counter of movement */
+	uint			mov;				/*< counter of movement */
 } tuio_cursor_t;
 
 int thread_input_start(void);

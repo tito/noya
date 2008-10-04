@@ -11,11 +11,11 @@ typedef struct manager_actor_s
 {
 	/* idx of object (in tuio env)
 	 */
-	unsigned int		id;
+	uint		id;
 
 	/* fiducial id
 	 */
-	unsigned int		fid;
+	uint		fid;
 
 	/* base actor from scene
 	 */
@@ -38,7 +38,7 @@ typedef struct
  */
 typedef struct manager_cursor_s
 {
-	unsigned int	id;
+	uint	id;
 	ClutterActor	*actor;
 	char			label[10];
 	LIST_ENTRY(manager_cursor_s) next;
