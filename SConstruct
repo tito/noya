@@ -42,7 +42,7 @@ for mod in mod_files:
 	env.SharedLibrary(target=out, source = mod, SHLIBPREFIX='')
 
 # Links
-penv = env.Copy()
+penv = env.Clone()
 for lib_file in lib_files:
 	penv.ParseConfig('pkg-config %s --libs' % lib_file)
 
