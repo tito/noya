@@ -9,7 +9,7 @@ LIBDC=libdc1394-2.0.2.tar.bz2
 
 function usage()
 {
-	echo "Usage: launch.sh <simulator|reactivision>"
+	echo "Usage: launch.sh <simulator|reactivision|ladspa>"
 	exit
 }
 
@@ -54,11 +54,25 @@ function simulator()
 	popd >/dev/null
 }
 
+function ladspa()
+{
+	echo 'In;Out;UID;Name;Description;'
+	for foo in /usr/lib/ladspa/*.so; do
+		echo -n `analyseplugin $foo | grep input | grep audio | wc -l`
+		echo -n ";"
+		echo -n `analyseplugin $foo | grep output | grep audio | wc -l`
+		echo -n ";"
+		echo `analyseplugin -l $foo|sed -r 's/^([[:alnum:]|_]+)[[:space:]]+([[:xdigit:]]*)[[:space:]]+(.*)/\2;\1;\3;/g'`;
+	done
+}
+
 case "$1" in
 	"simulator")
 		simulator;;
 	"reactivision")
 		reactivision;;
+	"ladspa")
+		ladspa;;
 	*)
 		usage;;
 esac
