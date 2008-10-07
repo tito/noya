@@ -6,7 +6,7 @@
 
 void noya_dump_str(FILE *fp, char *prefix, char *key, char *value);
 void noya_dump_int(FILE *fp, char *prefix, char *key, int value);
-void noya_dump_actor(FILE *fp, void *userdata, void *prefix, char *key, char *value);
+void noya_dump_actor(FILE *fp, void *userdata, char *prefix, char *key, char *value);
 void noya_dump(char *filename, scene_t *scene);
 
 #endif

@@ -19,7 +19,7 @@ void noya_dump_int(FILE *fp, char *prefix, char *key, int value)
 	fprintf(fp, "%s.%s = %d\n", prefix, key, value);
 }
 
-void noya_dump_actor(FILE *fp, void *userdata, void *prefix, char *key, char *value)
+void noya_dump_actor(FILE *fp, void *userdata, char *prefix, char *key, char *value)
 {
 	char				buffer[12];
 	scene_actor_base_t	*actor;
