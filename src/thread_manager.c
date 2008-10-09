@@ -23,6 +23,7 @@ MUTEX_DECLARE(m_manager);
 pthread_t	thread_manager;
 static __atomic__	c_want_leave	= 0;
 static __atomic__	c_running		= 0;
+static __atomic__	c_scene_changed	= 0;
 static short		c_state			= THREAD_STATE_START;
 scene_t				*c_scene		= NULL;
 manager_actor_list_t	manager_actors_list;
@@ -37,6 +38,19 @@ long				t_bpm			= 0;
 ClutterColor obj_background	= { 0xff, 0xff, 0xff, 0x99 };
 ClutterColor obj_border		= { 0xff, 0xff, 0xff, 0xff };
 
+manager_actor_list_t *noya_manager_get_actors(void)
+{
+	return &manager_actors_list;
+}
+
+manager_actor_t *noya_manager_actor_get_by_fid(uint fid)
+{
+	manager_actor_t	*it;
+	for ( it = manager_actors_list.lh_first; it != NULL; it = it->next.le_next )
+		if ( it->tuio->f_id == fid )
+			return it;
+	return NULL;
+}
 
 static void manager_event_object_new(unsigned short type, void *userdata, void *data)
 {
@@ -77,7 +91,7 @@ static void manager_event_object_new(unsigned short type, void *userdata, void *
 	bzero(el, sizeof(struct manager_actor_s));
 
 	el->id				= o->s_id;
-	el->fid				= o->f_id;
+	el->tuio			= o;
 	el->scene_actor		= actor;
 
 	clutter_threads_enter();
@@ -124,6 +138,8 @@ static void manager_event_object_new(unsigned short type, void *userdata, void *
 	clutter_container_add_actor(CLUTTER_CONTAINER(stage), el->clutter_actor);
 
 	clutter_threads_leave();
+
+	c_scene_changed = 1;
 }
 
 static void manager_event_object_del(unsigned short type, void *userdata, void *data)
@@ -158,6 +174,8 @@ static void manager_event_object_del(unsigned short type, void *userdata, void *
 	/* free entry
 	 */
 	free(it);
+
+	c_scene_changed = 1;
 }
 
 static void manager_event_object_set(unsigned short type, void *userdata, void *data)
@@ -210,6 +228,8 @@ static void manager_event_object_set(unsigned short type, void *userdata, void *
 	(*it->scene_actor->mod->object_update)(it->scene_actor->data_mod);
 
 	clutter_threads_leave();
+
+	c_scene_changed = 1;
 }
 
 static void manager_event_cursor_new(unsigned short type, void *userdata, void *data)
@@ -297,10 +317,56 @@ static void manager_event_cursor_set(unsigned short type, void *userdata, void *
 	clutter_threads_leave();
 }
 
+static void manager_event_bpm(unsigned short type, void *userdata, void *data)
+{
+	audio_t			*entry;
+
+	for ( entry = audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
+	{
+		if ( !(entry->flags & AUDIO_FL_USED) )
+			continue;
+		if ( !(entry->flags & AUDIO_FL_LOADED) )
+			continue;
+		if ( entry->flags & AUDIO_FL_FAILED )
+			continue;
+
+		if ( entry->flags & AUDIO_FL_WANTPLAY )
+		{
+			/* play audio
+			*/
+			noya_audio_play(entry);
+
+			/* increment bpm idx
+			*/
+			entry->bpmduration = entry->duration / t_beatinterval;
+			entry->bpmidx++;
+
+			/* enough data for play ?
+			*/
+			if ( entry->bpmidx <= entry->bpmduration )
+				continue;
+
+			/* back to start of sample
+			*/
+			noya_audio_seek(entry, 0);
+
+			/* if it's not a loop, stop it.
+			*/
+			if ( !(entry->flags & AUDIO_FL_ISLOOP) )
+				noya_audio_stop(entry);
+		}
+
+		if ( entry->flags & AUDIO_FL_WANTSTOP )
+		{
+			noya_audio_stop(entry);
+			noya_audio_seek(entry, 0);
+		}
+	}
+}
+
 static void *thread_manager_run(void *arg)
 {
 	manager_actor_t	*it = NULL;
-	audio_t			*entry;
 
 	THREAD_ENTER;
 
@@ -340,6 +406,8 @@ static void *thread_manager_run(void *arg)
 				noya_event_observe(EV_CURSOR_SET, manager_event_cursor_set, NULL);
 				noya_event_observe(EV_CURSOR_DEL, manager_event_cursor_del, NULL);
 
+				noya_event_observe(EV_BPM, manager_event_bpm, NULL);
+
 				break;
 
 			case THREAD_STATE_RESTART:
@@ -374,6 +442,14 @@ static void *thread_manager_run(void *arg)
 					break;
 				}
 
+				/* scene changed, send event
+				*/
+				if ( c_scene_changed )
+				{
+					noya_event_send(EV_SCENE_UPDATE, NULL);
+					c_scene_changed = 0;
+				}
+
 				/* let's do the beat !
 				 */
 				gettimeofday(&st_beat, NULL);
@@ -392,48 +468,6 @@ static void *thread_manager_run(void *arg)
 					/* send bpm event
 					 */
 					noya_event_send(EV_BPM, &t_bpm);
-
-					for ( entry = audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
-					{
-						if ( !(entry->flags & AUDIO_FL_USED) )
-							continue;
-						if ( !(entry->flags & AUDIO_FL_LOADED) )
-							continue;
-						if ( entry->flags & AUDIO_FL_FAILED )
-							continue;
-
-						if ( entry->flags & AUDIO_FL_WANTPLAY )
-						{
-							/* play audio
-							 */
-							noya_audio_play(entry);
-
-							/* increment bpm idx
-							 */
-							entry->bpmduration = entry->duration / t_beatinterval;
-							entry->bpmidx++;
-
-							/* enough data for play ?
-							 */
-							if ( entry->bpmidx <= entry->bpmduration )
-								continue;
-
-							/* back to start of sample
-							 */
-							noya_audio_seek(entry, 0);
-
-							/* if it's not a loop, stop it.
-							 */
-							if ( !(entry->flags & AUDIO_FL_ISLOOP) )
-								noya_audio_stop(entry);
-						}
-
-						if ( entry->flags & AUDIO_FL_WANTSTOP )
-						{
-							noya_audio_stop(entry);
-							noya_audio_seek(entry, 0);
-						}
-					}
 				}
 
 

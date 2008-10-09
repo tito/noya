@@ -25,6 +25,7 @@ typedef struct
 #define EV_OBJECT_DEL		0x06
 #define EV_OBJECT_SET		0x07
 #define EV_BPM				0x08
+#define EV_SCENE_UPDATE		0x09
 
 void noya_event_init(void);
 void noya_event_free(void);

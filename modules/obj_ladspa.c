@@ -2,12 +2,14 @@
 #include <string.h>
 #include <assert.h>
 #include <dlfcn.h>
+#include <math.h>
 
 #include "../src/noya.h"
 #include "../src/audio.h"
 #include "../src/module.h"
 #include "../src/config.h"
 #include "../src/utils.h"
+#include "../src/event.h"
 #include "../src/thread_manager.h"
 
 #include <ladspa.h>
@@ -52,7 +54,34 @@ typedef struct
 
 obj_t def_obj = {0};
 
-static void _load_ladspa(obj_t *obj)
+static inline float __dist(float xa, float ya, float xb, float yb)
+{
+#define pow2(a) ((a)*(a))
+	return sqrtf(pow2(xb-xa) + pow2(yb-ya));
+}
+
+static void __scene_update(unsigned short type, void *userdata, void *data)
+{
+	obj_t	*obj = (obj_t *)userdata;
+	manager_actor_list_t *list;
+	manager_actor_t		*it;
+
+	assert( obj != NULL );
+
+	list = noya_manager_get_actors();
+	if ( list == NULL )
+		return;
+
+	for ( it = list->lh_first; it != NULL; it = it->next.le_next )
+	{
+		if ( it == obj->actor )
+			continue;
+	}
+
+	return;
+}
+
+static void __load_ladspa(obj_t *obj)
 {
 	obj->pl_ladspa_fn = (LADSPA_Descriptor_Function)dlsym(obj->pl_handle, "ladspa_descriptor");
 	if ( obj->pl_ladspa_fn == NULL )
@@ -254,7 +283,7 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 			return;
 		}
 
-		_load_ladspa(obj);
+		__load_ladspa(obj);
 	}
 	else
 		l_printf("Invalid configuration %s", key);
@@ -305,7 +334,7 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 
 	/* create text
 	 */
-	snprintf(number, sizeof(number), "%d", actor->fid);
+	snprintf(number, sizeof(number), "%d", actor->tuio->f_id);
 	ac = clutter_label_new_with_text("Lucida 12", number);
 	clutter_actor_set_position(ac, actor->scene_actor->width / 2 -6, actor->scene_actor->height / 2 -10);
 
@@ -323,10 +352,17 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 	if ( obj->right )
 		(*obj->right->widget_prepare)(obj->data_right, actor);
 
+	/* attach to scene update event
+	 */
+	noya_event_observe(EV_SCENE_UPDATE, __scene_update, obj);
 }
 
 void lib_object_unprepare(obj_t *obj)
 {
+	/* un-attach to scene update event
+	 */
+	noya_event_remove(EV_SCENE_UPDATE, obj);
+
 	/* never remove object from clutter
 	 * parent remove all of this tree
 	 */

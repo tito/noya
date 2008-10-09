@@ -1,6 +1,7 @@
 #ifndef __AUDIO_H
 #define __AUDIO_H
 
+#include <unistd.h>
 #include <sys/queue.h>
 #include <signal.h>
 

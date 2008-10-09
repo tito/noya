@@ -312,7 +312,7 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 
 	/* create text
 	 */
-	snprintf(number, sizeof(number), "%d", actor->fid);
+	snprintf(number, sizeof(number), "%d", actor->tuio->f_id);
 	ac = clutter_label_new_with_text("Lucida 12", number);
 	clutter_actor_set_position(ac, actor->scene_actor->width / 2 -6, actor->scene_actor->height / 2 -10);
 

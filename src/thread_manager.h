@@ -4,6 +4,7 @@
 #include <clutter/clutter.h>
 #include "scene.h"
 #include "module.h"
+#include "thread_input.h"
 
 /* list of object in scene
  */
@@ -15,7 +16,7 @@ typedef struct manager_actor_s
 
 	/* fiducial id
 	 */
-	uint		fid;
+	tuio_object_t		*tuio;
 
 	/* base actor from scene
 	 */
@@ -48,6 +49,9 @@ typedef struct
 {
 	manager_cursor_t *lh_first;
 } manager_cursor_list_t;
+
+manager_actor_list_t *noya_manager_get_actors(void);
+manager_actor_t *noya_manager_actor_get_by_fid(uint fid);
 
 /* thread management
  */
