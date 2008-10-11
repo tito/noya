@@ -30,7 +30,7 @@ void trim(char *s)
 	}
 }
 
-void noya_color_write(char *buffer, int len, color_t *color)
+void na_color_write(char *buffer, int len, na_color_t *color)
 {
 	char *scolor = (char *)color;
 	snprintf(buffer, sizeof(buffer),
@@ -42,7 +42,7 @@ void noya_color_write(char *buffer, int len, color_t *color)
 	);
 }
 
-int noya_color_read(color_t *color, char *in)
+int na_color_read(na_color_t *color, char *in)
 {
 	char	buf[2] = {0};
 	char	*dst = (char *)color;

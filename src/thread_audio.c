@@ -20,8 +20,8 @@
 LOG_DECLARE("AUDIO");
 MUTEX_DECLARE(m_audio);
 pthread_t	thread_audio;
-static __atomic__	c_want_leave	= 0;
-static __atomic__	c_running		= 0;
+static na_atomic_t	c_want_leave	= 0;
+static na_atomic_t	c_running		= 0;
 static short		c_state			= THREAD_STATE_START;
 static PaStream		*c_stream		= NULL;
 
@@ -32,22 +32,22 @@ static void thread_audio_preload(void)
 {
 	SNDFILE			*sfp = NULL;
 	SF_INFO			sinfo;
-	audio_t	*entry;
+	na_audio_t	*entry;
 
-	for ( entry = audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
+	for ( entry = na_audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
 	{
-		if ( !(entry->flags & AUDIO_FL_USED) )
+		if ( !(entry->flags & NA_AUDIO_FL_USED) )
 			continue;
-		if ( entry->flags & AUDIO_FL_LOADED )
+		if ( entry->flags & NA_AUDIO_FL_LOADED )
 			continue;
-		if ( entry->flags & AUDIO_FL_FAILED )
+		if ( entry->flags & NA_AUDIO_FL_FAILED )
 			continue;
 
 		l_printf("Load %s", entry->filename);
 
 		sfp = sf_open(entry->filename, SFM_READ, &sinfo);
 		if ( sfp == NULL )
-			goto noya_audio_preload_clean;
+			goto na_audio_preload_clean;
 
 		l_printf("Got %s (samplerate=%d, channels=%d, frames=%d)",
 			entry->filename, sinfo.samplerate,
@@ -57,7 +57,7 @@ static void thread_audio_preload(void)
 		if ( sinfo.channels <= 0 || sinfo.channels > 2 )
 		{
 			l_errorf("Only mono or stereo sample are accepted !");
-			goto noya_audio_preload_clean;
+			goto na_audio_preload_clean;
 		}
 		entry->channels = sinfo.channels;
 
@@ -68,23 +68,23 @@ static void thread_audio_preload(void)
 
 		entry->data = (float *)malloc(entry->totalframes * sizeof(float) * MAX_CHANNELS);
 		if ( entry->data == NULL )
-			goto noya_audio_preload_clean;
+			goto na_audio_preload_clean;
 
 		entry->datalen = sf_readf_float(sfp, (float *)entry->data, entry->totalframes);
 
 		sf_close(sfp), sfp = NULL;
 
-		entry->flags |= AUDIO_FL_LOADED;
+		entry->flags |= NA_AUDIO_FL_LOADED;
 
 		continue;
 
-noya_audio_preload_clean:;
+na_audio_preload_clean:;
 		l_printf("Failed to load %s", entry->filename);
 		if ( sfp != NULL )
 			sf_close(sfp), sfp = NULL;
 		if ( entry->data != NULL )
 			free(entry->data), entry->data = NULL;
-		entry->flags |= AUDIO_FL_FAILED;
+		entry->flags |= NA_AUDIO_FL_FAILED;
 		continue;
 	}
 }
@@ -96,9 +96,9 @@ static int audio_output_callback(
 	PaStreamCallbackFlags statusFlags,
 	void *userData)
 {
-	static audio_t	*entries[MAX_SOUNDS];
+	static na_audio_t	*entries[MAX_SOUNDS];
 	int						entries_count = -1;
-	audio_t					*entry;
+	na_audio_t					*entry;
 	float					*out = (float *)outputBuffer,
 							*out_s;
 	unsigned long			i, j;
@@ -111,13 +111,13 @@ static int audio_output_callback(
 
 	/* check which sound are played
 	 */
-	for ( entry = audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
+	for ( entry = na_audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
 	{
-		if ( !(entry->flags & AUDIO_FL_USED) )
+		if ( !(entry->flags & NA_AUDIO_FL_USED) )
 			continue;
-		if ( !(entry->flags & AUDIO_FL_LOADED) )
+		if ( !(entry->flags & NA_AUDIO_FL_LOADED) )
 			continue;
-		if ( !(entry->flags & AUDIO_FL_PLAY) )
+		if ( !(entry->flags & NA_AUDIO_FL_PLAY) )
 			continue;
 
 		/* if we don't have enought data for this frame, don't play sound.
@@ -223,7 +223,7 @@ static int audio_output_callback(
 
 static void *thread_audio_run(void *arg)
 {
-	audio_t	*entry;
+	na_audio_t	*entry;
 	uint	ret,
 			cfg_samplerate,
 			cfg_frames;
@@ -251,8 +251,8 @@ static void *thread_audio_run(void *arg)
 
 				/* get some configs
 				 */
-				cfg_samplerate = config_get_int(CONFIG_DEFAULT, "noya.audio.samplerate");
-				cfg_frames = config_get_int(CONFIG_DEFAULT, "noya.audio.frames");
+				cfg_samplerate = na_config_get_int(NA_CONFIG_DEFAULT, "noya.audio.samplerate");
+				cfg_frames = na_config_get_int(NA_CONFIG_DEFAULT, "noya.audio.frames");
 
 				/* open stream
 				 */
@@ -305,9 +305,9 @@ static void *thread_audio_run(void *arg)
 
 				/* freeing all audio
 				 */
-				while ( !LIST_EMPTY(&audio_entries) )
+				while ( !LIST_EMPTY(&na_audio_entries) )
 				{
-					entry = LIST_FIRST(&audio_entries);
+					entry = LIST_FIRST(&na_audio_entries);
 					LIST_REMOVE(entry, next);
 					if ( entry->filename != NULL )
 						free(entry->filename);
@@ -348,16 +348,16 @@ int thread_audio_start(void)
 {
 	int ret;
 
-	LIST_INIT(&audio_entries);
+	LIST_INIT(&na_audio_entries);
 
 	ret = pthread_create(&thread_audio, NULL, thread_audio_run, NULL);
 	if ( ret )
 	{
 		l_errorf("unable to create AUDIO thread");
-		return NOYA_ERR;
+		return NA_ERR;
 	}
 
-	return NOYA_OK;
+	return NA_OK;
 }
 
 int thread_audio_stop(void)
@@ -365,5 +365,5 @@ int thread_audio_stop(void)
 	c_want_leave = 1;
 	while ( c_running )
 		usleep(1000);
-	return NOYA_OK;
+	return NA_OK;
 }

@@ -11,16 +11,16 @@
 
 LOG_DECLARE("MODULE");
 
-static module_head_t module_list;
+static na_module_head_t na_module_list;
 
-static int module_filter(const struct dirent *dirent)
+static int na_module_filter(const struct dirent *dirent)
 {
 	unsigned int len;
 	len = strlen (dirent->d_name);
 	return (len > 3 && strcmp (".so", dirent->d_name + len - 3) == 0) ? 1 : 0;
 }
 
-void noya_modules_init()
+void na_modules_init()
 {
 	char			dl_name[1024];
 	int				scandir_entries,
@@ -29,20 +29,20 @@ void noya_modules_init()
 					*name;
 	struct dirent	**scandir_list;
 	void			*dl_handle = NULL;
-	module_t		*module = NULL;
+	na_module_t		*module = NULL;
 
-	LIST_INIT(&module_list);
+	LIST_INIT(&na_module_list);
 
 	l_printf("Load modules...");
 
-	path = config_get(CONFIG_DEFAULT, "noya.path.modules");
+	path = na_config_get(NA_CONFIG_DEFAULT, "noya.path.modules");
 	if ( path == NULL )
 	{
 		l_errorf("no noya.path.modules config set !");
 		return;
 	}
 
-	scandir_entries = scandir(path,  &scandir_list, module_filter, alphasort);
+	scandir_entries = scandir(path,  &scandir_list, na_module_filter, alphasort);
 	if ( scandir_entries <= 0 )
 		return;
 
@@ -57,18 +57,18 @@ void noya_modules_init()
 		if ( dl_handle == NULL )
 		{
 			l_errorf("unable to load %s: %s", name, dlerror());
-			goto module_init_failed;
+			goto na_module_init_failed;
 		}
 
-		module = malloc(sizeof(module_t));
+		module = malloc(sizeof(na_module_t));
 		if ( module == NULL )
 		{
 			free(module);
 			l_errorf("no enough memory to create module %s", name);
-			goto module_init_failed;
+			goto na_module_init_failed;
 		}
 
-		bzero(module, sizeof(module_t));
+		bzero(module, sizeof(na_module_t));
 
 		module->dl_handle = dl_handle;
 		module->init = dlsym(dl_handle, "lib_init");
@@ -77,7 +77,7 @@ void noya_modules_init()
 		if ( module->init == NULL || module->exit == NULL )
 		{
 			l_errorf("Missing lib_[init|exit]() functions in %s", name);
-			goto module_init_failed;
+			goto na_module_init_failed;
 		}
 
 		/* init module
@@ -88,10 +88,10 @@ void noya_modules_init()
 		module->def = dlsym(dl_handle, "lib_"#def);	\
 		if ( module->def == NULL ) { \
 			l_printf("Unable to load %s, symbol %s is missing", module->name, #def); \
-			goto module_init_failed; \
+			goto na_module_init_failed; \
 		}
 
-		if ( module->type & MODULE_TYPE_OBJECT )
+		if ( module->type & NA_MOD_OBJECT )
 		{
 			MODULE_LOAD_DEF(object_new);
 			MODULE_LOAD_DEF(object_free);
@@ -103,7 +103,7 @@ void noya_modules_init()
 			MODULE_LOAD_DEF(object_get_control);
 		}
 
-		if ( module->type & MODULE_TYPE_WIDGET )
+		if ( module->type & NA_MOD_WIDGET )
 		{
 			MODULE_LOAD_DEF(widget_new);
 			MODULE_LOAD_DEF(widget_free);
@@ -115,11 +115,11 @@ void noya_modules_init()
 			MODULE_LOAD_DEF(widget_set_data);
 		}
 
-		LIST_INSERT_HEAD(&module_list, module, next);
+		LIST_INSERT_HEAD(&na_module_list, module, next);
 
 		dl_handle = NULL;
 
-module_init_failed:;
+na_module_init_failed:;
 		if ( dl_handle != NULL )
 			dlclose(dl_handle);
 		dl_handle = NULL;
@@ -134,7 +134,7 @@ module_init_failed:;
 	}
 }
 
-static void module_free(module_t *module)
+static void na_module_free(na_module_t *module)
 {
 	assert( module != NULL );
 	assert( module->exit != NULL );
@@ -148,25 +148,25 @@ static void module_free(module_t *module)
 	free(module);
 }
 
-void noya_modules_free()
+void na_modules_free()
 {
-	module_t *module;
+	na_module_t *module;
 
-	while ( !LIST_EMPTY(&module_list) )
+	while ( !LIST_EMPTY(&na_module_list) )
 	{
-		module = LIST_FIRST(&module_list);
+		module = LIST_FIRST(&na_module_list);
 		LIST_REMOVE(module, next);
-		module_free(module);
+		na_module_free(module);
 	}
 }
 
-module_t *noya_module_get(char *name, int type)
+na_module_t *na_module_get(char *name, int type)
 {
-	module_t *module;
+	na_module_t *module;
 
 	assert( name != NULL );
 
-	for ( module = module_list.lh_first; module != NULL; module = module->next.le_next )
+	for ( module = na_module_list.lh_first; module != NULL; module = module->next.le_next )
 	{
 		if ( !(module->type & type) )
 			continue;

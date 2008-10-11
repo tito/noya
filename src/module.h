@@ -1,12 +1,12 @@
 #ifndef __MODULE_H
 #define __MODULE_H
 
-#define MODULE_TYPE_OBJECT		0x01
-#define MODULE_TYPE_WIDGET		0x02
+#define NA_MOD_OBJECT			0x01
+#define NA_MOD_WIDGET			0x02
 
 typedef void (*_fn_control)(void*,float);
 
-typedef struct module_s
+typedef struct na_module_s
 {
 	char	*name;
 	int		type;
@@ -119,16 +119,16 @@ typedef struct module_s
 	 */
 	void (*ctl_update)(void *, float);
 
-	LIST_ENTRY(module_s) next;
-} module_t;
+	LIST_ENTRY(na_module_s) next;
+} na_module_t;
 
 typedef struct
 {
-	module_t *lh_first;
-} module_head_t;
+	na_module_t *lh_first;
+} na_module_head_t;
 
-void		noya_modules_init();
-void		noya_modules_free();
-module_t	*noya_module_get(char *name, int type);
+void		na_modules_init();
+void		na_modules_free();
+na_module_t	*na_module_get(char *name, int type);
 
 #endif

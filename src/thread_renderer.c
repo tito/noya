@@ -16,8 +16,8 @@ pthread_t	thread_renderer;
 
 /* static
  */
-static __atomic__	c_want_leave	= 0;
-static __atomic__	c_running		= 0;
+static na_atomic_t	c_want_leave	= 0;
+static na_atomic_t	c_running		= 0;
 static short					c_state			= THREAD_STATE_START;
 static ClutterColor				stage_color		= { 0x33, 0x09, 0x3b, 0xff };
 static ClutterActor				*stage			= NULL;
@@ -26,7 +26,7 @@ static ClutterActor				*stage			= NULL;
  */
 static int						ui_width		= 640;
 static int						ui_height		= 480;
-static __atomic__				clutter_running = 0;
+static na_atomic_t				clutter_running = 0;
 
 static gboolean renderer_key_handle(
 	ClutterActor	*actor,
@@ -67,8 +67,8 @@ static void *thread_renderer_run(void *arg)
 
 				/* read config
 				 */
-				ui_width	= config_get_int(CONFIG_DEFAULT, "noya.ui.width");
-				ui_height	= config_get_int(CONFIG_DEFAULT, "noya.ui.height");
+				ui_width	= na_config_get_int(NA_CONFIG_DEFAULT, "noya.ui.width");
+				ui_height	= na_config_get_int(NA_CONFIG_DEFAULT, "noya.ui.height");
 
 				/* init clutter
 				 */
@@ -79,7 +79,7 @@ static void *thread_renderer_run(void *arg)
 				stage = clutter_stage_get_default();
 				clutter_actor_set_size(stage, ui_width, ui_height);
 				clutter_stage_set_color(CLUTTER_STAGE(stage), &stage_color);
-				clutter_stage_set_title(CLUTTER_STAGE(stage), NOYA_TITLE);
+				clutter_stage_set_title(CLUTTER_STAGE(stage), NA_TITLE);
 
 				/* prepare signals
 				 */
@@ -155,10 +155,10 @@ int thread_renderer_start(void)
 	if ( ret )
 	{
 		l_errorf("unable to create RENDERER thread");
-		return NOYA_ERR;
+		return NA_ERR;
 	}
 
-	return NOYA_OK;
+	return NA_OK;
 }
 
 int thread_renderer_stop(void)
@@ -174,5 +174,5 @@ int thread_renderer_stop(void)
 	while ( c_running )
 		usleep(1000);
 
-	return NOYA_OK;
+	return NA_OK;
 }

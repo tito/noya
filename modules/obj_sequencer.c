@@ -20,12 +20,12 @@ typedef struct
 	unsigned int	bpm;			/*< bpm to play */
 	unsigned int	bpmidx;			/*< current index for this entry */
 	char			*filename;		/*< audio filename */
-	audio_t			*audio;			/*< audio entry (for audio manager) */
+	na_audio_t		*audio;			/*< audio entry (for audio manager) */
 } obj_entry_t;
 
 typedef struct
 {
-	scene_t			*scene;
+	na_scene_t		*scene;
 	manager_actor_t	*actor;
 
 	/* rendering issues
@@ -62,7 +62,7 @@ static void *object_resolve_value(obj_t *obj, char *value)
 void lib_init(char **name, int *type)
 {
 	*name = strdup(MODULE_NAME);
-	*type = MODULE_TYPE_OBJECT;
+	*type = NA_MOD_OBJECT;
 }
 
 void lib_exit(void)
@@ -75,7 +75,7 @@ void lib_object_global_config(char *key, char *value)
 	return;
 }
 
-obj_t *lib_object_new(scene_t *scene)
+obj_t *lib_object_new(na_scene_t *scene)
 {
 	obj_t *obj;
 
@@ -166,15 +166,15 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 		if ( strcmp(k_prop, "file") == 0 )
 		{
 			snprintf(filename, sizeof(filename), "%s/%s/%s",
-				config_get(CONFIG_DEFAULT, "noya.path.scenes"),
+				na_config_get(NA_CONFIG_DEFAULT, "noya.path.scenes"),
 				obj->scene->name,
 				value
 			);
 			entry = &obj->entries[idx];
 
 			entry->filename = strdup(value);
-			entry->audio = noya_audio_load(filename);
-			noya_audio_set_volume(entry->audio, obj->volume);
+			entry->audio = na_audio_load(filename);
+			na_audio_set_volume(entry->audio, obj->volume);
 		}
 		else if ( strcmp(k_prop, "bpm") == 0 )
 		{
@@ -206,8 +206,8 @@ static void lib_object_ev_bpm(unsigned short type, obj_t *obj, void *data)
 	 */
 	if ( entry != oldentry )
 	{
-		noya_audio_stop(oldentry->audio);
-		noya_audio_seek(oldentry->audio, 0);
+		na_audio_stop(oldentry->audio);
+		na_audio_seek(oldentry->audio, 0);
 
 		/* copy volume to new entry
 		 * FIXME find a way to copy all params
@@ -217,8 +217,8 @@ static void lib_object_ev_bpm(unsigned short type, obj_t *obj, void *data)
 
 	/* start current entry
 	 */
-	if ( !noya_audio_is_play(entry->audio) )
-		noya_audio_wantplay(entry->audio);
+	if ( !na_audio_is_play(entry->audio) )
+		na_audio_wantplay(entry->audio);
 
 	l_printf("SET entry=%s, flags=%d", entry->filename, entry->audio->flags);
 
@@ -254,7 +254,7 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 
 		/* force loop
 		 */
-		noya_audio_set_loop(entry->audio, 1);
+		na_audio_set_loop(entry->audio, 1);
 	}
 
 	if ( obj->bpmmax != bpmmax )
@@ -291,7 +291,7 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 
 	/* observe bpm
 	 */
-	noya_event_observe(EV_BPM, (event_callback)lib_object_ev_bpm, obj);
+	na_event_observe(NA_EV_BPM, (na_event_callback)lib_object_ev_bpm, obj);
 
 	/* RENDERING !
 	 */
@@ -333,15 +333,15 @@ void lib_object_unprepare(obj_t *obj)
 
 	/* remove bpm event
 	 */
-	noya_event_remove(EV_BPM, (event_callback)lib_object_ev_bpm);
+	na_event_remove(NA_EV_BPM, (na_event_callback)lib_object_ev_bpm);
 
 	/* stop audio
 	 */
 	if ( obj->bpmentries != NULL )
 	{
 		entry = obj->bpmentries[obj->bpmidx];
-		noya_audio_stop(entry->audio);
-		noya_audio_seek(entry->audio, 0);
+		na_audio_stop(entry->audio);
+		na_audio_seek(entry->audio, 0);
 	}
 
 	obj->bpmidx		= 0;
@@ -363,7 +363,7 @@ void ctl_volume(obj_t *obj, float value)
 		return;
 
 	entry = obj->bpmentries[obj->bpmidx];
-	noya_audio_set_volume(entry->audio, value);
+	na_audio_set_volume(entry->audio, value);
 }
 
 _fn_control lib_object_get_control(char *name)

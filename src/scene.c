@@ -7,49 +7,52 @@
 #include <assert.h>
 
 #include "noya.h"
+#include "config.h"
 #include "scene.h"
 
 LOG_DECLARE("SCENE");
 
 #define MAX_PATH	128
 
-scene_t *noya_scene_load(char *name)
+na_scene_t *na_scene_load(char *name)
 {
-	scene_t			*scene;
-	scene_actor_base_t *actor;
-	config_t		config = {NULL}, config_init = {NULL};
-	config_entry_t	*it;
-	module_t		*module;
-	char			*k_idx, *k_prop,
-					filename[MAX_PATH];
-	int				act_idx;
+	na_scene_t				*scene;
+	na_scene_actor_base_t	*actor;
+	na_config_t				config = {NULL},
+							config_init = {NULL};
+	na_config_entry_t		*it;
+	na_module_t				*module;
+	char					*k_idx,
+							*k_prop,
+							filename[MAX_PATH];
+	int						act_idx;
 
 	assert( name != NULL );
 
 	l_printf("Load scene %s", name);
 	snprintf(filename, MAX_PATH, "%s/%s/%s.ini",
-		config_get(CONFIG_DEFAULT, "noya.path.scenes"),
+		na_config_get(NA_CONFIG_DEFAULT, "noya.path.scenes"),
 		name, name
 	);
 
-	scene = malloc(sizeof(scene_t));
+	scene = malloc(sizeof(na_scene_t));
 	if ( scene == NULL )
-		goto noya_scene_load_error;
-	bzero(scene, sizeof(scene_t));
+		goto na_scene_load_error;
+	bzero(scene, sizeof(na_scene_t));
 
 	scene->name = strdup(name);
 	scene->bpm = 125;
 	scene->precision = 4;
 
-	if ( config_load(&config_init, filename) )
-		goto noya_scene_load_error;
+	if ( na_config_load(&config_init, filename) )
+		goto na_scene_load_error;
 
 	/* invert list !
 	 * FIXME use circle list ?
 	 */
 	for ( it = config_init.lh_first; it != NULL; it = it->next.le_next )
-		config_set(&config, it->k, it->v);
-	config_free(&config_init);
+		na_config_set(&config, it->k, it->v);
+	na_config_free(&config_init);
 
 	for ( it = config.lh_first; it != NULL; it = it->next.le_next )
 	{
@@ -65,7 +68,7 @@ scene_t *noya_scene_load(char *name)
 		 */
 		if ( strcmp(it->k, "scene.background.color") == 0 )
 		{
-			noya_color_read(&scene->background_color, it->v);
+			na_color_read(&scene->background_color, it->v);
 			continue;
 		}
 
@@ -97,7 +100,7 @@ scene_t *noya_scene_load(char *name)
 			if ( k_prop == NULL )
 				continue;
 
-			module = noya_module_get(k_idx, MODULE_TYPE_OBJECT);
+			module = na_module_get(k_idx, NA_MOD_OBJECT);
 			if ( module == NULL )
 				continue;
 
@@ -122,45 +125,45 @@ scene_t *noya_scene_load(char *name)
 
 			if ( strcmp(k_idx, "default") == 0 )
 			{
-				noya_scene_prop_set(scene, &scene->def_actor, k_prop, it->v);
+				na_scene_prop_set(scene, &scene->def_actor, k_prop, it->v);
 			}
 			else
 			{
 				act_idx = strtol(k_idx, NULL, 10);
-				actor = noya_scene_actor_get(scene, act_idx);
+				actor = na_scene_actor_get(scene, act_idx);
 				if ( actor == NULL )
-					actor = noya_scene_actor_new(scene, act_idx);
+					actor = na_scene_actor_new(scene, act_idx);
 				if ( actor == NULL )
 				{
 					l_errorf("unable to create actor %d", act_idx);
 					continue;
 				}
-				noya_scene_prop_set(scene, actor, k_prop, it->v);
+				na_scene_prop_set(scene, actor, k_prop, it->v);
 			}
 			continue;
 		}
 	}
 
-	config_free(&config);
+	na_config_free(&config);
 
 	return scene;
 
-noya_scene_load_error:;
+na_scene_load_error:;
 	l_errorf("unable to load scene");
 
 	if ( scene )
-		noya_scene_free(scene);
+		na_scene_free(scene);
 
-	config_free(&config);
+	na_config_free(&config);
 
 	return NULL;
 }
 
-scene_actor_base_t *noya_scene_actor_new(scene_t *scene, int idx)
+na_scene_actor_base_t *na_scene_actor_new(na_scene_t *scene, int idx)
 {
-	scene_actor_base_t *actor;
+	na_scene_actor_base_t *actor;
 
-	actor = malloc(sizeof(scene_actor_base_t));
+	actor = malloc(sizeof(na_scene_actor_base_t));
 	if ( actor == NULL )
 		return NULL;
 
@@ -173,9 +176,9 @@ scene_actor_base_t *noya_scene_actor_new(scene_t *scene, int idx)
 	LIST_INSERT_HEAD(&scene->actors, actor, next);
 }
 
-scene_actor_base_t *noya_scene_actor_get(scene_t *scene, int idx)
+na_scene_actor_base_t *na_scene_actor_get(na_scene_t *scene, int idx)
 {
-	scene_actor_base_t *actor;
+	na_scene_actor_base_t *actor;
 
 	for ( actor = scene->actors.lh_first; actor != NULL; actor = actor->next.le_next)
 	{
@@ -185,7 +188,7 @@ scene_actor_base_t *noya_scene_actor_get(scene_t *scene, int idx)
 	return NULL;
 }
 
-void noya_scene_prop_set(scene_t *scene, scene_actor_base_t *actor, char *key, char *value)
+void na_scene_prop_set(na_scene_t *scene, na_scene_actor_base_t *actor, char *key, char *value)
 {
 	void	*data;
 	char	filename[MAX_PATH];
@@ -196,7 +199,7 @@ void noya_scene_prop_set(scene_t *scene, scene_actor_base_t *actor, char *key, c
 	 */
 	if ( strcmp(key, "object") == 0 )
 	{
-		actor->mod = noya_module_get(value, MODULE_TYPE_OBJECT);
+		actor->mod = na_module_get(value, NA_MOD_OBJECT);
 		if ( actor->mod == NULL )
 		{
 			l_errorf("no object %s found !", value);
@@ -211,9 +214,9 @@ void noya_scene_prop_set(scene_t *scene, scene_actor_base_t *actor, char *key, c
 		}
 	}
 	else if ( strcmp(key, "background.color") == 0 )
-		noya_color_read(&actor->background_color, value);
+		na_color_read(&actor->background_color, value);
 	else if ( strcmp(key, "border.color") == 0 )
-		noya_color_read(&actor->border_color, value);
+		na_color_read(&actor->border_color, value);
 	else if ( strcmp(key, "border.width") == 0 )
 		actor->border_width = strtol(value, NULL, 10);
 	else if ( strcmp(key, "width") == 0 )
@@ -234,14 +237,14 @@ void noya_scene_prop_set(scene_t *scene, scene_actor_base_t *actor, char *key, c
 		l_errorf("unknown key property %s", key);
 	return;
 
-noya_scene_prop_set_invalid_size:;
+na_scene_prop_set_invalid_size:;
 	l_errorf("invalid size for %s", key);
 	return;
 }
 
-void noya_scene_free(scene_t *scene)
+void na_scene_free(na_scene_t *scene)
 {
-	scene_actor_base_t *actor;
+	na_scene_actor_base_t *actor;
 
 	assert( scene != NULL );
 
@@ -249,13 +252,13 @@ void noya_scene_free(scene_t *scene)
 	{
 		actor = LIST_FIRST(&scene->actors);
 		LIST_REMOVE(actor, next);
-		noya_scene_actor_free(actor);
+		na_scene_actor_free(actor);
 	}
 
 	free(scene);
 }
 
-void noya_scene_actor_free(scene_actor_base_t *actor)
+void na_scene_actor_free(na_scene_actor_base_t *actor)
 {
 	if ( actor->mod )
 	{

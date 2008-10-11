@@ -11,17 +11,17 @@
 
 LOG_DECLARE("AUDIO");
 
-audio_list_t audio_entries;
+na_audio_list_t na_audio_entries;
 
-audio_t *noya_audio_get_by_filename(char *filename)
+na_audio_t *na_audio_get_by_filename(char *filename)
 {
-	audio_t	*it;
+	na_audio_t	*it;
 
 	assert( filename != NULL );
 
-	for ( it = audio_entries.lh_first; it != NULL; it = it->next.le_next )
+	for ( it = na_audio_entries.lh_first; it != NULL; it = it->next.le_next )
 	{
-		if ( !(it->flags & AUDIO_FL_USED) )
+		if ( !(it->flags & NA_AUDIO_FL_USED) )
 			continue;
 		if ( strcmp(filename, it->filename) == 0 )
 			return it;
@@ -30,29 +30,29 @@ audio_t *noya_audio_get_by_filename(char *filename)
 	return NULL;
 }
 
-audio_t *noya_audio_load(char *filename)
+na_audio_t *na_audio_load(char *filename)
 {
-	audio_t	*entry;
+	na_audio_t	*entry;
 
 	assert( filename != NULL );
 
-	entry = malloc(sizeof(audio_t));
+	entry = malloc(sizeof(na_audio_t));
 	if ( entry == NULL )
-		goto noya_audio_load_clean;
-	bzero(entry, sizeof(audio_t));
+		goto na_audio_load_clean;
+	bzero(entry, sizeof(na_audio_t));
 
 	entry->filename	= strdup(filename);
 	if ( entry->filename == NULL )
-		goto noya_audio_load_clean;
+		goto na_audio_load_clean;
 
-	entry->flags	= AUDIO_FL_USED;
+	entry->flags	= NA_AUDIO_FL_USED;
 	entry->bpmidx	= -1;
 
-	LIST_INSERT_HEAD(&audio_entries, entry, next);
+	LIST_INSERT_HEAD(&na_audio_entries, entry, next);
 
 	return entry;
 
-noya_audio_load_clean:;
+na_audio_load_clean:;
 	if ( entry != NULL )
 	{
 		if ( entry->filename != NULL )
@@ -64,54 +64,54 @@ noya_audio_load_clean:;
 	return NULL;
 }
 
-void noya_audio_play(audio_t *entry)
+void na_audio_play(na_audio_t *entry)
 {
 	assert( entry != NULL );
-	entry->flags |= AUDIO_FL_PLAY;
+	entry->flags |= NA_AUDIO_FL_PLAY;
 }
 
-void noya_audio_wantplay(audio_t *entry)
+void na_audio_wantplay(na_audio_t *entry)
 {
 	assert( entry != NULL );
-	entry->flags |= AUDIO_FL_WANTPLAY;
+	entry->flags |= NA_AUDIO_FL_WANTPLAY;
 }
 
-void noya_audio_wantstop(audio_t *entry)
+void na_audio_wantstop(na_audio_t *entry)
 {
 	assert( entry != NULL );
-	entry->flags |= AUDIO_FL_WANTSTOP;
+	entry->flags |= NA_AUDIO_FL_WANTSTOP;
 }
 
-void noya_audio_stop(audio_t *entry)
+void na_audio_stop(na_audio_t *entry)
 {
 	assert( entry != NULL );
-	entry->flags &= ~AUDIO_FL_PLAY;
-	entry->flags &= ~AUDIO_FL_WANTPLAY;
-	entry->flags &= ~AUDIO_FL_WANTSTOP;
+	entry->flags &= ~NA_AUDIO_FL_PLAY;
+	entry->flags &= ~NA_AUDIO_FL_WANTPLAY;
+	entry->flags &= ~NA_AUDIO_FL_WANTSTOP;
 }
 
-void noya_audio_set_loop(audio_t *entry, short isloop)
+void na_audio_set_loop(na_audio_t *entry, short isloop)
 {
 	assert( entry != NULL );
 	if ( isloop )
-		entry->flags |= AUDIO_FL_ISLOOP;
+		entry->flags |= NA_AUDIO_FL_ISLOOP;
 	else
-		entry->flags &= ~AUDIO_FL_ISLOOP;
+		entry->flags &= ~NA_AUDIO_FL_ISLOOP;
 }
 
-void noya_audio_set_volume(audio_t *entry, float volume)
+void na_audio_set_volume(na_audio_t *entry, float volume)
 {
 	assert( entry != NULL );
 	entry->volume = volume;
 }
 
-short noya_audio_is_play(audio_t *entry)
+short na_audio_is_play(na_audio_t *entry)
 {
 	assert( entry != NULL );
-	return entry->flags & AUDIO_FL_PLAY;
+	return entry->flags & NA_AUDIO_FL_PLAY;
 }
 
-void noya_audio_seek(audio_t *entry, long position)
+void na_audio_seek(na_audio_t *entry, long position)
 {
 	if ( position == 0 )
 	{

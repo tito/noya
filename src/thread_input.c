@@ -17,8 +17,8 @@
 LOG_DECLARE("INPUT");
 MUTEX_DECLARE(m_input);
 pthread_t	thread_input;
-static __atomic__	c_want_leave	= 0;
-static __atomic__	c_running		= 0;
+static na_atomic_t	c_want_leave	= 0;
+static na_atomic_t	c_running		= 0;
 static short		c_state			= THREAD_STATE_START;
 
 #define		BUFFER_LEN			512
@@ -97,9 +97,9 @@ static int _lo_tuio_object_handler(const char *path, const char *types, lo_arg *
 		/* send new object event
 		 */
 		if ( (o->flags & TUIO_OBJECT_FL_INIT) == TUIO_OBJECT_FL_INIT )
-			noya_event_send(EV_OBJECT_SET, o);
+			na_event_send(NA_EV_OBJECT_SET, o);
 		else
-			noya_event_send(EV_OBJECT_NEW, o);
+			na_event_send(NA_EV_OBJECT_NEW, o);
 
 		o->flags	|= TUIO_OBJECT_FL_INIT;
 		MUTEX_UNLOCK(m_input);
@@ -160,7 +160,7 @@ static int _lo_tuio_object_handler(const char *path, const char *types, lo_arg *
 				/* send end object event
 				 */
 				o->flags = 0;
-				noya_event_send(EV_OBJECT_DEL, (void *)o);
+				na_event_send(NA_EV_OBJECT_DEL, (void *)o);
 			}
 		}
 
@@ -227,9 +227,9 @@ static int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg *
 		/* send cursor new event
 		 */
 		if ( c->flags == TUIO_CURSOR_FL_INIT )
-			noya_event_send(EV_CURSOR_NEW, (void *)c);
+			na_event_send(NA_EV_CURSOR_NEW, (void *)c);
 		else
-			noya_event_send(EV_CURSOR_SET, (void *)c);
+			na_event_send(NA_EV_CURSOR_SET, (void *)c);
 		MUTEX_UNLOCK(m_input);
 	}
 
@@ -279,10 +279,10 @@ static int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg *
 
 			/* send click cursor event ! */
 			if ( c->mov < TUIO_CURSOR_THRESHOLD_CLICK )
-				noya_event_send(EV_CURSOR_CLICK, (void *)c);
+				na_event_send(NA_EV_CURSOR_CLICK, (void *)c);
 
 			/* send blur cursor event ! */
-			noya_event_send(EV_CURSOR_DEL, (void *)c);
+			na_event_send(NA_EV_CURSOR_DEL, (void *)c);
 
 			/* delete cursor
 			 */
@@ -316,7 +316,7 @@ static void *thread_input_run(void *arg)
 
 				/* get osc port
 				 */
-				port = config_get(CONFIG_DEFAULT, "noya.net.port");
+				port = na_config_get(NA_CONFIG_DEFAULT, "noya.net.port");
 
 				/* instanciate service
 				 */
@@ -396,10 +396,10 @@ int thread_input_start(void)
 	if ( ret )
 	{
 		l_errorf("unable to create INPUT thread");
-		return NOYA_ERR;
+		return NA_ERR;
 	}
 
-	return NOYA_OK;
+	return NA_OK;
 }
 
 int thread_input_stop(void)
@@ -407,5 +407,5 @@ int thread_input_stop(void)
 	c_want_leave = 1;
 	while ( c_running )
 		usleep(1000);
-	return NOYA_OK;
+	return NA_OK;
 }

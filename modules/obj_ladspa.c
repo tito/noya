@@ -21,7 +21,7 @@ LOG_DECLARE("MOD_OBJ_LADSPA");
 
 typedef struct
 {
-	scene_t			*scene;
+	na_scene_t			*scene;
 	manager_actor_t	*actor;
 
 	/* ladspa issue
@@ -38,16 +38,16 @@ typedef struct
 
 	/* widget that we accept
 	 */
-	module_t		*top;
+	na_module_t		*top;
 	void			*data_top;
 	char			*value_top;
-	module_t		*bottom;
+	na_module_t		*bottom;
 	void			*data_bottom;
 	char			*value_bottom;
-	module_t		*left;
+	na_module_t		*left;
 	void			*data_left;
 	char			*value_left;
-	module_t		*right;
+	na_module_t		*right;
 	void			*data_right;
 	char			*value_right;
 } obj_t;
@@ -68,7 +68,7 @@ static void __scene_update(unsigned short type, void *userdata, void *data)
 
 	assert( obj != NULL );
 
-	list = noya_manager_get_actors();
+	list = na_manager_get_actors();
 	if ( list == NULL )
 		return;
 
@@ -126,7 +126,7 @@ static void *object_resolve_value(obj_t *obj, char *value)
 void lib_init(char **name, int *type)
 {
 	*name = strdup(MODULE_NAME);
-	*type = MODULE_TYPE_OBJECT;
+	*type = NA_MOD_OBJECT;
 }
 
 void lib_exit(void)
@@ -136,7 +136,7 @@ void lib_exit(void)
 void lib_object_global_config(char *key, char *value)
 {
 	char		*k_pos, *k_prop;
-	module_t	**module;
+	na_module_t	**module;
 	void		**data;
 	char		**w_value;
 
@@ -180,7 +180,7 @@ void lib_object_global_config(char *key, char *value)
 	 */
 	if ( strcmp(k_prop, "widget") == 0 )
 	{
-		*module = noya_module_get(value, MODULE_TYPE_WIDGET);
+		*module = na_module_get(value, NA_MOD_WIDGET);
 
 		if ( *module == NULL )
 		{
@@ -206,7 +206,7 @@ void lib_object_global_config(char *key, char *value)
 	}
 }
 
-obj_t *lib_object_new(scene_t *scene)
+obj_t *lib_object_new(na_scene_t *scene)
 {
 	obj_t *obj;
 
@@ -257,7 +257,7 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 
 	if ( strcmp(key, "plugin") == 0 )
 	{
-		ladspa_path = config_get(CONFIG_DEFAULT, "noya.path.ladspa");
+		ladspa_path = na_config_get(NA_CONFIG_DEFAULT, "noya.path.ladspa");
 		if ( ladspa_path == NULL )
 		{
 			l_errorf("No noya.path.ladspa config found, fallback to default path");
@@ -271,7 +271,7 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 
 		snprintf(filename, sizeof(filename), "%s/%s.so", ladspa_path, value);
 
-		obj->pl_name	= strdup(value);
+		obj->pl_name		= strdup(value);
 		obj->pl_filename	= strdup(filename);
 
 		/* open plugin
@@ -354,14 +354,14 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 
 	/* attach to scene update event
 	 */
-	noya_event_observe(EV_SCENE_UPDATE, __scene_update, obj);
+	na_event_observe(NA_EV_SCENE_UPDATE, __scene_update, obj);
 }
 
 void lib_object_unprepare(obj_t *obj)
 {
 	/* un-attach to scene update event
 	 */
-	noya_event_remove(EV_SCENE_UPDATE, obj);
+	na_event_remove(NA_EV_SCENE_UPDATE, obj);
 
 	/* never remove object from clutter
 	 * parent remove all of this tree

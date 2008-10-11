@@ -20,30 +20,30 @@
 
 LOG_DECLARE("MANAGER");
 MUTEX_DECLARE(m_manager);
-pthread_t	thread_manager;
-static __atomic__	c_want_leave	= 0;
-static __atomic__	c_running		= 0;
-static __atomic__	c_scene_changed	= 0;
-static short		c_state			= THREAD_STATE_START;
-scene_t				*c_scene		= NULL;
+pthread_t				thread_manager;
+static na_atomic_t		c_want_leave	= 0;
+static na_atomic_t		c_running		= 0;
+static na_atomic_t		c_scene_changed	= 0;
+static short			c_state			= THREAD_STATE_START;
+na_scene_t				*c_scene		= NULL;
 manager_actor_list_t	manager_actors_list;
 manager_cursor_list_t	manager_cursors_list;
-struct timeval		st_beat;
-double				t_lastbeat		= 0,
-					t_beat			= 0,
-					t_beatinterval	= 0,
-					t_current		= 0;
-long				t_bpm			= 0;
+struct timeval			st_beat;
+double					t_lastbeat		= 0,
+						t_beat			= 0,
+						t_beatinterval	= 0,
+						t_current		= 0;
+long					t_bpm			= 0;
 
 ClutterColor obj_background	= { 0xff, 0xff, 0xff, 0x99 };
 ClutterColor obj_border		= { 0xff, 0xff, 0xff, 0xff };
 
-manager_actor_list_t *noya_manager_get_actors(void)
+manager_actor_list_t *na_manager_get_actors(void)
 {
 	return &manager_actors_list;
 }
 
-manager_actor_t *noya_manager_actor_get_by_fid(uint fid)
+manager_actor_t *na_manager_actor_get_by_fid(uint fid)
 {
 	manager_actor_t	*it;
 	for ( it = manager_actors_list.lh_first; it != NULL; it = it->next.le_next )
@@ -54,18 +54,21 @@ manager_actor_t *noya_manager_actor_get_by_fid(uint fid)
 
 static void manager_event_object_new(unsigned short type, void *userdata, void *data)
 {
-	ClutterColor	col_background, col_border;
-	scene_actor_base_t	*actor;
-	tuio_object_t	*o = (tuio_object_t *)data;
-	manager_actor_t	*el;
-	ClutterActor	*stage, *ac;
-	uint	wx, wy;
+	ClutterColor			col_background,
+							col_border;
+	na_scene_actor_base_t	*actor;
+	tuio_object_t			*o = (tuio_object_t *)data;
+	manager_actor_t			*el;
+	ClutterActor			*stage,
+							*ac;
+	uint					wx,
+							wy;
 
 	assert( data != NULL );
 
 	/* search actor from scene
 	 */
-	actor = noya_scene_actor_get(c_scene, o->f_id);
+	actor = na_scene_actor_get(c_scene, o->f_id);
 	if ( actor == NULL )
 	{
 		l_errorf("actor %d not found in scene", o->f_id);
@@ -145,7 +148,7 @@ static void manager_event_object_new(unsigned short type, void *userdata, void *
 static void manager_event_object_del(unsigned short type, void *userdata, void *data)
 {
 	tuio_object_t	*o = (tuio_object_t *)data;
-	audio_t	*audio;
+	na_audio_t	*audio;
 	manager_actor_t	*it = NULL;
 
 	for ( it = manager_actors_list.lh_first; it != NULL; it = it->next.le_next )
@@ -180,7 +183,7 @@ static void manager_event_object_del(unsigned short type, void *userdata, void *
 
 static void manager_event_object_set(unsigned short type, void *userdata, void *data)
 {
-	audio_t	*audio;
+	na_audio_t	*audio;
 	tuio_object_t	*o = (tuio_object_t *)data;
 	manager_actor_t	*it;
 	ClutterActor *stage;
@@ -319,22 +322,22 @@ static void manager_event_cursor_set(unsigned short type, void *userdata, void *
 
 static void manager_event_bpm(unsigned short type, void *userdata, void *data)
 {
-	audio_t			*entry;
+	na_audio_t			*entry;
 
-	for ( entry = audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
+	for ( entry = na_audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
 	{
-		if ( !(entry->flags & AUDIO_FL_USED) )
+		if ( !(entry->flags & NA_AUDIO_FL_USED) )
 			continue;
-		if ( !(entry->flags & AUDIO_FL_LOADED) )
+		if ( !(entry->flags & NA_AUDIO_FL_LOADED) )
 			continue;
-		if ( entry->flags & AUDIO_FL_FAILED )
+		if ( entry->flags & NA_AUDIO_FL_FAILED )
 			continue;
 
-		if ( entry->flags & AUDIO_FL_WANTPLAY )
+		if ( entry->flags & NA_AUDIO_FL_WANTPLAY )
 		{
 			/* play audio
 			*/
-			noya_audio_play(entry);
+			na_audio_play(entry);
 
 			/* increment bpm idx
 			*/
@@ -348,18 +351,18 @@ static void manager_event_bpm(unsigned short type, void *userdata, void *data)
 
 			/* back to start of sample
 			*/
-			noya_audio_seek(entry, 0);
+			na_audio_seek(entry, 0);
 
 			/* if it's not a loop, stop it.
 			*/
-			if ( !(entry->flags & AUDIO_FL_ISLOOP) )
-				noya_audio_stop(entry);
+			if ( !(entry->flags & NA_AUDIO_FL_ISLOOP) )
+				na_audio_stop(entry);
 		}
 
-		if ( entry->flags & AUDIO_FL_WANTSTOP )
+		if ( entry->flags & NA_AUDIO_FL_WANTSTOP )
 		{
-			noya_audio_stop(entry);
-			noya_audio_seek(entry, 0);
+			na_audio_stop(entry);
+			na_audio_seek(entry, 0);
 		}
 	}
 }
@@ -378,7 +381,7 @@ static void *thread_manager_run(void *arg)
 				l_printf(" - MANAGER start...");
 				c_state = THREAD_STATE_RUNNING;
 
-				c_scene = noya_scene_load(g_options.scene_fn);
+				c_scene = na_scene_load(g_options.scene_fn);
 				if ( c_scene == NULL )
 				{
 					l_errorf("unable to load scene");
@@ -390,7 +393,7 @@ static void *thread_manager_run(void *arg)
 				if ( g_options.dump )
 				{
 					l_printf("Dump scene !");
-					noya_dump(NULL, c_scene);
+					na_dump(NULL, c_scene);
 					g_want_leave = 1;
 					c_want_leave = 1;
 					break;
@@ -398,15 +401,15 @@ static void *thread_manager_run(void *arg)
 
 				LIST_INIT(&manager_actors_list);
 
-				noya_event_observe(EV_OBJECT_NEW, manager_event_object_new, NULL);
-				noya_event_observe(EV_OBJECT_SET, manager_event_object_set, NULL);
-				noya_event_observe(EV_OBJECT_DEL, manager_event_object_del, NULL);
+				na_event_observe(NA_EV_OBJECT_NEW, manager_event_object_new, NULL);
+				na_event_observe(NA_EV_OBJECT_SET, manager_event_object_set, NULL);
+				na_event_observe(NA_EV_OBJECT_DEL, manager_event_object_del, NULL);
 
-				noya_event_observe(EV_CURSOR_NEW, manager_event_cursor_new, NULL);
-				noya_event_observe(EV_CURSOR_SET, manager_event_cursor_set, NULL);
-				noya_event_observe(EV_CURSOR_DEL, manager_event_cursor_del, NULL);
+				na_event_observe(NA_EV_CURSOR_NEW, manager_event_cursor_new, NULL);
+				na_event_observe(NA_EV_CURSOR_SET, manager_event_cursor_set, NULL);
+				na_event_observe(NA_EV_CURSOR_DEL, manager_event_cursor_del, NULL);
 
-				noya_event_observe(EV_BPM, manager_event_bpm, NULL);
+				na_event_observe(NA_EV_BPM, manager_event_bpm, NULL);
 
 				break;
 
@@ -425,7 +428,7 @@ static void *thread_manager_run(void *arg)
 
 				if ( c_scene != NULL )
 				{
-					noya_scene_free(c_scene);
+					na_scene_free(c_scene);
 					c_scene = NULL;
 				}
 
@@ -446,7 +449,7 @@ static void *thread_manager_run(void *arg)
 				*/
 				if ( c_scene_changed )
 				{
-					noya_event_send(EV_SCENE_UPDATE, NULL);
+					na_event_send(NA_EV_SCENE_UPDATE, NULL);
 					c_scene_changed = 0;
 				}
 
@@ -467,7 +470,7 @@ static void *thread_manager_run(void *arg)
 
 					/* send bpm event
 					 */
-					noya_event_send(EV_BPM, &t_bpm);
+					na_event_send(NA_EV_BPM, &t_bpm);
 				}
 
 
@@ -489,10 +492,10 @@ int thread_manager_start(void)
 	if ( ret )
 	{
 		l_errorf("unable to create MANAGER thread");
-		return NOYA_ERR;
+		return NA_ERR;
 	}
 
-	return NOYA_OK;
+	return NA_OK;
 }
 
 int thread_manager_stop(void)
@@ -500,5 +503,5 @@ int thread_manager_stop(void)
 	c_want_leave = 1;
 	while ( c_running )
 		usleep(1000);
-	return NOYA_OK;
+	return NA_OK;
 }

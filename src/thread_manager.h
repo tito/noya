@@ -20,7 +20,7 @@ typedef struct manager_actor_s
 
 	/* base actor from scene
 	 */
-	scene_actor_base_t	*scene_actor;
+	na_scene_actor_base_t	*scene_actor;
 
 	/* rendering actor
 	 */
@@ -50,8 +50,8 @@ typedef struct
 	manager_cursor_t *lh_first;
 } manager_cursor_list_t;
 
-manager_actor_list_t *noya_manager_get_actors(void);
-manager_actor_t *noya_manager_actor_get_by_fid(uint fid);
+manager_actor_list_t *na_manager_get_actors(void);
+manager_actor_t *na_manager_actor_get_by_fid(uint fid);
 
 /* thread management
  */

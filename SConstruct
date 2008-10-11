@@ -34,6 +34,7 @@ for lib_file in lib_files:
 # Debug
 env.AppendUnique(CCFLAGS='-ggdb')
 env.AppendUnique(CCFLAGS='-O0')
+env.AppendUnique(CCFLAGS='-DNA_DEBUG')
 
 # Libs
 import os

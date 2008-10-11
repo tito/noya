@@ -16,9 +16,9 @@
 
 LOG_DECLARE("MAIN");
 MUTEX_DECLARE(g_thread_mutex);
-__atomic__				g_threads		= 0;
-__atomic__				g_want_leave	= 0;
-options_t				g_options		= {0};
+na_atomic_t				g_threads		= 0;
+na_atomic_t				g_want_leave	= 0;
+na_options_t			g_options		= {0};
 
 /* services declaration
  */
@@ -27,8 +27,8 @@ typedef struct
 	int (*fn_start)(void);
 	int (*fn_stop)(void);
 	int	is_started;
-} service_t;
-service_t services[] = {
+} na_service_t;
+na_service_t services[] = {
 	{	thread_audio_start,		thread_audio_stop,		0	},
 	{	thread_input_start,		thread_input_stop,		0	},
 	{	thread_renderer_start,	thread_renderer_stop,	0	},
@@ -67,7 +67,7 @@ void usage(void)
 
 /* read options from command line
  */
-void options_read(int argc, char **argv)
+void na_options_read(int argc, char **argv)
 {
 	int opt;
 
@@ -98,7 +98,7 @@ void options_read(int argc, char **argv)
 
 /* clean options
  */
-void options_free(void)
+void na_options_free(void)
 {
 	if ( g_options.scene_fn != NULL )
 		free(g_options.scene_fn);
@@ -108,13 +108,13 @@ void options_free(void)
  */
 int main(int argc, char **argv)
 {
-	service_t	*service;
+	na_service_t	*service;
 
-	printf("%s\n\n", NOYA_BANNER);
+	printf("%s\n\n", NA_BANNER);
 
 	/* read options
 	 */
-	options_read(argc, argv);
+	na_options_read(argc, argv);
 
 	/* prepare signals
 	 */
@@ -122,16 +122,16 @@ int main(int argc, char **argv)
 
 	/* read config
 	 */
-	if ( config_init(NOYA_CONFIG_FN) )
+	if ( na_config_init(NA_CONFIG_FN) )
 	{
-		l_errorf("config file %s : %s", NOYA_CONFIG_FN, strerror(errno));
+		l_errorf("config file %s : %s", NA_CONFIG_FN, strerror(errno));
 		return -1;
 	}
 
 	/* load modules
 	 */
-	noya_event_init();
-	noya_modules_init();
+	na_event_init();
+	na_modules_init();
 
 	/* start INPUT service
 	 */
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 	service = services;
 	while ( service->fn_start )
 	{
-		if ( service->fn_start() != NOYA_OK )
+		if ( service->fn_start() != NA_OK )
 			goto cleaning;
 		service->is_started = 1;
 		service++;
@@ -165,12 +165,12 @@ cleaning:;
 		usleep(100);
 
 	l_printf("Free modules...");
-	noya_modules_free();
+	na_modules_free();
 
 	l_printf("Free events...");
-	noya_event_free();
+	na_event_free();
 
-	options_free();
+	na_options_free();
 
 	l_printf("Done.");
 	return 0;

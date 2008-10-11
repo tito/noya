@@ -1,22 +1,24 @@
-#ifndef __AUDIO_H
-#define __AUDIO_H
+#ifndef __NA_AUDIO_H
+#define __NA_AUDIO_H
 
 #include <unistd.h>
 #include <sys/queue.h>
 #include <signal.h>
 
+#include "chunk.h"
+
 /* list of object to play
  */
-typedef struct audio_s
+typedef struct na_audio_s
 {
-#define AUDIO_FL_USED		0x01
-#define	AUDIO_FL_LOADED		0x02
-#define AUDIO_FL_FAILED		0x04
-#define	AUDIO_FL_WANTSTOP	0x08
-#define	AUDIO_FL_WANTPLAY	0x10
-#define AUDIO_FL_PLAY		0x20
-#define AUDIO_FL_ISLOOP		0x40
-	__atomic__		flags;
+#define NA_AUDIO_FL_USED		0x01
+#define	NA_AUDIO_FL_LOADED		0x02
+#define NA_AUDIO_FL_FAILED		0x04
+#define	NA_AUDIO_FL_WANTSTOP	0x08
+#define	NA_AUDIO_FL_WANTPLAY	0x10
+#define NA_AUDIO_FL_PLAY		0x20
+#define NA_AUDIO_FL_ISLOOP		0x40
+	na_atomic_t		flags;
 
 	char			*filename;
 
@@ -29,6 +31,10 @@ typedef struct audio_s
 	long			dataidx;
 	float			datalen;
 
+	/* entry chunk
+	 */
+	na_chunk_t		input;
+
 	/* control
 	 */
 	float			volume;				/*< RW : 0 - 1 (percent) */
@@ -37,27 +43,27 @@ typedef struct audio_s
 	uint			bpmduration;		/*< R  : 0 - n (bpm) */
 	int				bpmidx;				/*< RW : 0 - n (bpm from dataidx) */
 
-	LIST_ENTRY(audio_s) next;
-} audio_t;
+	LIST_ENTRY(na_audio_s) next;
+} na_audio_t;
 
 typedef struct
 {
-	audio_t *lh_first;
-} audio_list_t;
+	na_audio_t *lh_first;
+} na_audio_list_t;
 
 /* audio interface
  */
-audio_t *noya_audio_get_by_filename(char *filename);
-audio_t *noya_audio_load(char *filename);
-void noya_audio_set_loop(audio_t *entry, short isloop);
-void noya_audio_set_volume(audio_t *entry, float volume);
-void noya_audio_wantplay(audio_t *entry);
-void noya_audio_play(audio_t *entry);
-void noya_audio_wantstop(audio_t *entry);
-void noya_audio_stop(audio_t *entry);
-void noya_audio_seek(audio_t *entry, long position);
-short noya_audio_is_play(audio_t *entry);
+na_audio_t *na_audio_get_by_filename(char *filename);
+na_audio_t *na_audio_load(char *filename);
+void na_audio_set_loop(na_audio_t *entry, short isloop);
+void na_audio_set_volume(na_audio_t *entry, float volume);
+void na_audio_wantplay(na_audio_t *entry);
+void na_audio_play(na_audio_t *entry);
+void na_audio_wantstop(na_audio_t *entry);
+void na_audio_stop(na_audio_t *entry);
+void na_audio_seek(na_audio_t *entry, long position);
+short na_audio_is_play(na_audio_t *entry);
 
-extern audio_list_t audio_entries;
+extern na_audio_list_t na_audio_entries;
 
 #endif

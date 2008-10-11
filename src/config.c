@@ -11,20 +11,20 @@
 
 LOG_DECLARE("CONFIG");
 
-config_t	config_entries;
+na_config_t	na_config_entries;
 
-int config_init(char *filename)
+int na_config_init(char *filename)
 {
 	assert( filename != NULL );
 
 	/* init list
 	 */
-	LIST_INIT(&config_entries);
+	LIST_INIT(&na_config_entries);
 
-	return config_load(&config_entries, filename);
+	return na_config_load(&na_config_entries, filename);
 }
 
-int config_load(config_t *head, char *filename)
+int na_config_load(na_config_t *head, char *filename)
 {
 	char line[512];
 	char *key, *value;
@@ -68,21 +68,21 @@ int config_load(config_t *head, char *filename)
 		trim(value);
 
 		l_printf("Read <%s> = <%s>", key, value);
-		config_set(head, line, value);
+		na_config_set(head, line, value);
 	}
 
 	fclose(fd);
 	return 0;
 }
 
-void config_set(config_t *head, char *key, char *value)
+void na_config_set(na_config_t *head, char *key, char *value)
 {
-	config_entry_t *entry;
+	na_config_entry_t *entry;
 
 	assert( key != NULL );
 	assert( value != NULL );
 
-	entry = malloc(sizeof(config_entry_t));
+	entry = malloc(sizeof(na_config_entry_t));
 	if ( entry == NULL )
 		return;
 
@@ -92,9 +92,9 @@ void config_set(config_t *head, char *key, char *value)
 	LIST_INSERT_HEAD(head, entry, next);
 }
 
-char *config_get(config_t *head, char *key)
+char *na_config_get(na_config_t *head, char *key)
 {
-	config_entry_t *entry;
+	na_config_entry_t *entry;
 
 	assert( head != NULL );
 	assert( key != NULL );
@@ -106,22 +106,22 @@ char *config_get(config_t *head, char *key)
 	return NULL;
 }
 
-int config_get_int(config_t *head, char *key)
+int na_config_get_int(na_config_t *head, char *key)
 {
 	char *value;
 
 	assert( head != NULL );
 
-	value = config_get(head, key);
+	value = na_config_get(head, key);
 	if ( value == NULL )
 		return -1;
 
 	return strtol(value, NULL, 10);
 }
 
-void config_free(config_t *config)
+void na_config_free(na_config_t *config)
 {
-	config_entry_t *entry;
+	na_config_entry_t *entry;
 
 	assert( config != NULL );
 

@@ -7,8 +7,8 @@
 
 /* Types
  */
-#define NOYA_OK					0
-#define NOYA_ERR				1
+#define NA_OK					0
+#define NA_ERR					-1
 
 #define THREAD_STATE_START		0
 #define THREAD_STATE_RUNNING	1
@@ -28,7 +28,7 @@
 
 /* Log
  */
-#ifdef NOYA_DEBUG
+#ifdef NA_DEBUG
 #define LOG_DECLARE(a)			static char *log_module = a;
 #define l_printf(...) do {						\
 		THREAD_GLOBAL_LOCK;						\
@@ -49,7 +49,7 @@
 #define l_errorw(...)
 #endif
 
-typedef volatile sig_atomic_t  __atomic__;
+typedef volatile sig_atomic_t  na_atomic_t;
 
 /* Options
  */
@@ -57,13 +57,13 @@ typedef struct
 {
 	char			*scene_fn;
 	short			dump;
-} options_t;
-extern options_t g_options;
+} na_options_t;
+extern na_options_t g_options;
 
 /* Globals
  */
-extern __atomic__ g_threads;
-extern __atomic__ g_want_leave;
+extern na_atomic_t g_threads;
+extern na_atomic_t g_want_leave;
 MUTEX_IMPORT(g_thread_mutex);
 
 #endif

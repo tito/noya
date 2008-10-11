@@ -13,7 +13,7 @@ LOG_DECLARE("MOD_WIDGET_HBAR");
 
 typedef struct
 {
-	scene_t			*scene;
+	na_scene_t			*scene;
 	manager_actor_t	*actor;
 
 	ClutterActor	*group_hbar;
@@ -25,14 +25,14 @@ typedef struct
 void lib_init(char **name, int *type)
 {
 	*name = strdup(MODULE_NAME);
-	*type = MODULE_TYPE_WIDGET;
+	*type = NA_MOD_WIDGET;
 }
 
 void lib_exit(void)
 {
 }
 
-void *lib_widget_new(scene_t *scene)
+void *lib_widget_new(na_scene_t *scene)
 {
 	widget_t *widget;
 
@@ -53,7 +53,7 @@ void lib_widget_free(widget_t *widget)
 	free(widget);
 }
 
-void *lib_widget_clone(widget_t *widget, scene_t *scene)
+void *lib_widget_clone(widget_t *widget, na_scene_t *scene)
 {
 	widget_t *clone;
 

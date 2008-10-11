@@ -19,13 +19,13 @@ typedef struct
 	/* audio attached for sample
 	 */
 	char			*filename;		/*< audio filename */
-	audio_t			*audio;			/*< audio entry (for audio manager) */
+	na_audio_t		*audio;			/*< audio entry (for audio manager) */
 
 } obj_entry_t;
 
 typedef struct
 {
-	scene_t			*scene;
+	na_scene_t			*scene;
 	manager_actor_t	*actor;
 
 	/* entries
@@ -46,16 +46,16 @@ typedef struct
 
 	/* widget that we accept
 	 */
-	module_t		*top;
+	na_module_t		*top;
 	void			*data_top;
 	char			*value_top;
-	module_t		*bottom;
+	na_module_t		*bottom;
 	void			*data_bottom;
 	char			*value_bottom;
-	module_t		*left;
+	na_module_t		*left;
 	void			*data_left;
 	char			*value_left;
-	module_t		*right;
+	na_module_t		*right;
 	void			*data_right;
 	char			*value_right;
 } obj_t;
@@ -78,7 +78,7 @@ static void *object_resolve_value(obj_t *obj, char *value)
 void lib_init(char **name, int *type)
 {
 	*name = strdup(MODULE_NAME);
-	*type = MODULE_TYPE_OBJECT;
+	*type = NA_MOD_OBJECT;
 }
 
 void lib_exit(void)
@@ -88,7 +88,7 @@ void lib_exit(void)
 void lib_object_global_config(char *key, char *value)
 {
 	char		*k_pos, *k_prop;
-	module_t	**module;
+	na_module_t	**module;
 	void		**data;
 	char		**w_value;
 
@@ -132,7 +132,7 @@ void lib_object_global_config(char *key, char *value)
 	 */
 	if ( strcmp(k_prop, "widget") == 0 )
 	{
-		*module = noya_module_get(value, MODULE_TYPE_WIDGET);
+		*module = na_module_get(value, NA_MOD_WIDGET);
 
 		if ( *module == NULL )
 		{
@@ -158,7 +158,7 @@ void lib_object_global_config(char *key, char *value)
 	}
 }
 
-obj_t *lib_object_new(scene_t *scene)
+obj_t *lib_object_new(na_scene_t *scene)
 {
 	obj_t *obj;
 
@@ -276,15 +276,15 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 		if ( strcmp(k_prop, "file") == 0 )
 		{
 			snprintf(filename, sizeof(filename), "%s/%s/%s",
-				config_get(CONFIG_DEFAULT, "noya.path.scenes"),
+				na_config_get(NA_CONFIG_DEFAULT, "noya.path.scenes"),
 				obj->scene->name,
 				value
 			);
 			entry = &obj->entries[idx];
 
 			entry->filename = strdup(value);
-			entry->audio = noya_audio_load(filename);
-			noya_audio_set_volume(entry->audio, obj->cfg_volume);
+			entry->audio = na_audio_load(filename);
+			na_audio_set_volume(entry->audio, obj->cfg_volume);
 		}
 		else
 			l_printf("Error: invalid configuration %s", key);
@@ -318,8 +318,8 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 
 	/* do first thing : play audio !
 	 */
-	noya_audio_wantplay(obj->entries[obj->idx].audio);
-	noya_audio_set_loop(obj->entries[obj->idx].audio, actor->scene_actor->is_loop);
+	na_audio_wantplay(obj->entries[obj->idx].audio);
+	na_audio_set_loop(obj->entries[obj->idx].audio, actor->scene_actor->is_loop);
 
 	/* RENDERING !
 	 */
@@ -371,8 +371,8 @@ void lib_object_unprepare(obj_t *obj)
 
 	/* stop audio
 	 */
-	noya_audio_stop(obj->entries[obj->idx].audio);
-	noya_audio_seek(obj->entries[obj->idx].audio, 0);
+	na_audio_stop(obj->entries[obj->idx].audio);
+	na_audio_seek(obj->entries[obj->idx].audio, 0);
 
 	if ( obj->top )
 		(*obj->top->widget_unprepare)(obj->data_top);
@@ -401,7 +401,7 @@ void lib_object_update(obj_t *obj)
 void ctl_volume(obj_t *obj, float value)
 {
 	assert( obj != NULL );
-	noya_audio_set_volume(obj->entries[obj->idx].audio, value);
+	na_audio_set_volume(obj->entries[obj->idx].audio, value);
 }
 
 void ctl_sampleidx(obj_t *obj, float value)
@@ -431,10 +431,10 @@ void ctl_sampleidx(obj_t *obj, float value)
 
 	if ( last_idx != obj->idx )
 	{
-		noya_audio_wantstop(obj->entries[last_idx].audio);
-		noya_audio_wantplay(obj->entries[obj->idx].audio);
-		noya_audio_set_volume(obj->entries[obj->idx].audio, 0.7); //obj->cfg_volume);
-		noya_audio_set_loop(obj->entries[obj->idx].audio, 1);
+		na_audio_wantstop(obj->entries[last_idx].audio);
+		na_audio_wantplay(obj->entries[obj->idx].audio);
+		na_audio_set_volume(obj->entries[obj->idx].audio, 0.7); //obj->cfg_volume);
+		na_audio_set_loop(obj->entries[obj->idx].audio, 1);
 	}
 }
 
