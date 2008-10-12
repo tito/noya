@@ -108,6 +108,9 @@ static int audio_output_callback(
 	(void) inputBuffer;
 	(void) userData;
 
+	if ( c_want_leave )
+		return paComplete;
+
 
 	/* check which sound are played
 	 */
