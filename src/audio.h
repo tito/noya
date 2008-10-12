@@ -31,9 +31,14 @@ typedef struct na_audio_s
 	long			dataidx;
 	float			datalen;
 
-	/* entry chunk
+	/* input chunk
 	 */
-	na_chunk_t		input;
+	na_chunk_t		*input;
+
+	/* output port
+	 */
+	float			*out_L;
+	float			*out_R;
 
 	/* control
 	 */
@@ -42,6 +47,10 @@ typedef struct na_audio_s
 	float			duration;			/*< R  : 0 - n (seconds) */
 	uint			bpmduration;		/*< R  : 0 - n (bpm) */
 	int				bpmidx;				/*< RW : 0 - n (bpm from dataidx) */
+
+	/* reference counter
+	 */
+	int				_ref;
 
 	LIST_ENTRY(na_audio_s) next;
 } na_audio_t;
@@ -55,6 +64,7 @@ typedef struct
  */
 na_audio_t *na_audio_get_by_filename(char *filename);
 na_audio_t *na_audio_load(char *filename);
+void na_audio_free(na_audio_t *entry);
 void na_audio_set_loop(na_audio_t *entry, short isloop);
 void na_audio_set_volume(na_audio_t *entry, float volume);
 void na_audio_wantplay(na_audio_t *entry);

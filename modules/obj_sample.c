@@ -175,7 +175,7 @@ void lib_object_free(obj_t *obj)
 	if ( obj->filename != NULL )
 		free(obj->filename);
 	if ( obj->audio != NULL )
-		free(obj->audio);
+		na_audio_free(obj->audio);
 
 	if ( obj->top )
 		(*obj->top->widget_free)(obj->data_top);

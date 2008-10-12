@@ -11,6 +11,11 @@
 #define NA_BANNER				"Noya, ver " NA_VERSION " - by Mathieu Virbel <tito@bankiz.org>"
 #define	NA_TUIO_PORT			"3333"
 #define NA_CONFIG_FN			"config.ini"
+#define NA_OUTPUT_CHANNELS		2
+
+#if NA_OUTPUT_CHANNELS != 2
+#error "Noya support only output stereo !"
+#endif
 
 
 /* default configuration

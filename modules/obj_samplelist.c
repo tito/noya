@@ -197,7 +197,7 @@ void lib_object_free(obj_t *obj)
 		if ( obj->entries[i].filename != NULL )
 			free(obj->entries[i].filename);
 		if ( obj->entries[i].audio != NULL )
-			free(obj->entries[i].audio);
+			na_audio_free(obj->entries[i].audio);
 	}
 
 	if ( obj->top )

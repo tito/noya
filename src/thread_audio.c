@@ -90,18 +90,20 @@ na_audio_preload_clean:;
 }
 
 static int audio_output_callback(
-	const void *inputBuffer, void *outputBuffer,
+	const void *inputBuffer,
+	void *outputBuffer,
 	unsigned long framesPerBuffer,
 	const PaStreamCallbackTimeInfo* timeInfo,
 	PaStreamCallbackFlags statusFlags,
 	void *userData)
 {
 	static na_audio_t	*entries[MAX_SOUNDS];
-	int						entries_count = -1;
-	na_audio_t					*entry;
-	float					*out = (float *)outputBuffer,
-							*out_s;
-	unsigned long			i, j;
+	static int			entries_count;
+	na_audio_t			*entry;
+	float				*out = (float *)outputBuffer;
+	static float		*in_L,
+						*in_R;
+	unsigned long		i, j;
 
 	(void) timeInfo; /* Prevent unused variable warnings. */
 	(void) statusFlags;
@@ -111,6 +113,9 @@ static int audio_output_callback(
 	if ( c_want_leave )
 		return paComplete;
 
+	/* initialize values
+	 */
+	entries_count = -1;
 
 	/* check which sound are played
 	 */
@@ -137,86 +142,84 @@ static int audio_output_callback(
 		/* prepare entry for optimize
 		 */
 		entry->datacur = &entry->data[entry->dataidx];
-	}
 
-	/* no entries to play ?
-	 * generate empty sound
-	 */
-	if ( entries_count < 0 )
-	{
-		for ( i = 0; i < framesPerBuffer; i++ )
+		/* copy entry to his chunk
+		 */
+		assert( na_chunk_get_channels(entry->input) == 2 );
+		if ( entry->channels == 1 )
 		{
-			*out++ = 0;
-			*out++ = 0;
-		}
-		return paContinue;
-	}
+			in_L = na_chunk_get_channel(entry->input, 0);
+			in_R = na_chunk_get_channel(entry->input, 1);
 
-	/* got entries, play !
-	 */
-	out_s = out;
+			for ( i = 0; i < framesPerBuffer; i++ )
+			{
+				*in_L	= *(entry->datacur) * entry->volume;
+				in_L++;
+				*in_R	= *(entry->datacur) * entry->volume;
+				in_R++;
+				entry->datacur++;
+			}
+		}
+		else if ( entry->channels == 2 )
+		{
+			in_L = na_chunk_get_channel(entry->input, 0);
+			in_R = na_chunk_get_channel(entry->input, 1);
+
+			for ( i = 0; i < framesPerBuffer; i++ )
+			{
+				*in_L	= *(entry->datacur) * entry->volume;
+				entry->datacur++;
+				in_L++;
+				*in_R	= *(entry->datacur) * entry->volume;
+				entry->datacur++;
+				in_R++;
+			}
+		}
+
+		/* next idx
+		 */
+		entry->dataidx += framesPerBuffer * entry->channels;
+		if ( entry->totalframes > 0 )
+			entry->position = (entry->dataidx * 0.5) /  entry->totalframes;
+		else
+			entry->position = 0;
+	}
 
 	/* first, empty out
 	 */
-	bzero(out, sizeof(float) * framesPerBuffer * 2);
+	bzero(out, sizeof(float) * framesPerBuffer * NA_OUTPUT_CHANNELS);
+
+	/* no entries to play ?
+	 */
+	if ( entries_count < 0 )
+		return paContinue;
 
 	/* and play
 	 */
 	for ( j = 0; j <= entries_count; j++ )
 	{
 		entry = entries[j];
+		in_L = na_chunk_get_channel(entry->input, 0);
+		in_R = na_chunk_get_channel(entry->input, 1);
 
-		/* stereo audio ?
-		 */
-		if ( entry->channels == 2 )
+		for ( i = 0; i < framesPerBuffer; i++ )
 		{
-			for ( i = 0; i < framesPerBuffer; i++ )
-			{
-				/* left
-				 */
-				*out		+= *(entry->datacur) * entry->volume;
-				entry->datacur++;
+			/* left
+			 */
+			*out		+= *in_L;
+			in_L++;
+			out++;
 
-				/* right
-				 */
-				*(out+1)	+= *(entry->datacur) * entry->volume;
-				entry->datacur++;
-
-				out += 2;
-			}
-		}
-
-		/* mono audio ?
-		 */
-		else if ( entry->channels == 1 )
-		{
-			for ( i = 0; i < framesPerBuffer; i++ )
-			{
-				/* left & right
-				 */
-				*out		+= *(entry->datacur) * entry->volume;
-				*(out+1)	+= *(entry->datacur) * entry->volume;
-				entry->datacur++;
-
-				out += 2;
-			}
+			/* right
+			 */
+			*out		+= *in_R;
+			in_R++;
+			out++;
 		}
 
 		/* rewind for next entry
 		 */
-		out = out_s;
-	}
-
-	/* advance idx 
-	 */
-	for ( j = 0; j <= entries_count; j++ )
-	{
-		entry = entries[j];
-		entry->dataidx += framesPerBuffer * entry->channels;
-		if ( entry->totalframes > 0 )
-			entry->position = (entry->dataidx * 0.5) /  entry->totalframes;
-		else
-			entry->position = 0;
+		out = (float *)outputBuffer;
 	}
 
 	return paContinue;
@@ -254,15 +257,15 @@ static void *thread_audio_run(void *arg)
 
 				/* get some configs
 				 */
-				cfg_samplerate = na_config_get_int(NA_CONFIG_DEFAULT, "noya.audio.samplerate");
-				cfg_frames = na_config_get_int(NA_CONFIG_DEFAULT, "noya.audio.frames");
+				cfg_samplerate	= na_config_get_int(NA_CONFIG_DEFAULT, "noya.audio.samplerate");
+				cfg_frames		= na_config_get_int(NA_CONFIG_DEFAULT, "noya.audio.frames");
 
 				/* open stream
 				 */
 				ret = Pa_OpenDefaultStream(
 					&c_stream,		/* stream */
 					0,				/* input channels */
-					2,				/* output channels (stereo output) */
+					NA_OUTPUT_CHANNELS,	/* output channels */
 					paFloat32,		/* 32 bit floating point output */
 					cfg_samplerate,
 					cfg_frames,		/* frames per buffer, i.e. the number
@@ -312,11 +315,7 @@ static void *thread_audio_run(void *arg)
 				{
 					entry = LIST_FIRST(&na_audio_entries);
 					LIST_REMOVE(entry, next);
-					if ( entry->filename != NULL )
-						free(entry->filename);
-					if ( entry->data != NULL )
-						free(entry->data);
-					free(entry);
+					na_audio_free(entry);
 				}
 
 				if ( c_state == THREAD_STATE_RESTART )

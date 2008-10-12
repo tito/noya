@@ -92,7 +92,19 @@ obj_t *lib_object_new(na_scene_t *scene)
 
 void lib_object_free(obj_t *obj)
 {
+	int			idx;
+	obj_entry_t *entry;
+
 	assert( obj != NULL );
+
+	for ( idx = 0; idx < obj->entry_count; idx++ )
+	{
+		entry		= &obj->entries[idx];
+		if ( entry->filename )
+			free(entry->filename);
+		if ( entry->audio )
+			na_audio_free(entry->audio);
+	}
 
 	if ( obj->bpmentries )
 		free(obj->bpmentries);

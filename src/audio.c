@@ -13,6 +13,30 @@ LOG_DECLARE("AUDIO");
 
 na_audio_list_t na_audio_entries;
 
+static void na_audio_update_output(na_audio_t *audio)
+{
+	na_chunk_t	*chunk;
+
+	assert( audio != NULL );
+
+	/* TODO get last processed chunk !
+	 */
+	chunk = audio->input;
+
+	assert( na_chunk_get_channels(chunk) > 0 );
+
+	if ( na_chunk_get_channels(chunk) == 1 )
+	{
+		audio->out_L = na_chunk_get_channel(chunk, 0);
+		audio->out_R = na_chunk_get_channel(chunk, 0);
+	}
+	else
+	{
+		audio->out_L = na_chunk_get_channel(chunk, 0);
+		audio->out_R = na_chunk_get_channel(chunk, 1);
+	}
+}
+
 na_audio_t *na_audio_get_by_filename(char *filename)
 {
 	na_audio_t	*it;
@@ -32,6 +56,7 @@ na_audio_t *na_audio_get_by_filename(char *filename)
 
 na_audio_t *na_audio_load(char *filename)
 {
+	int			cfg_frames;
 	na_audio_t	*entry;
 
 	assert( filename != NULL );
@@ -48,25 +73,41 @@ na_audio_t *na_audio_load(char *filename)
 	entry->flags	= NA_AUDIO_FL_USED;
 	entry->bpmidx	= -1;
 
+	cfg_frames		= na_config_get_int(NA_CONFIG_DEFAULT, "noya.audio.frames");
+	entry->input	= na_chunk_new(NA_OUTPUT_CHANNELS, cfg_frames);
+	if ( entry->input == NULL )
+		goto na_audio_load_clean;
+
+	entry->_ref++;
 	LIST_INSERT_HEAD(&na_audio_entries, entry, next);
 
 	return entry;
 
 na_audio_load_clean:;
 	if ( entry != NULL )
-	{
-		if ( entry->filename != NULL )
-			free(entry->filename), entry->filename = NULL;
-		if ( entry->data != NULL )
-			free(entry->data), entry->data = NULL;
-		free(entry);
-	}
+		na_audio_free(entry);
 	return NULL;
+}
+
+void na_audio_free(na_audio_t *entry)
+{
+	entry->_ref--;
+	if ( entry->_ref )
+		return;
+
+	if ( entry->filename != NULL )
+		free(entry->filename);
+	if ( entry->data != NULL )
+		free(entry->data);
+	if ( entry->input != NULL )
+		na_chunk_free(entry->input);
+	free(entry);
 }
 
 void na_audio_play(na_audio_t *entry)
 {
 	assert( entry != NULL );
+	na_audio_update_output(entry);
 	entry->flags |= NA_AUDIO_FL_PLAY;
 }
 
