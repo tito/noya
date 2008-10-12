@@ -25,7 +25,7 @@ typedef struct
 	/* audio attached for sample
 	 */
 	char			*filename;		/*< audio filename */
-	na_audio_t			*audio;			/*< audio entry (for audio manager) */
+	na_audio_t		*audio;			/*< audio entry (for audio manager) */
 
 	/* widget that we accept
 	 */

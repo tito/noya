@@ -6,7 +6,7 @@
 /* Configuration
  * FIXME Move this !
  */
-#define NA_VERSION				"1.0"
+#define NA_VERSION				"0.1alpha"
 #define NA_TITLE				"NOYA - Real time music"
 #define NA_BANNER				"Noya, ver " NA_VERSION " - by Mathieu Virbel <tito@bankiz.org>"
 #define	NA_TUIO_PORT			"3333"
