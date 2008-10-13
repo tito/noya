@@ -4,7 +4,7 @@
 #define NA_MOD_OBJECT			0x01
 #define NA_MOD_WIDGET			0x02
 
-typedef void (*_fn_control)(void*,float);
+typedef void (*_fn_control)(void*, float);
 
 typedef struct na_module_s
 {

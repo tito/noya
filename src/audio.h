@@ -7,7 +7,33 @@
 
 #include "chunk.h"
 
-/* list of object to play
+typedef void (*na_audio_sfx_connect)(void *);
+typedef void (*na_audio_sfx_disconnect)(void *);
+typedef void (*na_audio_sfx_process)(void *);
+
+/* effects structure
+ */
+typedef struct na_audio_sfx_s
+{
+	na_chunk_t					*out;
+	void						*userdata;
+
+	int							in_channels;
+	int							out_channels;
+
+	na_audio_sfx_connect		fn_connect;
+	na_audio_sfx_disconnect		fn_disconnect;
+	na_audio_sfx_process		fn_process;
+
+	LIST_ENTRY(na_audio_sfx_s)	next;
+} na_audio_sfx_t;
+
+typedef struct
+{
+	na_audio_sfx_t	*lh_first;
+} na_audio_sfx_list_t;
+
+/* audio structure
  */
 typedef struct na_audio_s
 {
@@ -34,6 +60,10 @@ typedef struct na_audio_s
 	/* input chunk
 	 */
 	na_chunk_t		*input;
+
+	/* sfx
+	 */
+	na_audio_sfx_list_t	sfx;
 
 	/* output port
 	 */
@@ -73,6 +103,15 @@ void na_audio_wantstop(na_audio_t *entry);
 void na_audio_stop(na_audio_t *entry);
 void na_audio_seek(na_audio_t *entry, long position);
 short na_audio_is_play(na_audio_t *entry);
+na_audio_sfx_t *na_audio_sfx_add(
+	na_audio_t *audio,
+	int in_channels,
+	int out_channels,
+	na_audio_sfx_connect fn_connect,
+	na_audio_sfx_disconnect fn_disconnect,
+	na_audio_sfx_process fn_process,
+	void *userdata);
+void na_audio_sfx_remove(na_audio_t *audio, na_audio_sfx_t *sfx);
 
 extern na_audio_list_t na_audio_entries;
 

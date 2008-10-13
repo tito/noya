@@ -15,7 +15,7 @@
 #include "thread_manager.h"
 
 LOG_DECLARE("MAIN");
-MUTEX_DECLARE(g_thread_mutex);
+MUTEX_DECLARE(global);
 na_atomic_t				g_threads		= 0;
 na_atomic_t				g_want_leave	= 0;
 na_options_t			g_options		= {0};

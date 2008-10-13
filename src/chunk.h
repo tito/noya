@@ -3,9 +3,9 @@
 
 typedef struct
 {
-	float	*data;
-	ushort	channels;
-	uint	size;
+	float		*data;
+	ushort		channels;
+	uint		size;
 } na_chunk_t;
 
 na_chunk_t	*na_chunk_new(ushort channels, uint size);

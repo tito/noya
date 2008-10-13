@@ -17,12 +17,12 @@
 
 /* Macros
  */
-#define MUTEX_DECLARE(a)		pthread_mutex_t	a = PTHREAD_MUTEX_INITIALIZER
-#define MUTEX_IMPORT(a)			extern pthread_mutex_t a
-#define MUTEX_LOCK(a)			pthread_mutex_lock(&a)
-#define MUTEX_UNLOCK(a)			pthread_mutex_unlock(&a)
-#define THREAD_GLOBAL_LOCK		MUTEX_LOCK(g_thread_mutex)
-#define THREAD_GLOBAL_UNLOCK	MUTEX_UNLOCK(g_thread_mutex)
+#define MUTEX_DECLARE(a)		pthread_mutex_t	__mtx__##a = PTHREAD_MUTEX_INITIALIZER
+#define MUTEX_IMPORT(a)			extern pthread_mutex_t __mtx__##a
+#define MUTEX_LOCK(a)			pthread_mutex_lock(&__mtx__##a)
+#define MUTEX_UNLOCK(a)			pthread_mutex_unlock(&__mtx__##a)
+#define THREAD_GLOBAL_LOCK		MUTEX_LOCK(global)
+#define THREAD_GLOBAL_UNLOCK	MUTEX_UNLOCK(global)
 #define THREAD_ENTER			do { THREAD_GLOBAL_LOCK; c_running = 1; g_threads++; THREAD_GLOBAL_UNLOCK; } while(0);
 #define THREAD_LEAVE			do { THREAD_GLOBAL_LOCK; c_running = 0; g_threads--; THREAD_GLOBAL_UNLOCK; } while(0);
 
@@ -64,6 +64,6 @@ extern na_options_t g_options;
  */
 extern na_atomic_t g_threads;
 extern na_atomic_t g_want_leave;
-MUTEX_IMPORT(g_thread_mutex);
+MUTEX_IMPORT(global);
 
 #endif

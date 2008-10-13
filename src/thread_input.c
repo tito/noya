@@ -15,7 +15,7 @@
 #include "thread_input.h"
 
 LOG_DECLARE("INPUT");
-MUTEX_DECLARE(m_input);
+MUTEX_DECLARE(input);
 pthread_t	thread_input;
 static na_atomic_t	c_want_leave	= 0;
 static na_atomic_t	c_running		= 0;
@@ -81,7 +81,7 @@ static int _lo_tuio_object_handler(const char *path, const char *types, lo_arg *
 	 */
 	if ( strcmp("set", (char *)argv[0]) == 0 && argc == 11 )
 	{
-		MUTEX_LOCK(m_input);
+		MUTEX_LOCK(input);
 		o			= & t_objs[argv[2]->i];
 		o->s_id		= argv[1]->i32;
 		o->f_id		= argv[2]->i32;
@@ -102,14 +102,14 @@ static int _lo_tuio_object_handler(const char *path, const char *types, lo_arg *
 			na_event_send(NA_EV_OBJECT_NEW, o);
 
 		o->flags	|= TUIO_OBJECT_FL_INIT;
-		MUTEX_UNLOCK(m_input);
+		MUTEX_UNLOCK(input);
 	}
 
 	/* object alive list
 	 */
 	else if ( strcmp("alive", (char *)argv[0]) == 0 )
 	{
-		MUTEX_LOCK(m_input);
+		MUTEX_LOCK(input);
 
 		/* copy actual to old
 		 */
@@ -164,7 +164,7 @@ static int _lo_tuio_object_handler(const char *path, const char *types, lo_arg *
 			}
 		}
 
-		MUTEX_UNLOCK(m_input);
+		MUTEX_UNLOCK(input);
 	}
 
 	/* TODO handle other object like : source, fseq...
@@ -210,7 +210,7 @@ static int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg *
 	 */
 	if ( strcmp("set", (char *)argv[0]) == 0 && argc == 7 )
 	{
-		MUTEX_LOCK(m_input);
+		MUTEX_LOCK(input);
 		c = _tuio_cursor_get_by_id(argv[1]->i32);
 		if ( c == NULL )
 		{
@@ -230,14 +230,14 @@ static int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg *
 			na_event_send(NA_EV_CURSOR_NEW, (void *)c);
 		else
 			na_event_send(NA_EV_CURSOR_SET, (void *)c);
-		MUTEX_UNLOCK(m_input);
+		MUTEX_UNLOCK(input);
 	}
 
 	/* object alive list
 	 */
 	else if ( strcmp("alive", (char *)argv[0]) == 0 )
 	{
-		MUTEX_LOCK(m_input);
+		MUTEX_LOCK(input);
 
 		/* copy actual to old
 		 */
@@ -289,7 +289,7 @@ static int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg *
 			c->s_id = 0, c->flags = 0, c->mov = 0;
 		}
 
-		MUTEX_UNLOCK(m_input);
+		MUTEX_UNLOCK(input);
 	}
 
 	return 1;

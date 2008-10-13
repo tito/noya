@@ -10,18 +10,28 @@
 #include "audio.h"
 
 LOG_DECLARE("AUDIO");
+MUTEX_DECLARE(audiosfx);
 
 na_audio_list_t na_audio_entries;
 
 static void na_audio_update_output(na_audio_t *audio)
 {
-	na_chunk_t	*chunk;
+	na_audio_sfx_t	*sfx;
+	na_chunk_t		*chunk;
 
 	assert( audio != NULL );
 
-	/* TODO get last processed chunk !
+	/* search chunk to connect
 	 */
-	chunk = audio->input;
+	if ( LIST_EMPTY(&audio->sfx) )
+		chunk = audio->input;
+	else
+	{
+		LIST_FOREACH(sfx, audio->sfx, next)
+		{
+			chunk = sfx->output;
+		}
+	}
 
 	assert( na_chunk_get_channels(chunk) > 0 );
 
@@ -166,5 +176,63 @@ void na_audio_seek(na_audio_t *entry, long position)
 		 * This is due to the manager loop.
 		 */
 	}
+}
+
+na_audio_sfx_t *na_audio_sfx_add(
+	na_audio_t *audio,
+	int in_channels,
+	int out_channels,
+	na_audio_sfx_connect fn_connect,
+	na_audio_sfx_disconnect fn_disconnect,
+	na_audio_sfx_process fn_process,
+	void *userdata)
+{
+	na_audio_sfx_t	*sfx;
+	int				cfg_frames;
+
+	sfx = malloc(sizeof(na_audio_sfx_t));
+	if ( sfx == NULL )
+		goto na_audio_sfx_add_failed;
+	bzero(sfx, sizeof(na_audio_sfx_t));
+
+	sfx->userdata			= userdata;
+	sfx->in_channels		= in_channels;
+	sfx->out_channels		= out_channels;
+	sfx->fn_connect			= fn_connect;
+	sfx->fn_disconnect		= fn_disconnect;
+	sfx->fn_process			= fn_process;
+
+	/* create chunk for output
+	 */
+	cfg_frames		= na_config_get_int(NA_CONFIG_DEFAULT, "noya.audio.frames");
+	sfx->chunk = na_chunk_new(out_channels, cfg_frames);
+	if ( sfx->chunk == NULL )
+		goto na_audio_sfx_add_failed;
+
+	MUTEX_LOCK(audiosfx);
+	LIST_INSERT_HEAD(&audio->sfx, sfx, next);
+	na_audio_update_output(audiosfx);
+	MUTEX_UNLOCK(audiosfx);
+
+	return sfx;
+
+na_audio_sfx_add_failed:
+	if ( sfx )
+	{
+		if ( sfx->chunk )
+			na_chunk_free(sfx->chunk);
+		free(sfx);
+	}
+	return NULL;
+}
+
+void na_audio_sfx_remove(na_audio_t *audio, na_audio_sfx_t *sfx)
+{
+	assert( sfx != NULL );
+
+	MUTEX_LOCK(audiosfx);
+	LIST_REMOVE(sfx);
+	na_audio_update_output(audio);
+	MUTEX_UNLOCK(audiosfx);
 }
 

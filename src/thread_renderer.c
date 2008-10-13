@@ -11,7 +11,7 @@
 #include "thread_renderer.h"
 
 LOG_DECLARE("RENDERER");
-MUTEX_DECLARE(m_renderer);
+MUTEX_DECLARE(renderer);
 pthread_t	thread_renderer;
 
 /* static
@@ -134,12 +134,12 @@ thread_leave:;
 
 void _thread_renderer_enter(void)
 {
-	MUTEX_LOCK(m_renderer);
+	MUTEX_LOCK(renderer);
 }
 
 void _thread_renderer_leave(void)
 {
-	MUTEX_UNLOCK(m_renderer);
+	MUTEX_UNLOCK(renderer);
 }
 
 int thread_renderer_start(void)
@@ -166,9 +166,9 @@ int thread_renderer_stop(void)
 	c_want_leave = 1;
 	if ( clutter_running )
 	{
-		MUTEX_LOCK(m_renderer);
+		MUTEX_LOCK(renderer);
 		clutter_main_quit();
-		MUTEX_UNLOCK(m_renderer);
+		MUTEX_UNLOCK(renderer);
 	}
 
 	while ( c_running )

@@ -19,7 +19,6 @@
 #define PI2					6.2832
 
 LOG_DECLARE("MANAGER");
-MUTEX_DECLARE(m_manager);
 pthread_t				thread_manager;
 static na_atomic_t		c_want_leave	= 0;
 static na_atomic_t		c_running		= 0;

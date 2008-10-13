@@ -9,6 +9,11 @@ na_chunk_t	*na_chunk_new(ushort channels, uint size)
 {
 	na_chunk_t *chunk;
 
+	/* we want, for precaution, at least 1 channel with 16 sample.
+	 */
+	assert( channels > 1 );
+	assert( size > 16 );
+
 	chunk = malloc(sizeof(na_chunk_t));
 	if ( chunk == NULL )
 		return NULL;

@@ -18,7 +18,6 @@
 #define MAX_SOUNDS		128
 
 LOG_DECLARE("AUDIO");
-MUTEX_DECLARE(m_audio);
 pthread_t	thread_audio;
 static na_atomic_t	c_want_leave	= 0;
 static na_atomic_t	c_running		= 0;
