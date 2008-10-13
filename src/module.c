@@ -53,7 +53,7 @@ void na_modules_init()
 
 		l_printf("Load %s", dl_name);
 
-		dl_handle = dlopen (dl_name, RTLD_LAZY);
+		dl_handle = dlopen (dl_name, RTLD_NOW);
 		if ( dl_handle == NULL )
 		{
 			l_errorf("unable to load %s: %s", name, dlerror());
