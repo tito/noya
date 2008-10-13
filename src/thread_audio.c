@@ -175,6 +175,10 @@ static int audio_output_callback(
 			}
 		}
 
+		/* process sfx
+		 */
+		na_audio_sfx_process(entry);
+
 		/* next idx
 		 */
 		entry->dataidx += framesPerBuffer * entry->channels;
