@@ -27,9 +27,9 @@ static void na_audio_update_output(na_audio_t *audio)
 		chunk = audio->input;
 	else
 	{
-		LIST_FOREACH(sfx, audio->sfx, next)
+		LIST_FOREACH(sfx, &audio->sfx, next)
 		{
-			chunk = sfx->output;
+			chunk = sfx->out;
 		}
 	}
 
@@ -205,13 +205,13 @@ na_audio_sfx_t *na_audio_sfx_add(
 	/* create chunk for output
 	 */
 	cfg_frames		= na_config_get_int(NA_CONFIG_DEFAULT, "noya.audio.frames");
-	sfx->chunk = na_chunk_new(out_channels, cfg_frames);
-	if ( sfx->chunk == NULL )
+	sfx->out		= na_chunk_new(out_channels, cfg_frames);
+	if ( sfx->out == NULL )
 		goto na_audio_sfx_add_failed;
 
 	MUTEX_LOCK(audiosfx);
 	LIST_INSERT_HEAD(&audio->sfx, sfx, next);
-	na_audio_update_output(audiosfx);
+	na_audio_update_output(audio);
 	MUTEX_UNLOCK(audiosfx);
 
 	return sfx;
@@ -219,8 +219,8 @@ na_audio_sfx_t *na_audio_sfx_add(
 na_audio_sfx_add_failed:
 	if ( sfx )
 	{
-		if ( sfx->chunk )
-			na_chunk_free(sfx->chunk);
+		if ( sfx->out )
+			na_chunk_free(sfx->out);
 		free(sfx);
 	}
 	return NULL;
@@ -231,7 +231,7 @@ void na_audio_sfx_remove(na_audio_t *audio, na_audio_sfx_t *sfx)
 	assert( sfx != NULL );
 
 	MUTEX_LOCK(audiosfx);
-	LIST_REMOVE(sfx);
+	LIST_REMOVE(sfx, next);
 	na_audio_update_output(audio);
 	MUTEX_UNLOCK(audiosfx);
 }
