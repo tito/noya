@@ -105,6 +105,9 @@ void na_audio_stop(na_audio_t *entry);
 void na_audio_seek(na_audio_t *entry, long position);
 short na_audio_is_play(na_audio_t *entry);
 
+/* /!\ be aware, all of theses functions must be protected
+ * with MUTEX_LOCK/UNLOCK of audiosfx.
+ */
 void na_audio_sfx_free(na_audio_sfx_t *audio);
 na_audio_sfx_t *na_audio_sfx_add(
 	na_audio_t *audio,

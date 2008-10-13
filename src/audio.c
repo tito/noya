@@ -218,8 +218,6 @@ na_audio_sfx_t *na_audio_sfx_add(
 	if ( sfx->out == NULL )
 		goto na_audio_sfx_add_failed;
 
-	MUTEX_LOCK(audiosfx);
-
 	/* connect effect with head
 	 */
 	sfx->in = audio->input;
@@ -236,8 +234,6 @@ na_audio_sfx_t *na_audio_sfx_add(
 	if ( sfx->fn_connect )
 		sfx->fn_connect(sfx->userdata, sfx->in, sfx->out);
 
-	MUTEX_UNLOCK(audiosfx);
-
 	return sfx;
 
 na_audio_sfx_add_failed:
@@ -251,8 +247,6 @@ void na_audio_sfx_remove(na_audio_t *audio, na_audio_sfx_t *sfx)
 	na_audio_sfx_t	*in, *it;
 
 	assert( sfx != NULL );
-
-	MUTEX_LOCK(audiosfx);
 
 	/* link the next sfx to the current link
 	 * => preserve link between sfx.
@@ -270,8 +264,6 @@ void na_audio_sfx_remove(na_audio_t *audio, na_audio_sfx_t *sfx)
 	if ( sfx->fn_disconnect )
 		sfx->fn_disconnect(sfx->userdata);
 
-	MUTEX_UNLOCK(audiosfx);
-
 	na_audio_sfx_free(sfx);
 }
 
@@ -281,15 +273,10 @@ void na_audio_sfx_process(na_audio_t *audio)
 
 	assert( audio != NULL );
 
-	MUTEX_LOCK(audiosfx);
-
 	/* nothing to process if they are no sfx.
 	 */
 	if ( LIST_EMPTY(&audio->sfx) )
-	{
-		MUTEX_UNLOCK(audiosfx);
 		return;
-	}
 
 	/* process effects plugin
 	 */
@@ -297,6 +284,4 @@ void na_audio_sfx_process(na_audio_t *audio)
 	{
 		sfx->fn_process(sfx->userdata);
 	}
-
-	MUTEX_UNLOCK(audiosfx);
 }

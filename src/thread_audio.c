@@ -18,6 +18,8 @@
 #define MAX_SOUNDS		128
 
 LOG_DECLARE("AUDIO");
+MUTEX_IMPORT(audiosfx);
+
 pthread_t	thread_audio;
 static na_atomic_t	c_want_leave	= 0;
 static na_atomic_t	c_running		= 0;
@@ -175,10 +177,6 @@ static int audio_output_callback(
 			}
 		}
 
-		/* process sfx
-		 */
-		na_audio_sfx_process(entry);
-
 		/* next idx
 		 */
 		entry->dataidx += framesPerBuffer * entry->channels;
@@ -197,13 +195,27 @@ static int audio_output_callback(
 	if ( entries_count < 0 )
 		return paContinue;
 
+	/* ========================================================= *
+	 * CRITICAL SECTION
+	 * We need to ensure that processing from input to output
+	 * is not modified in the time of process.
+	 * Path: input -> sfx1 -> sfx2 -> ... -> {out_L,out_R}
+	 * ========================================================= */
+
+	MUTEX_LOCK(audiosfx);
+
+	/* process sfx, as fast as we can.
+	 */
+	for ( j = 0; j <= entries_count; j++ )
+		na_audio_sfx_process(entries[j]);
+
 	/* and play
 	 */
 	for ( j = 0; j <= entries_count; j++ )
 	{
 		entry = entries[j];
-		in_L = na_chunk_get_channel(entry->input, 0);
-		in_R = na_chunk_get_channel(entry->input, 1);
+		in_L = entry->out_L;
+		in_R = entry->out_R;
 
 		for ( i = 0; i < framesPerBuffer; i++ )
 		{
@@ -224,6 +236,12 @@ static int audio_output_callback(
 		 */
 		out = (float *)outputBuffer;
 	}
+
+	MUTEX_UNLOCK(audiosfx);
+
+	/* ========================================================= *
+	 * END OF CRITICAL SECTION
+	 * ========================================================= */
 
 	return paContinue;
 }
