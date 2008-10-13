@@ -4,13 +4,13 @@
 #include <dlfcn.h>
 #include <math.h>
 
-#include "../src/noya.h"
-#include "../src/audio.h"
-#include "../src/module.h"
-#include "../src/config.h"
-#include "../src/utils.h"
-#include "../src/event.h"
-#include "../src/thread_manager.h"
+#include "noya.h"
+#include "audio.h"
+#include "module.h"
+#include "config.h"
+#include "utils.h"
+#include "event.h"
+#include "thread_manager.h"
 
 #include <ladspa.h>
 

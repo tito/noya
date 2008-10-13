@@ -2,10 +2,10 @@
 #include <string.h>
 #include <assert.h>
 
-#include "../src/noya.h"
-#include "../src/module.h"
-#include "../src/audio.h"
-#include "../src/thread_manager.h"
+#include "noya.h"
+#include "module.h"
+#include "audio.h"
+#include "thread_manager.h"
 
 #define MODULE_NAME "hbar"
 

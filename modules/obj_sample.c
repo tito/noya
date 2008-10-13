@@ -2,12 +2,12 @@
 #include <string.h>
 #include <assert.h>
 
-#include "../src/noya.h"
-#include "../src/audio.h"
-#include "../src/module.h"
-#include "../src/config.h"
-#include "../src/utils.h"
-#include "../src/thread_manager.h"
+#include "noya.h"
+#include "audio.h"
+#include "module.h"
+#include "config.h"
+#include "utils.h"
+#include "thread_manager.h"
 
 #define MODULE_NAME "obj_sample"
 
