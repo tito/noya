@@ -345,7 +345,7 @@ void lib_object_unprepare(obj_t *obj)
 
 	/* remove bpm event
 	 */
-	na_event_remove(NA_EV_BPM, (na_event_callback)lib_object_ev_bpm);
+	na_event_remove(NA_EV_BPM, (na_event_callback)lib_object_ev_bpm, obj);
 
 	/* stop audio
 	 */

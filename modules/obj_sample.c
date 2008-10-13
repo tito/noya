@@ -8,6 +8,7 @@
 #include "config.h"
 #include "utils.h"
 #include "thread_manager.h"
+#include "event.h"
 
 #define MODULE_NAME "obj_sample"
 
@@ -26,6 +27,10 @@ typedef struct
 	 */
 	char			*filename;		/*< audio filename */
 	na_audio_t		*audio;			/*< audio entry (for audio manager) */
+
+	/* event observers
+	 */
+	na_event_list_t	observers;
 
 	/* widget that we accept
 	 */
@@ -60,7 +65,7 @@ static void *object_resolve_value(obj_t *obj, char *value)
 void lib_init(char **name, int *type)
 {
 	*name = strdup(MODULE_NAME);
-	*type = NA_MOD_OBJECT;
+	*type = NA_MOD_OBJECT | NA_MOD_EVENT;
 }
 
 void lib_exit(void)
@@ -147,10 +152,11 @@ obj_t *lib_object_new(na_scene_t *scene)
 	obj = malloc(sizeof(obj_t));
 	if ( obj == NULL )
 		return NULL;
-
 	bzero(obj, sizeof(obj_t));
 
 	obj->scene = scene;
+
+	na_event_init_ex(&obj->observers);
 
 	obj->top = def_obj.top;
 	if ( obj->top )
@@ -171,6 +177,8 @@ obj_t *lib_object_new(na_scene_t *scene)
 void lib_object_free(obj_t *obj)
 {
 	assert( obj != NULL );
+
+	na_event_free_ex(&obj->observers);
 
 	if ( obj->filename != NULL )
 		free(obj->filename);
@@ -232,7 +240,12 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 	if ( obj->right )
 		(*obj->right->widget_set_data)(obj->data_right, object_resolve_value(obj, def_obj.value_right));
 
-	/* do first thing : play audio !
+	/* send events
+	 */
+	na_event_send_ex(&obj->observers, NA_EV_ACTOR_PREPARE, obj->actor);
+	na_event_send_ex(&obj->observers, NA_EV_AUDIO_PLAY, obj->audio);
+
+	/* we want to be played !
 	 */
 	na_audio_wantplay(obj->audio);
 	na_audio_set_loop(obj->audio, actor->scene_actor->is_loop);
@@ -279,16 +292,21 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 
 void lib_object_unprepare(obj_t *obj)
 {
-	/* never remove object from clutter
-	 * parent remove all of this tree
+	/* send events
 	 */
-	obj->actor		= NULL;
-	obj->group_cube	= NULL;
+	na_event_send_ex(&obj->observers, NA_EV_AUDIO_STOP, obj->audio);
+	na_event_send_ex(&obj->observers, NA_EV_ACTOR_UNPREPARE, obj->actor);
 
 	/* stop audio
 	 */
 	na_audio_stop(obj->audio);
 	na_audio_seek(obj->audio, 0);
+
+	/* never remove object from clutter
+	 * parent remove all of this tree
+	 */
+	obj->actor		= NULL;
+	obj->group_cube	= NULL;
 
 	if ( obj->top )
 		(*obj->top->widget_unprepare)(obj->data_top);
@@ -325,4 +343,14 @@ _fn_control lib_object_get_control(char *name)
 	if ( strcmp(name, "volume") == 0 )
 		return ctl_volume;
 	return NULL;
+}
+
+void lib_event_observe(obj_t *obj, ushort ev_type, na_event_callback callback, void *userdata)
+{
+	na_event_observe_ex(&obj->observers, ev_type, callback, userdata);
+}
+
+void lib_event_remove(obj_t *obj, ushort ev_type, na_event_callback callback, void *userdata)
+{
+	na_event_remove_ex(&obj->observers, ev_type, callback, userdata);
 }

@@ -8,22 +8,22 @@
 
 typedef struct na_scene_actor_base_s
 {
-	int		id;							/*< id of object */
+	int			id;							/*< id of object */
 
-	int		width;						/*< width */
-	int		height;						/*< height */
+	int			width;						/*< width */
+	int			height;						/*< height */
 	na_color_t	background_color;			/*< background color */
 	na_color_t	border_color;				/*< border color */
-	int		border_width;				/*< border width */
+	int			border_width;				/*< border width */
 
-	short	is_loop;					/*< indicate if actor animation is looping */
+	short		is_loop;					/*< indicate if actor animation is looping */
 	
-	_fn_control ctl_angle;				/*< indicate control for angle */
-	_fn_control ctl_x;					/*< indicate control for X axis */
-	_fn_control ctl_y;					/*< indicate control for Y axis */
+	_fn_control ctl_angle;					/*< indicate control for angle */
+	_fn_control ctl_x;						/*< indicate control for X axis */
+	_fn_control ctl_y;						/*< indicate control for Y axis */
 
-	na_module_t	*mod;					/*< module to extend base object */
-	void		*data_mod;				/*< private data for module */
+	na_module_t	*mod;						/*< module to extend base object */
+	void		*data_mod;					/*< private data for module */
 
 	LIST_ENTRY(na_scene_actor_base_s) next;
 
@@ -36,7 +36,7 @@ typedef struct na_scene_actor_head_s
 
 typedef struct
 {
-	char				*name;				/*< name of scene */
+	char					*name;				/*< name of scene */
 	na_color_t				background_color;	/*< scene background color */
 	na_scene_actor_base_t	def_actor;			/*< default params for actor */
 	na_scene_actor_list_t	actors;				/*< actors list */

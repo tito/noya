@@ -86,7 +86,7 @@ na_scene_t *na_scene_load(char *name)
 				scene->precision = strtol(it->v, NULL, 10);
 		}
 
-		/* handle types
+		/* handle object
 		 */
 		if ( strstr(it->k, "scene.object.") == it->k )
 		{

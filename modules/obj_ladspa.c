@@ -19,22 +19,46 @@
 
 LOG_DECLARE("MOD_OBJ_LADSPA");
 
+struct obj_s;
+
+typedef struct obj_entry_s
+{
+	struct obj_s			*parent; /* used from event */
+	manager_actor_t			*actor;
+	na_audio_t				*audio;
+	LIST_ENTRY(obj_entry_s) next;
+} obj_entry_t;
+
 typedef struct
 {
+	obj_entry_t *lh_first;
+} obj_entry_list_t;
+
+typedef struct obj_s
+{
 	na_scene_t			*scene;
-	manager_actor_t	*actor;
+	manager_actor_t		*actor;
 
 	/* ladspa issue
 	 */
-	char			*pl_name;
-	char			*pl_filename;
-	void			*pl_handle;
+	char				*pl_name;
+	char				*pl_filename;
+	void				*pl_handle;
 	LADSPA_Descriptor_Function pl_ladspa_fn;
-	LADSPA_Descriptor *pl_ladspa;
+	LADSPA_Descriptor	*pl_ladspa;
+
+	/* list of connected object
+	 */
+	obj_entry_list_t	entries;
 
 	/* rendering issues
 	 */
-	ClutterActor	*group_cube;
+	ClutterActor		*group_cube;
+
+	/* min/max distance value to attach
+	 */
+	float			dist_min;
+	float			dist_max;
 
 	/* widget that we accept
 	 */
@@ -52,7 +76,7 @@ typedef struct
 	char			*value_right;
 } obj_t;
 
-obj_t def_obj = {0};
+static obj_t def_obj = {0};
 
 static inline float __dist(float xa, float ya, float xb, float yb)
 {
@@ -60,11 +84,73 @@ static inline float __dist(float xa, float ya, float xb, float yb)
 	return sqrtf(pow2(xb-xa) + pow2(yb-ya));
 }
 
+static obj_entry_t *__find_entry_by_actor(obj_entry_list_t *list, manager_actor_t *actor)
+{
+	obj_entry_t *it;
+
+	assert( list != NULL );
+	assert( actor != NULL );
+
+	LIST_FOREACH(it, list, next)
+	{
+		if ( it->actor == actor )
+			return it;
+	}
+	return NULL;
+}
+
+static obj_entry_t *__find_entry_by_audio(obj_entry_list_t *list, na_audio_t *audio)
+{
+	obj_entry_t *it;
+
+	assert( list != NULL );
+	assert( audio != NULL );
+
+	LIST_FOREACH(it, list, next)
+	{
+		if ( it->audio == audio )
+			return it;
+	}
+	return NULL;
+}
+
+static obj_entry_t *__entry_new(obj_entry_list_t *list)
+{
+	obj_entry_t *entry;
+
+	assert( list != NULL );
+
+	entry = malloc(sizeof(obj_entry_t));
+	if ( entry == NULL )
+		return NULL;
+	bzero(entry, sizeof(obj_entry_t));
+
+	LIST_INSERT_HEAD(list, entry, next);
+
+	return entry;
+}
+
+static void __entry_free(obj_entry_list_t *list, obj_entry_t *entry)
+{
+	assert( entry != NULL );
+	free(entry);
+}
+
+static void __event_dispatch(ushort ev_type, void *userdata, void *object)
+{
+	l_printf("Receive event of type %d", ev_type);
+	switch ( ev_type )
+	{
+	}
+}
+
 static void __scene_update(unsigned short type, void *userdata, void *data)
 {
-	obj_t	*obj = (obj_t *)userdata;
-	manager_actor_list_t *list;
-	manager_actor_t		*it;
+	obj_t					*obj = (obj_t *)userdata;
+	manager_actor_list_t	*list;
+	manager_actor_t			*it;
+	obj_entry_t				*dobj;
+	float					dist;
 
 	assert( obj != NULL );
 
@@ -76,6 +162,83 @@ static void __scene_update(unsigned short type, void *userdata, void *data)
 	{
 		if ( it == obj->actor )
 			continue;
+
+		assert( it->tuio != NULL );
+
+		dobj = __find_entry_by_actor(&obj->entries, it);
+
+		dist = __dist(
+			it->tuio->xpos,
+			it->tuio->ypos,
+			obj->actor->tuio->xpos,
+			obj->actor->tuio->ypos
+		);
+
+		l_printf("[%f,%f] -> [%f, %f] = dist %f", obj->actor->tuio->xpos, obj->actor->tuio->ypos, it->tuio->xpos, it->tuio->ypos, dist);
+
+		if ( dist < obj->dist_min )
+		{
+			if ( dobj != NULL )
+				continue;
+
+			/* TODO write attach object code.
+			 */
+
+			/* test is we can connect to this object
+			 */
+			l_printf("Try to attach on object %d", it->id);
+
+			if ( it->scene_actor->mod == NULL || it->scene_actor->data_mod == NULL )
+			{
+				l_errorf("No module attach to object %d, skip", it->id);
+				continue;
+			}
+
+			if ( !(it->scene_actor->mod->type & NA_MOD_EVENT) )
+			{
+				l_errorf("No event interface on object %d, skip", it->id);
+				continue;
+			}
+
+			dobj = __entry_new(&obj->entries);
+			if ( dobj == NULL )
+			{
+				l_errorf("Cannot allocate new link !");
+				continue;
+			}
+
+			dobj->parent = obj;
+
+			(*it->scene_actor->mod->event_observe)(it->scene_actor->data_mod,
+					NA_EV_ACTOR_PREPARE, __event_dispatch, dobj);
+			(*it->scene_actor->mod->event_observe)(it->scene_actor->data_mod,
+					NA_EV_ACTOR_UNPREPARE, __event_dispatch, dobj);
+			(*it->scene_actor->mod->event_observe)(it->scene_actor->data_mod,
+					NA_EV_AUDIO_PLAY, __event_dispatch, dobj);
+			(*it->scene_actor->mod->event_observe)(it->scene_actor->data_mod,
+					NA_EV_AUDIO_STOP, __event_dispatch, dobj);
+		}
+		else if ( dist > obj->dist_max )
+		{
+			if ( dobj == NULL )
+				continue;
+
+			/* TODO write detach object code.
+			 */
+
+			(*it->scene_actor->mod->event_remove)(it->scene_actor->data_mod,
+					NA_EV_ACTOR_PREPARE, __event_dispatch, dobj);
+			(*it->scene_actor->mod->event_remove)(it->scene_actor->data_mod,
+					NA_EV_ACTOR_UNPREPARE, __event_dispatch, dobj);
+			(*it->scene_actor->mod->event_remove)(it->scene_actor->data_mod,
+					NA_EV_AUDIO_PLAY, __event_dispatch, dobj);
+			(*it->scene_actor->mod->event_remove)(it->scene_actor->data_mod,
+					NA_EV_AUDIO_STOP, __event_dispatch, dobj);
+
+			__entry_free(&obj->entries, dobj);
+
+		}
+
 	}
 
 	return;
@@ -285,6 +448,10 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 
 		__load_ladspa(obj);
 	}
+	else if ( strcmp(key, "distmin") == 0 )
+		obj->dist_min = atof(value);
+	else if ( strcmp(key, "distmax") == 0 )
+		obj->dist_max = atof(value);
 	else
 		l_printf("Invalid configuration %s", key);
 }
@@ -361,7 +528,7 @@ void lib_object_unprepare(obj_t *obj)
 {
 	/* un-attach to scene update event
 	 */
-	na_event_remove(NA_EV_SCENE_UPDATE, obj);
+	na_event_remove(NA_EV_SCENE_UPDATE, __scene_update, obj);
 
 	/* never remove object from clutter
 	 * parent remove all of this tree

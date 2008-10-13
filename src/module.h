@@ -1,8 +1,11 @@
 #ifndef __MODULE_H
 #define __MODULE_H
 
-#define NA_MOD_OBJECT			0x01
-#define NA_MOD_WIDGET			0x02
+#include "event.h"
+
+#define NA_MOD_OBJECT			0x0001			/* provide object interface */
+#define NA_MOD_WIDGET			0x0002			/* provide widget interface */
+#define NA_MOD_EVENT			0x0004			/* provide event interface */
 
 typedef void (*_fn_control)(void*, float);
 
@@ -118,6 +121,20 @@ typedef struct na_module_s
 	 * args: manager actor, value of control
 	 */
 	void (*ctl_update)(void *, float);
+
+
+	/* event
+	 */
+
+	/* observe an event
+	 * args: module data, type of event, callback, userdata
+	 */
+	void (*event_observe)(void *, ushort, na_event_callback, void *);
+
+	/* unobserve an event
+	 * args: module data, type of event, callback
+	 */
+	void (*event_remove)(void *, ushort, na_event_callback, void *);
 
 	LIST_ENTRY(na_module_s) next;
 } na_module_t;

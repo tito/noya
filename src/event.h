@@ -1,14 +1,15 @@
 #ifndef __EVENT_H
 #define __EVENT_H
 
+#include <unistd.h>
 #include <sys/queue.h>
 
-typedef void (*na_event_callback)(unsigned short ev_type, void *userdata, void *object);
+typedef void (*na_event_callback)(ushort ev_type, void *userdata, void *object);
 typedef struct na_event_s
 {
-	unsigned short		type;
+	ushort					type;
 	na_event_callback		callback;
-	void				*userdata;
+	void					*userdata;
 	LIST_ENTRY(na_event_s)	next;
 } na_event_t;
 
@@ -27,10 +28,25 @@ typedef struct
 #define NA_EV_BPM				0x08
 #define NA_EV_SCENE_UPDATE		0x09
 
+#define NA_EV_ACTOR_PREPARE		0x10
+#define NA_EV_ACTOR_UNPREPARE	0x20
+#define NA_EV_AUDIO_PLAY		0x30
+#define NA_EV_AUDIO_STOP		0x40
+
+/* default noya event list
+ */
 void na_event_init(void);
 void na_event_free(void);
-void na_event_observe(unsigned short ev_type, na_event_callback callback, void *userdata);
-void na_event_send(unsigned short ev_type, void *data);
-void na_event_remove(unsigned short ev_type, na_event_callback callback);
+void na_event_observe(ushort ev_type, na_event_callback callback, void *userdata);
+void na_event_send(ushort ev_type, void *data);
+void na_event_remove(ushort ev_type, na_event_callback callback, void *userdata);
+
+/* for other event list (modules...)
+ */
+void na_event_init_ex(na_event_list_t *list);
+void na_event_free_ex(na_event_list_t *list);
+void na_event_observe_ex(na_event_list_t *list, ushort ev_type, na_event_callback callback, void *userdata);
+void na_event_send_ex(na_event_list_t *list, ushort ev_type, void *data);
+void na_event_remove_ex(na_event_list_t *list, ushort ev_type, na_event_callback callback, void *userdata);
 
 #endif

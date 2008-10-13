@@ -115,6 +115,12 @@ void na_modules_init()
 			MODULE_LOAD_DEF(widget_set_data);
 		}
 
+		if ( module->type & NA_MOD_EVENT )
+		{
+			MODULE_LOAD_DEF(event_observe);
+			MODULE_LOAD_DEF(event_remove);
+		}
+
 		LIST_INSERT_HEAD(&na_module_list, module, next);
 
 		dl_handle = NULL;
@@ -137,7 +143,6 @@ na_module_init_failed:;
 static void na_module_free(na_module_t *module)
 {
 	assert( module != NULL );
-	assert( module->exit != NULL );
 
 	(*module->exit)();
 
