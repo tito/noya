@@ -109,15 +109,15 @@ short na_audio_is_play(na_audio_t *entry);
  * with MUTEX_LOCK/UNLOCK of audiosfx.
  */
 void na_audio_sfx_free(na_audio_sfx_t *audio);
-na_audio_sfx_t *na_audio_sfx_add(
-	na_audio_t *audio,
+na_audio_sfx_t *na_audio_sfx_new(
 	int in_channels,
 	int out_channels,
 	na_audio_sfx_connect_fn fn_connect,
 	na_audio_sfx_disconnect_fn fn_disconnect,
 	na_audio_sfx_process_fn fn_process,
 	void *userdata);
-void na_audio_sfx_remove(na_audio_t *audio, na_audio_sfx_t *sfx);
+void na_audio_sfx_connect(na_audio_t *audio, na_audio_sfx_t *sfx);
+void na_audio_sfx_disconnect(na_audio_t *audio, na_audio_sfx_t *sfx);
 void na_audio_sfx_process(na_audio_t *audio);
 
 extern na_audio_list_t na_audio_entries;

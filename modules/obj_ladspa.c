@@ -28,6 +28,10 @@ typedef struct obj_entry_s
 	uint					id;			/* actor id */
 	manager_actor_t			*actor;
 	na_audio_t				*audio;
+
+	na_audio_sfx_t			*sfx;		/* buffer for sfx */
+	LADSPA_Handle			*pl_ladspa_handle; /* effect instance for sfx */
+
 	LIST_ENTRY(obj_entry_s) next;
 } obj_entry_t;
 
@@ -47,7 +51,10 @@ typedef struct obj_s
 	char				*pl_filename;
 	void				*pl_handle;
 	LADSPA_Descriptor_Function pl_ladspa_fn;
-	LADSPA_Descriptor	*pl_ladspa;
+	LADSPA_Descriptor	*pl_ladspa_desc;
+
+	int					pl_input_count;
+	int					pl_output_count;
 
 	/* list of connected object
 	 */
@@ -125,10 +132,99 @@ static void __entry_free(obj_entry_list_t *list, obj_entry_t *entry)
 
 static void __event_dispatch(ushort ev_type, void *userdata, void *object)
 {
-	l_printf("Receive event of type %d", ev_type);
+	obj_entry_t *dobj = (obj_entry_t *)userdata;
+
+	assert( userdata != NULL );
+	assert( dobj != NULL );
+	assert( dobj->pl_ladspa_handle != NULL );
+	assert( dobj->sfx != NULL );
+
 	switch ( ev_type )
 	{
+		case NA_EV_AUDIO_PLAY:
+			l_printf("Event AUDIO_PLAY : connect sfx");
+			na_audio_sfx_connect((na_audio_t *)userdata, dobj->sfx);
+			break;
+		case NA_EV_AUDIO_STOP:
+			l_printf("Event AUDIO_PLAY : disconnect sfx");
+			na_audio_sfx_disconnect((na_audio_t *)userdata, dobj->sfx);
+			break;
+		case NA_EV_ACTOR_PREPARE:
+			dobj->actor = (manager_actor_t *)userdata;
+			/* TODO create a visual between actors
+			 */
+			break;
+		case NA_EV_ACTOR_UNPREPARE:
+			dobj->actor = NULL;
+			/* TODO remove visual between actors 
+			 */
+			break;
 	}
+}
+
+static void __audio_sfx_connect(void *userdata, na_chunk_t *in, na_chunk_t *out)
+{
+	uint		i, in_audio, out_audio;
+	obj_entry_t *entry = (obj_entry_t *)userdata;
+	LADSPA_PortDescriptor port;
+
+	/* we cannot handle differents channels between IO from chunk and plugin
+	 */
+	if ( na_chunk_get_channels(in)  != entry->parent->pl_input_count ||
+		 na_chunk_get_channels(out) != entry->parent->pl_output_count )
+	{
+		l_errorf("I/O channels not corresponding : Chunk [%d,%d] vs Effect [%d,%d]",
+			na_chunk_get_channels(in), na_chunk_get_channels(out),
+			entry->parent->pl_input_count, entry->parent->pl_output_count
+		);
+		return;
+	}
+
+	for ( i = 0; i < entry->parent->pl_ladspa_desc->PortCount; i++ )
+	{
+		port = entry->parent->pl_ladspa_desc->PortDescriptors[i];
+
+		if ( ! LADSPA_IS_PORT_AUDIO(port) )
+			continue;
+		if ( LADSPA_IS_PORT_INPUT(port) )
+		{
+			entry->parent->pl_ladspa_desc->connect_port(
+				entry->parent->pl_ladspa_desc, i,
+				na_chunk_get_channel(in, in_audio)
+			);
+			in_audio++;
+		}
+
+		if ( LADSPA_IS_PORT_OUTPUT(port) )
+		{
+			entry->parent->pl_ladspa_desc->connect_port(
+				entry->parent->pl_ladspa_desc, i,
+				na_chunk_get_channel(out, out_audio)
+			);
+			out_audio++;
+		}
+	}
+
+	if ( entry->parent->pl_ladspa_desc->activate );
+		entry->parent->pl_ladspa_desc->activate(entry->pl_ladspa_handle);
+}
+
+static void __audio_sfx_disconnect(void *userdata)
+{
+	obj_entry_t *entry = (obj_entry_t *)userdata;
+
+	if ( entry->parent->pl_ladspa_desc->deactivate )
+		entry->parent->pl_ladspa_desc->deactivate(entry->pl_ladspa_handle);
+}
+
+static void __audio_sfx_process(void *userdata)
+{
+	obj_entry_t *entry = (obj_entry_t *)userdata;
+
+	entry->parent->pl_ladspa_desc->run(
+		entry->pl_ladspa_handle,
+		entry->sfx->out->size
+	);
 }
 
 static void __scene_update(unsigned short type, void *userdata, void *data)
@@ -203,6 +299,37 @@ static void __scene_update(unsigned short type, void *userdata, void *data)
 			dobj->id		= it->id;
 			dobj->parent	= obj;
 
+			/* create an instance of ladspa plugin for this object
+			 */
+			dobj->pl_ladspa_handle = obj->pl_ladspa_desc->instantiate(
+				obj->pl_ladspa_desc, NA_DEF_SAMPLERATE
+			);
+			if ( dobj->pl_ladspa_handle == NULL )
+			{
+				l_errorf("Unable to have a plugin instance !");
+				__entry_free(&obj->entries, dobj);
+				continue;
+			}
+
+			/* create sfx
+			 */
+			dobj->sfx = na_audio_sfx_new(
+				obj->pl_input_count,
+				obj->pl_output_count,
+				__audio_sfx_connect,
+				__audio_sfx_disconnect,
+				__audio_sfx_process,
+				dobj
+			);
+			if ( dobj->sfx == NULL )
+			{
+				l_errorf("Unable to create a sfx !");
+				__entry_free(&obj->entries, dobj);
+				continue;
+			}
+
+			/* subscribe to event
+			 */
 			(*it->scene_actor->mod->event_observe)(it->scene_actor->data_mod,
 					NA_EV_ACTOR_PREPARE, __event_dispatch, dobj);
 			(*it->scene_actor->mod->event_observe)(it->scene_actor->data_mod,
@@ -242,8 +369,27 @@ static void __scene_update(unsigned short type, void *userdata, void *data)
 	return;
 }
 
+/* code taken from ladspa > applyplugin.c
+ */
+static unsigned long __ladspa_count_port(
+		const LADSPA_Descriptor		*psDescriptor,
+		const LADSPA_PortDescriptor	iType)
+{
+	unsigned long lCount;
+	unsigned long lIndex;
+
+	lCount = 0;
+	for (lIndex = 0; lIndex < psDescriptor->PortCount; lIndex++)
+		if ((psDescriptor->PortDescriptors[lIndex] & iType) == iType)
+			lCount++;
+
+	return lCount;
+}
+
 static void __load_ladspa(obj_t *obj)
 {
+	/* load descriptor
+	 */
 	obj->pl_ladspa_fn = (LADSPA_Descriptor_Function)dlsym(obj->pl_handle, "ladspa_descriptor");
 	if ( obj->pl_ladspa_fn == NULL )
 	{
@@ -251,18 +397,25 @@ static void __load_ladspa(obj_t *obj)
 		goto load_cleanup;
 	}
 
-	obj->pl_ladspa = (LADSPA_Descriptor *)obj->pl_ladspa_fn(0);
-	if ( obj->pl_ladspa == NULL )
+	obj->pl_ladspa_desc = (LADSPA_Descriptor *)obj->pl_ladspa_fn(0);
+	if ( obj->pl_ladspa_desc == NULL )
 	{
 		l_errorf("Unable to get a ladspa descriptor in %s", obj->pl_name);
 		goto load_cleanup;
 	}
 
-	if ( !LADSPA_IS_HARD_RT_CAPABLE(obj->pl_ladspa->Properties) )
+	if ( !LADSPA_IS_HARD_RT_CAPABLE(obj->pl_ladspa_desc->Properties) )
 	{
 		l_errorf("Unable to use %s, not Hard-RT capable.", obj->pl_name);
 		goto load_cleanup;
 	}
+
+	/* count input / output
+	 */
+	obj->pl_input_count = __ladspa_count_port(obj->pl_ladspa_desc, LADSPA_PORT_AUDIO | LADSPA_PORT_INPUT);
+	obj->pl_output_count = __ladspa_count_port(obj->pl_ladspa_desc, LADSPA_PORT_AUDIO | LADSPA_PORT_OUTPUT);
+
+	l_printf("Ladspa plugin have %d IN, %d OUT", obj->pl_input_count, obj->pl_output_count);
 
 load_cleanup:;
 	if ( obj->pl_handle )

@@ -187,8 +187,7 @@ void na_audio_sfx_free(na_audio_sfx_t *sfx)
 	free(sfx);
 }
 
-na_audio_sfx_t *na_audio_sfx_add(
-	na_audio_t *audio,
+na_audio_sfx_t *na_audio_sfx_new(
 	int in_channels,
 	int out_channels,
 	na_audio_sfx_connect_fn fn_connect,
@@ -218,6 +217,19 @@ na_audio_sfx_t *na_audio_sfx_add(
 	if ( sfx->out == NULL )
 		goto na_audio_sfx_add_failed;
 
+	return sfx;
+
+na_audio_sfx_add_failed:
+	if ( sfx )
+		na_audio_sfx_free(sfx);
+	return NULL;
+}
+
+void na_audio_sfx_connect(na_audio_t *audio, na_audio_sfx_t *sfx)
+{
+	assert( audio != NULL );
+	assert( sfx != NULL );
+
 	/* connect effect with head
 	 */
 	sfx->in = audio->input;
@@ -233,16 +245,9 @@ na_audio_sfx_t *na_audio_sfx_add(
 	 */
 	if ( sfx->fn_connect )
 		sfx->fn_connect(sfx->userdata, sfx->in, sfx->out);
-
-	return sfx;
-
-na_audio_sfx_add_failed:
-	if ( sfx )
-		na_audio_sfx_free(sfx);
-	return NULL;
 }
 
-void na_audio_sfx_remove(na_audio_t *audio, na_audio_sfx_t *sfx)
+void na_audio_sfx_disconnect(na_audio_t *audio, na_audio_sfx_t *sfx)
 {
 	na_audio_sfx_t	*in, *it;
 

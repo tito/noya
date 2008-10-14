@@ -12,6 +12,7 @@
 #define	NA_TUIO_PORT			"3333"
 #define NA_CONFIG_FN			"config.ini"
 #define NA_OUTPUT_CHANNELS		2
+#define NA_DEF_SAMPLERATE		44100
 
 #if NA_OUTPUT_CHANNELS != 2
 #error "Noya support only output stereo !"
