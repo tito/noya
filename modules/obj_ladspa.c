@@ -143,14 +143,14 @@ static void __event_dispatch(ushort ev_type, void *userdata, void *object)
 	{
 		case NA_EV_AUDIO_PLAY:
 			l_printf("Event AUDIO_PLAY : connect sfx");
-			na_audio_sfx_connect((na_audio_t *)userdata, dobj->sfx);
+			na_audio_sfx_connect((na_audio_t *)object, dobj->sfx);
 			break;
 		case NA_EV_AUDIO_STOP:
 			l_printf("Event AUDIO_PLAY : disconnect sfx");
-			na_audio_sfx_disconnect((na_audio_t *)userdata, dobj->sfx);
+			na_audio_sfx_disconnect((na_audio_t *)object, dobj->sfx);
 			break;
 		case NA_EV_ACTOR_PREPARE:
-			dobj->actor = (manager_actor_t *)userdata;
+			dobj->actor = (manager_actor_t *)object;
 			/* TODO create a visual between actors
 			 */
 			break;
@@ -164,7 +164,7 @@ static void __event_dispatch(ushort ev_type, void *userdata, void *object)
 
 static void __audio_sfx_connect(void *userdata, na_chunk_t *in, na_chunk_t *out)
 {
-	uint		i, in_audio, out_audio;
+	uint		i, in_audio = 0, out_audio = 0;
 	obj_entry_t *entry = (obj_entry_t *)userdata;
 	LADSPA_PortDescriptor port;
 
@@ -188,8 +188,11 @@ static void __audio_sfx_connect(void *userdata, na_chunk_t *in, na_chunk_t *out)
 			continue;
 		if ( LADSPA_IS_PORT_INPUT(port) )
 		{
+			l_printf("call ladspa connect_port IN %d, %p", i,
+				na_chunk_get_channel(in, in_audio)
+			);
 			entry->parent->pl_ladspa_desc->connect_port(
-				entry->parent->pl_ladspa_desc, i,
+				entry->pl_ladspa_handle, i,
 				na_chunk_get_channel(in, in_audio)
 			);
 			in_audio++;
@@ -197,8 +200,11 @@ static void __audio_sfx_connect(void *userdata, na_chunk_t *in, na_chunk_t *out)
 
 		if ( LADSPA_IS_PORT_OUTPUT(port) )
 		{
+			l_printf("call ladspa connect_port OUT %d, %p", i,
+				na_chunk_get_channel(out, out_audio)
+			);
 			entry->parent->pl_ladspa_desc->connect_port(
-				entry->parent->pl_ladspa_desc, i,
+				entry->pl_ladspa_handle, i,
 				na_chunk_get_channel(out, out_audio)
 			);
 			out_audio++;
@@ -206,7 +212,10 @@ static void __audio_sfx_connect(void *userdata, na_chunk_t *in, na_chunk_t *out)
 	}
 
 	if ( entry->parent->pl_ladspa_desc->activate );
+	{
+		l_printf("call ladspa activate");
 		entry->parent->pl_ladspa_desc->activate(entry->pl_ladspa_handle);
+	}
 }
 
 static void __audio_sfx_disconnect(void *userdata)
@@ -214,20 +223,24 @@ static void __audio_sfx_disconnect(void *userdata)
 	obj_entry_t *entry = (obj_entry_t *)userdata;
 
 	if ( entry->parent->pl_ladspa_desc->deactivate )
+	{
+		l_printf("call ladspa deactivate");
 		entry->parent->pl_ladspa_desc->deactivate(entry->pl_ladspa_handle);
+	}
 }
 
 static void __audio_sfx_process(void *userdata)
 {
 	obj_entry_t *entry = (obj_entry_t *)userdata;
 
+	l_printf("call ladspa run (size=%d)", entry->sfx->out->size);
 	entry->parent->pl_ladspa_desc->run(
 		entry->pl_ladspa_handle,
 		entry->sfx->out->size
 	);
 }
 
-static void __scene_update(unsigned short type, void *userdata, void *data)
+static void __scene_update(ushort type, void *userdata, void *data)
 {
 	obj_t					*obj = (obj_t *)userdata;
 	manager_actor_list_t	*list;
@@ -388,6 +401,8 @@ static unsigned long __ladspa_count_port(
 
 static void __load_ladspa(obj_t *obj)
 {
+	l_printf("Load ladspa on %p", obj);
+
 	/* load descriptor
 	 */
 	obj->pl_ladspa_fn = (LADSPA_Descriptor_Function)dlsym(obj->pl_handle, "ladspa_descriptor");
@@ -416,6 +431,8 @@ static void __load_ladspa(obj_t *obj)
 	obj->pl_output_count = __ladspa_count_port(obj->pl_ladspa_desc, LADSPA_PORT_AUDIO | LADSPA_PORT_OUTPUT);
 
 	l_printf("Ladspa plugin have %d IN, %d OUT", obj->pl_input_count, obj->pl_output_count);
+
+	return;
 
 load_cleanup:;
 	if ( obj->pl_handle )
