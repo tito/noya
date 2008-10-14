@@ -15,7 +15,8 @@ typedef struct na_event_s
 
 typedef struct
 {
-	na_event_t	*lh_first;
+	na_event_t				*lh_first;
+	int						have_changed;
 } na_event_list_t;
 
 #define NA_EV_CURSOR_NEW		0x01
@@ -28,10 +29,10 @@ typedef struct
 #define NA_EV_BPM				0x08
 #define NA_EV_SCENE_UPDATE		0x09
 
-#define NA_EV_ACTOR_PREPARE		0x10
-#define NA_EV_ACTOR_UNPREPARE	0x20
-#define NA_EV_AUDIO_PLAY		0x30
-#define NA_EV_AUDIO_STOP		0x40
+#define NA_EV_ACTOR_PREPARE		0xA1
+#define NA_EV_ACTOR_UNPREPARE	0xA2
+#define NA_EV_AUDIO_PLAY		0xA3
+#define NA_EV_AUDIO_STOP		0xA4
 
 /* default noya event list
  */
@@ -48,5 +49,7 @@ void na_event_free_ex(na_event_list_t *list);
 void na_event_observe_ex(na_event_list_t *list, ushort ev_type, na_event_callback callback, void *userdata);
 void na_event_send_ex(na_event_list_t *list, ushort ev_type, void *data);
 void na_event_remove_ex(na_event_list_t *list, ushort ev_type, na_event_callback callback, void *userdata);
+int  na_event_have_changed(na_event_list_t *list);
+void na_event_clear_changed(na_event_list_t *list);
 
 #endif

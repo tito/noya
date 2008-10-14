@@ -23,7 +23,9 @@ struct obj_s;
 
 typedef struct obj_entry_s
 {
-	struct obj_s			*parent; /* used from event */
+	struct obj_s			*parent;	/* used from event */
+
+	uint					id;			/* actor id */
 	manager_actor_t			*actor;
 	na_audio_t				*audio;
 	LIST_ENTRY(obj_entry_s) next;
@@ -84,31 +86,15 @@ static inline float __dist(float xa, float ya, float xb, float yb)
 	return sqrtf(pow2(xb-xa) + pow2(yb-ya));
 }
 
-static obj_entry_t *__find_entry_by_actor(obj_entry_list_t *list, manager_actor_t *actor)
+static obj_entry_t *__find_entry_by_id(obj_entry_list_t *list, uint id)
 {
 	obj_entry_t *it;
 
 	assert( list != NULL );
-	assert( actor != NULL );
 
 	LIST_FOREACH(it, list, next)
 	{
-		if ( it->actor == actor )
-			return it;
-	}
-	return NULL;
-}
-
-static obj_entry_t *__find_entry_by_audio(obj_entry_list_t *list, na_audio_t *audio)
-{
-	obj_entry_t *it;
-
-	assert( list != NULL );
-	assert( audio != NULL );
-
-	LIST_FOREACH(it, list, next)
-	{
-		if ( it->audio == audio )
+		if ( it->id == id )
 			return it;
 	}
 	return NULL;
@@ -133,6 +119,7 @@ static obj_entry_t *__entry_new(obj_entry_list_t *list)
 static void __entry_free(obj_entry_list_t *list, obj_entry_t *entry)
 {
 	assert( entry != NULL );
+	LIST_REMOVE(entry, next);
 	free(entry);
 }
 
@@ -165,7 +152,7 @@ static void __scene_update(unsigned short type, void *userdata, void *data)
 
 		assert( it->tuio != NULL );
 
-		dobj = __find_entry_by_actor(&obj->entries, it);
+		dobj = __find_entry_by_id(&obj->entries, it->id);
 
 		dist = __dist(
 			it->tuio->xpos,
@@ -174,7 +161,13 @@ static void __scene_update(unsigned short type, void *userdata, void *data)
 			obj->actor->tuio->ypos
 		);
 
-		l_printf("[%f,%f] -> [%f, %f] = dist %f", obj->actor->tuio->xpos, obj->actor->tuio->ypos, it->tuio->xpos, it->tuio->ypos, dist);
+#ifdef DEBUG_INTERNAL
+		l_printf("[%f,%f] -> [%f, %f] = dist %f / min %f / max %f",
+				obj->actor->tuio->xpos, obj->actor->tuio->ypos,
+				it->tuio->xpos, it->tuio->ypos,
+				dist, obj->dist_min, obj->dist_max
+		);
+#endif
 
 		if ( dist < obj->dist_min )
 		{
@@ -207,7 +200,8 @@ static void __scene_update(unsigned short type, void *userdata, void *data)
 				continue;
 			}
 
-			dobj->parent = obj;
+			dobj->id		= it->id;
+			dobj->parent	= obj;
 
 			(*it->scene_actor->mod->event_observe)(it->scene_actor->data_mod,
 					NA_EV_ACTOR_PREPARE, __event_dispatch, dobj);
@@ -217,6 +211,8 @@ static void __scene_update(unsigned short type, void *userdata, void *data)
 					NA_EV_AUDIO_PLAY, __event_dispatch, dobj);
 			(*it->scene_actor->mod->event_observe)(it->scene_actor->data_mod,
 					NA_EV_AUDIO_STOP, __event_dispatch, dobj);
+
+			l_printf("Object %d attached to %d", obj->actor->id, dobj->id);
 		}
 		else if ( dist > obj->dist_max )
 		{
@@ -234,6 +230,8 @@ static void __scene_update(unsigned short type, void *userdata, void *data)
 					NA_EV_AUDIO_PLAY, __event_dispatch, dobj);
 			(*it->scene_actor->mod->event_remove)(it->scene_actor->data_mod,
 					NA_EV_AUDIO_STOP, __event_dispatch, dobj);
+
+			l_printf("Object %d detached to %d", obj->actor->id, dobj->id);
 
 			__entry_free(&obj->entries, dobj);
 
@@ -401,6 +399,15 @@ void lib_object_free(obj_t *obj)
 {
 	assert( obj != NULL );
 
+	/* unload ladspa
+	 */
+	if ( obj->pl_handle )
+		dlclose(obj->pl_handle);
+	if ( obj->pl_filename )
+		free(obj->pl_filename);
+	if ( obj->pl_name )
+		free(obj->pl_name);
+
 	if ( obj->top )
 		(*obj->top->widget_free)(obj->data_top);
 	if ( obj->bottom )
@@ -535,15 +542,6 @@ void lib_object_unprepare(obj_t *obj)
 	 */
 	obj->actor		= NULL;
 	obj->group_cube	= NULL;
-
-	/* unload ladspa
-	 */
-	if ( obj->pl_handle )
-		dlclose(obj->pl_handle);
-	if ( obj->pl_filename )
-		free(obj->pl_filename);
-	if ( obj->pl_name )
-		free(obj->pl_name);
 
 	if ( obj->top )
 		(*obj->top->widget_unprepare)(obj->data_top);

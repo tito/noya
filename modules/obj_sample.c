@@ -347,10 +347,17 @@ _fn_control lib_object_get_control(char *name)
 
 void lib_event_observe(obj_t *obj, ushort ev_type, na_event_callback callback, void *userdata)
 {
+	l_printf("Add observer %d", ev_type);
 	na_event_observe_ex(&obj->observers, ev_type, callback, userdata);
+
+	if ( ev_type == NA_EV_ACTOR_PREPARE )
+		na_event_send_ex(&obj->observers, NA_EV_ACTOR_PREPARE, obj->actor);
+	else if ( ev_type == NA_EV_AUDIO_PLAY )
+		na_event_send_ex(&obj->observers, NA_EV_AUDIO_PLAY, obj->audio);
 }
 
 void lib_event_remove(obj_t *obj, ushort ev_type, na_event_callback callback, void *userdata)
 {
+	l_printf("Remove observer %d", ev_type);
 	na_event_remove_ex(&obj->observers, ev_type, callback, userdata);
 }

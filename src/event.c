@@ -51,6 +51,8 @@ void na_event_observe_ex(na_event_list_t *list, ushort ev_type, na_event_callbac
 	event->userdata	= userdata;
 
 	LIST_INSERT_HEAD(list, event, next);
+
+	list->have_changed = 1;
 }
 
 void na_event_send_ex(na_event_list_t *list, ushort ev_type, void *data)
@@ -82,8 +84,19 @@ void na_event_remove_ex(na_event_list_t *list, ushort ev_type, na_event_callback
 			return;
 		}
 	}
+
+	list->have_changed = 1;
 }
 
+int  na_event_have_changed(na_event_list_t *list)
+{
+	return list->have_changed;
+}
+
+void na_event_clear_changed(na_event_list_t *list)
+{
+	list->have_changed = 0;
+}
 
 void na_event_init(void)
 {

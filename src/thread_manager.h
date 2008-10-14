@@ -12,11 +12,11 @@ typedef struct manager_actor_s
 {
 	/* idx of object (in tuio env)
 	 */
-	uint		id;
+	uint					id;
 
 	/* fiducial id
 	 */
-	tuio_object_t		*tuio;
+	tuio_object_t			*tuio;
 
 	/* base actor from scene
 	 */
@@ -24,8 +24,8 @@ typedef struct manager_actor_s
 
 	/* rendering actor
 	 */
-	ClutterActor		*clutter_actor;
-	ClutterActor		*rotate_actor;
+	ClutterActor			*clutter_actor;
+	ClutterActor			*rotate_actor;
 
 	LIST_ENTRY(manager_actor_s) next;
 } manager_actor_t;
