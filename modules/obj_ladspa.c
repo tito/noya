@@ -144,10 +144,12 @@ static void __event_dispatch(ushort ev_type, void *userdata, void *object)
 		case NA_EV_AUDIO_PLAY:
 			l_printf("Event AUDIO_PLAY : connect sfx");
 			na_audio_sfx_connect((na_audio_t *)object, dobj->sfx);
+			dobj->audio = object;
 			break;
 		case NA_EV_AUDIO_STOP:
 			l_printf("Event AUDIO_PLAY : disconnect sfx");
 			na_audio_sfx_disconnect((na_audio_t *)object, dobj->sfx);
+			dobj->audio = object;
 			break;
 		case NA_EV_ACTOR_PREPARE:
 			dobj->actor = (manager_actor_t *)object;
@@ -166,7 +168,8 @@ static void __audio_sfx_connect(void *userdata, na_chunk_t *in, na_chunk_t *out)
 {
 	uint		i, in_audio = 0, out_audio = 0;
 	obj_entry_t *entry = (obj_entry_t *)userdata;
-	LADSPA_PortDescriptor port;
+	LADSPA_Data				dummy_port;
+	LADSPA_PortDescriptor	port;
 
 	/* we cannot handle differents channels between IO from chunk and plugin
 	 */
@@ -185,8 +188,14 @@ static void __audio_sfx_connect(void *userdata, na_chunk_t *in, na_chunk_t *out)
 		port = entry->parent->pl_ladspa_desc->PortDescriptors[i];
 
 		if ( ! LADSPA_IS_PORT_AUDIO(port) )
-			continue;
-		if ( LADSPA_IS_PORT_INPUT(port) )
+		{
+			l_printf("call ladspa connect_port DUMMY %d", i);
+			entry->parent->pl_ladspa_desc->connect_port(
+				entry->pl_ladspa_handle, i,
+				&dummy_port
+			);
+		}
+		else if ( LADSPA_IS_PORT_INPUT(port) )
 		{
 			l_printf("call ladspa connect_port IN %d, %p", i,
 				na_chunk_get_channel(in, in_audio)
@@ -197,8 +206,7 @@ static void __audio_sfx_connect(void *userdata, na_chunk_t *in, na_chunk_t *out)
 			);
 			in_audio++;
 		}
-
-		if ( LADSPA_IS_PORT_OUTPUT(port) )
+		else if ( LADSPA_IS_PORT_OUTPUT(port) )
 		{
 			l_printf("call ladspa connect_port OUT %d, %p", i,
 				na_chunk_get_channel(out, out_audio)
@@ -283,9 +291,6 @@ static void __scene_update(ushort type, void *userdata, void *data)
 			if ( dobj != NULL )
 				continue;
 
-			/* TODO write attach object code.
-			 */
-
 			/* test is we can connect to this object
 			 */
 			l_printf("Try to attach on object %d", it->id);
@@ -301,6 +306,9 @@ static void __scene_update(ushort type, void *userdata, void *data)
 				l_errorf("No event interface on object %d, skip", it->id);
 				continue;
 			}
+
+			/* create attached object
+			 */
 
 			dobj = __entry_new(&obj->entries);
 			if ( dobj == NULL )
@@ -361,6 +369,9 @@ static void __scene_update(ushort type, void *userdata, void *data)
 
 			/* TODO write detach object code.
 			 */
+
+			__event_dispatch(NA_EV_AUDIO_STOP, dobj, dobj->audio);
+			__audio_sfx_disconnect(dobj);
 
 			(*it->scene_actor->mod->event_remove)(it->scene_actor->data_mod,
 					NA_EV_ACTOR_PREPARE, __event_dispatch, dobj);
