@@ -40,9 +40,6 @@ na_service_t services[] = {
  */
 void signal_leave(int sig)
 {
-	/* XXX Check if we need to get a lock or not ?
-	 * XXX Assure it's an atomic operation
-	 */
 	l_printf("Catch signal %d, leave", sig);
 	if ( g_want_leave )
 	{
@@ -110,7 +107,7 @@ int main(int argc, char **argv)
 {
 	na_service_t	*service;
 
-	printf("%s\n\n", NA_BANNER);
+	printf("%s\n%s\n\n", NA_BANNER, NA_WEBSITE);
 
 	/* read options
 	 */

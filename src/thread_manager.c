@@ -14,9 +14,7 @@
 #include "thread_audio.h"
 #include "scene.h"
 #include "dump.h"
-
-#define TUIO_PI_TO_DEG(a)	((a - 3.1416) * 57.2957795)    //360 / 2 x PI
-#define PI2					6.2832
+#include "utils.h"
 
 LOG_DECLARE("MANAGER");
 pthread_t				thread_manager;

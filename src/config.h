@@ -9,10 +9,20 @@
 #define NA_VERSION				"0.1alpha"
 #define NA_TITLE				"NOYA - Real time music"
 #define NA_BANNER				"Noya, ver " NA_VERSION " - by Mathieu Virbel <tito@bankiz.org>"
+#define NA_WEBSITE				"Visit http://noya.txzone.net/ for more information"
 #define	NA_TUIO_PORT			"3333"
 #define NA_CONFIG_FN			"config.ini"
 #define NA_OUTPUT_CHANNELS		2
 #define NA_DEF_SAMPLERATE		44100
+#define NA_DEF_SOUNDS_MAX		128
+#define NA_DEF_PATH_LEN			512
+
+#define	TUIO_OBJECT_OSCPATH				"/tuio/2Dobj"
+#define	TUIO_CURSOR_OSCPATH				"/tuio/2Dcur"
+#define	TUIO_OBJECT_MAX					128
+#define	TUIO_CURSOR_MAX					64
+#define	TUIO_CURSOR_THRESHOLD_CLICK		3
+
 
 #if NA_OUTPUT_CHANNELS != 2
 #error "Noya support only output stereo !"

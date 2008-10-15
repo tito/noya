@@ -12,8 +12,6 @@
 
 LOG_DECLARE("SCENE");
 
-#define MAX_PATH	128
-
 na_scene_t *na_scene_load(char *name)
 {
 	na_scene_t				*scene;
@@ -24,13 +22,13 @@ na_scene_t *na_scene_load(char *name)
 	na_module_t				*module;
 	char					*k_idx,
 							*k_prop,
-							filename[MAX_PATH];
+							filename[NA_DEF_PATH_LEN];
 	int						act_idx;
 
 	assert( name != NULL );
 
 	l_printf("Load scene %s", name);
-	snprintf(filename, MAX_PATH, "%s/%s/%s.ini",
+	snprintf(filename, sizeof(filename), "%s/%s/%s.ini",
 		na_config_get(NA_CONFIG_DEFAULT, "noya.path.scenes"),
 		name, name
 	);
@@ -40,9 +38,9 @@ na_scene_t *na_scene_load(char *name)
 		goto na_scene_load_error;
 	bzero(scene, sizeof(na_scene_t));
 
-	scene->name = strdup(name);
-	scene->bpm = 125;
-	scene->precision = 4;
+	scene->name			= strdup(name);
+	scene->bpm			= 125;
+	scene->precision	= 4;
 
 	if ( na_config_load(&config_init, filename) )
 		goto na_scene_load_error;
@@ -191,7 +189,6 @@ na_scene_actor_base_t *na_scene_actor_get(na_scene_t *scene, int idx)
 void na_scene_prop_set(na_scene_t *scene, na_scene_actor_base_t *actor, char *key, char *value)
 {
 	void	*data;
-	char	filename[MAX_PATH];
 
 	assert( actor != NULL );
 

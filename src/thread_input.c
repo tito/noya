@@ -21,16 +21,6 @@ static na_atomic_t	c_want_leave	= 0;
 static na_atomic_t	c_running		= 0;
 static short		c_state			= THREAD_STATE_START;
 
-#define		BUFFER_LEN			512
-#define		PATH_LEN			128
-
-#define		TUIO_OBJECT_OSCPATH		"/tuio/2Dobj"
-#define		TUIO_CURSOR_OSCPATH		"/tuio/2Dcur"
-
-#define		TUIO_OBJECT_MAX					128
-#define		TUIO_CURSOR_MAX					64
-#define		TUIO_CURSOR_THRESHOLD_CLICK		3
-
 static tuio_object_t	t_objs[TUIO_OBJECT_MAX];				/*< object info */
 static uint				t_objs_alive[TUIO_OBJECT_MAX],			/*< actual object alive */
 						t_objs_alive_o[TUIO_OBJECT_MAX];		/*< old alive object (needed for event) */

@@ -13,10 +13,6 @@
 #include "audio.h"
 #include "thread_audio.h"
 
-#define BUFFER_LEN		2048
-#define MAX_CHANNELS	2
-#define MAX_SOUNDS		128
-
 LOG_DECLARE("AUDIO");
 MUTEX_IMPORT(audiosfx);
 
@@ -67,7 +63,7 @@ static void thread_audio_preload(void)
 
 		entry->duration = sinfo.frames / sinfo.samplerate;
 
-		entry->data = (float *)malloc(entry->totalframes * sizeof(float) * MAX_CHANNELS);
+		entry->data = (float *)malloc(entry->totalframes * sizeof(float) * NA_OUTPUT_CHANNELS);
 		if ( entry->data == NULL )
 			goto na_audio_preload_clean;
 
@@ -98,7 +94,7 @@ static int audio_output_callback(
 	PaStreamCallbackFlags statusFlags,
 	void *userData)
 {
-	static na_audio_t	*entries[MAX_SOUNDS];
+	static na_audio_t	*entries[NA_DEF_SOUNDS_MAX];
 	static int			entries_count;
 	na_audio_t			*entry;
 	float				*out = (float *)outputBuffer;
