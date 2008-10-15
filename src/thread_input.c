@@ -37,12 +37,14 @@ static void _lo_error(int num, const char *msg, const char *path)
     l_errorf("liblo server error %d in path %s: %s\n", num, path, msg);
 }
 
+#if 0
 static int _lo_quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 void *data, void *user_data)
 {
 	c_want_leave = 1;
     return 0;
 }
+#endif
 
 static inline tuio_object_t *_tuio_object_get_by_idx(uint id)
 {

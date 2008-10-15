@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 #include <assert.h>
 #include <clutter/clutter.h>

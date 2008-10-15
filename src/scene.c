@@ -172,6 +172,8 @@ na_scene_actor_base_t *na_scene_actor_new(na_scene_t *scene, int idx)
 	actor->id = idx;
 
 	LIST_INSERT_HEAD(&scene->actors, actor, next);
+
+	return actor;
 }
 
 na_scene_actor_base_t *na_scene_actor_get(na_scene_t *scene, int idx)
@@ -188,8 +190,6 @@ na_scene_actor_base_t *na_scene_actor_get(na_scene_t *scene, int idx)
 
 void na_scene_prop_set(na_scene_t *scene, na_scene_actor_base_t *actor, char *key, char *value)
 {
-	void	*data;
-
 	assert( actor != NULL );
 
 	/* base object
@@ -232,10 +232,6 @@ void na_scene_prop_set(na_scene_t *scene, na_scene_actor_base_t *actor, char *ke
 		(*actor->mod->object_config)(actor->data_mod, key, value);
 	else
 		l_errorf("unknown key property %s", key);
-	return;
-
-na_scene_prop_set_invalid_size:;
-	l_errorf("invalid size for %s", key);
 	return;
 }
 

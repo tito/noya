@@ -47,6 +47,7 @@ typedef struct
 
 obj_t def_obj = {0};
 
+#if 0
 static void *object_resolve_value(obj_t *obj, char *value)
 {
 	assert( obj != NULL );
@@ -58,6 +59,7 @@ static void *object_resolve_value(obj_t *obj, char *value)
 		return &obj->entryidx;
 	return NULL;
 }
+#endif
 
 void lib_init(char **name, int *type)
 {
@@ -365,9 +367,10 @@ void lib_object_update(obj_t *obj)
 	assert( obj != NULL );
 }
 
-void ctl_volume(obj_t *obj, float value)
+void ctl_volume(void *data, float value)
 {
 	obj_entry_t *entry;
+	obj_t		*obj = (obj_t *)data;
 
 	assert( obj != NULL );
 

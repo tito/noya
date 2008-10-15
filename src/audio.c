@@ -249,8 +249,6 @@ void na_audio_sfx_connect(na_audio_t *audio, na_audio_sfx_t *sfx)
 
 void na_audio_sfx_disconnect(na_audio_t *audio, na_audio_sfx_t *sfx)
 {
-	na_audio_sfx_t	*in, *it;
-
 	assert( sfx != NULL );
 
 	/* link the next sfx to the current link

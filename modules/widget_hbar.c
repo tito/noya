@@ -9,7 +9,7 @@
 
 #define MODULE_NAME "hbar"
 
-LOG_DECLARE("MOD_WIDGET_HBAR");
+//LOG_DECLARE("MOD_WIDGET_HBAR");
 
 typedef struct
 {

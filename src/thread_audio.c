@@ -48,7 +48,7 @@ static void thread_audio_preload(void)
 
 		l_printf("Got %s (samplerate=%d, channels=%d, frames=%d)",
 			entry->filename, sinfo.samplerate,
-			sinfo.channels, sinfo.frames
+			sinfo.channels, (int)sinfo.frames
 		);
 
 		if ( sinfo.channels <= 0 || sinfo.channels > 2 )

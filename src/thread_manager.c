@@ -6,6 +6,7 @@
 #include <sys/queue.h>
 #include <assert.h>
 #include <clutter/clutter.h>
+#include <sys/time.h>
 
 #include "noya.h"
 #include "event.h"
@@ -51,13 +52,10 @@ manager_actor_t *na_manager_actor_get_by_fid(uint fid)
 
 static void manager_event_object_new(unsigned short type, void *userdata, void *data)
 {
-	ClutterColor			col_background,
-							col_border;
 	na_scene_actor_base_t	*actor;
 	tuio_object_t			*o = (tuio_object_t *)data;
 	manager_actor_t			*el;
-	ClutterActor			*stage,
-							*ac;
+	ClutterActor			*stage;
 	uint					wx,
 							wy;
 
@@ -145,7 +143,6 @@ static void manager_event_object_new(unsigned short type, void *userdata, void *
 static void manager_event_object_del(unsigned short type, void *userdata, void *data)
 {
 	tuio_object_t	*o = (tuio_object_t *)data;
-	na_audio_t	*audio;
 	manager_actor_t	*it = NULL;
 
 	for ( it = manager_actors_list.lh_first; it != NULL; it = it->next.le_next )
@@ -180,7 +177,6 @@ static void manager_event_object_del(unsigned short type, void *userdata, void *
 
 static void manager_event_object_set(unsigned short type, void *userdata, void *data)
 {
-	na_audio_t	*audio;
 	tuio_object_t	*o = (tuio_object_t *)data;
 	manager_actor_t	*it;
 	ClutterActor *stage;

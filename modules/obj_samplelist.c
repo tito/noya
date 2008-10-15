@@ -398,16 +398,20 @@ void lib_object_update(obj_t *obj)
 		(*obj->right->widget_update)(obj->data_right);
 }
 
-void ctl_volume(obj_t *obj, float value)
+void ctl_volume(void *data, float value)
 {
+	obj_t *obj = (obj_t *)data;
+
 	assert( obj != NULL );
+
 	na_audio_set_volume(obj->entries[obj->idx].audio, value);
 }
 
-void ctl_sampleidx(obj_t *obj, float value)
+void ctl_sampleidx(void *data, float value)
 {
 	int		last_idx, sens;
 	float	amplitude;
+	obj_t	*obj = (obj_t *)data;
 
 	assert( obj != NULL );
 

@@ -13,7 +13,7 @@ LOG_DECLARE("MODULE");
 
 static na_module_head_t na_module_list;
 
-static int na_module_filter(const struct dirent *dirent)
+static int na_module_filter(struct dirent *dirent)
 {
 	unsigned int len;
 	len = strlen (dirent->d_name);
@@ -42,7 +42,7 @@ void na_modules_init()
 		return;
 	}
 
-	scandir_entries = scandir(path,  &scandir_list, na_module_filter, alphasort);
+	scandir_entries = scandir(path, &scandir_list, na_module_filter, alphasort);
 	if ( scandir_entries <= 0 )
 		return;
 

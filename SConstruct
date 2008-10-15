@@ -32,10 +32,12 @@ for lib_file in lib_files:
 	env.ParseConfig('pkg-config %s --cflags' % lib_file)
 
 # Debug
+env.AppendUnique(CCFLAGS='-Wall')
+env.AppendUnique(CCFLAGS='-Werror')
 env.AppendUnique(CCFLAGS='-ggdb')
 env.AppendUnique(CCFLAGS='-O0')
-env.AppendUnique(CCFLAGS='-DNA_DEBUG')
 env.AppendUnique(CCFLAGS='-Isrc')
+env.AppendUnique(CCFLAGS='-DNA_DEBUG')
 
 # Libs
 import os
