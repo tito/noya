@@ -66,6 +66,12 @@ function ladspa()
 	done
 }
 
+function noya()
+{
+	scons
+	LC_ALL=C ./noya $@
+}
+
 case "$1" in
 	"simulator")
 		simulator;;
@@ -73,6 +79,8 @@ case "$1" in
 		reactivision;;
 	"ladspa")
 		ladspa;;
+	"noya")
+		noya $@;;
 	*)
 		usage;;
 esac

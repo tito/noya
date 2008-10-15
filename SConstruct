@@ -33,7 +33,6 @@ for lib_file in lib_files:
 
 # Debug
 env.AppendUnique(CCFLAGS='-Wall')
-env.AppendUnique(CCFLAGS='-Werror')
 env.AppendUnique(CCFLAGS='-ggdb')
 env.AppendUnique(CCFLAGS='-O0')
 env.AppendUnique(CCFLAGS='-Isrc')

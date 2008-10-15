@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <dlfcn.h>
 #include <math.h>
+#include <locale.h>
 
 #include "noya.h"
 #include "audio.h"
@@ -637,9 +638,12 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 		__load_ladspa(obj);
 	}
 	else if ( strcmp(key, "distmin") == 0 )
-		obj->dist_min = atof(value);
+	{
+		obj->dist_min = (float)strtod(value, NULL);
+		l_printf("obj->distmin = %f", obj->dist_min);
+	}
 	else if ( strcmp(key, "distmax") == 0 )
-		obj->dist_max = atof(value);
+		obj->dist_max = (float)strtod(value, NULL);
 	else
 		l_printf("Invalid configuration %s", key);
 }

@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <locale.h>
 
 #include "noya.h"
 
