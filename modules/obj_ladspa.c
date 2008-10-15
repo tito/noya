@@ -137,7 +137,6 @@ static void __event_dispatch(ushort ev_type, void *userdata, void *object)
 
 	assert( userdata != NULL );
 	assert( dobj != NULL );
-	assert( dobj->pl_ladspa_handle != NULL );
 	assert( dobj->sfx != NULL );
 
 	switch ( ev_type )
@@ -167,10 +166,23 @@ static void __event_dispatch(ushort ev_type, void *userdata, void *object)
 
 static void __audio_sfx_connect(void *userdata, na_chunk_t *in, na_chunk_t *out)
 {
-	uint		i, in_audio = 0, out_audio = 0;
-	obj_entry_t *entry = (obj_entry_t *)userdata;
+	uint					i,
+							in_audio = 0,
+							out_audio = 0;
+	obj_entry_t				*entry = (obj_entry_t *)userdata;
 	LADSPA_Data				dummy_port;
 	LADSPA_PortDescriptor	port;
+
+	/* create an instance of ladspa plugin for this object
+	 */
+	entry->pl_ladspa_handle = entry->parent->pl_ladspa_desc->instantiate(
+		entry->parent->pl_ladspa_desc, NA_DEF_SAMPLERATE
+	);
+	if ( entry->pl_ladspa_handle == NULL )
+	{
+		l_errorf("Unable to have a plugin instance !");
+		return;
+	}
 
 	/* we cannot handle differents channels between IO from chunk and plugin
 	 */
@@ -231,18 +243,28 @@ static void __audio_sfx_disconnect(void *userdata)
 {
 	obj_entry_t *entry = (obj_entry_t *)userdata;
 
+	if ( entry->pl_ladspa_handle == NULL )
+		return;
+
 	if ( entry->parent->pl_ladspa_desc->deactivate )
 	{
 		l_printf("call ladspa deactivate");
 		entry->parent->pl_ladspa_desc->deactivate(entry->pl_ladspa_handle);
 	}
+
+	if ( entry->parent->pl_ladspa_desc->cleanup )
+	{
+		l_printf("call ladspa cleanup");
+		entry->parent->pl_ladspa_desc->cleanup(entry->pl_ladspa_handle);
+	}
+
+	entry->pl_ladspa_handle = NULL;
 }
 
 static void __audio_sfx_process(void *userdata)
 {
 	obj_entry_t *entry = (obj_entry_t *)userdata;
 
-	l_printf("call ladspa run (size=%d)", entry->sfx->out->size);
 	entry->parent->pl_ladspa_desc->run(
 		entry->pl_ladspa_handle,
 		entry->sfx->out->size
@@ -320,18 +342,6 @@ static void __scene_update(ushort type, void *userdata, void *data)
 
 			dobj->id		= it->id;
 			dobj->parent	= obj;
-
-			/* create an instance of ladspa plugin for this object
-			 */
-			dobj->pl_ladspa_handle = obj->pl_ladspa_desc->instantiate(
-				obj->pl_ladspa_desc, NA_DEF_SAMPLERATE
-			);
-			if ( dobj->pl_ladspa_handle == NULL )
-			{
-				l_errorf("Unable to have a plugin instance !");
-				__entry_free(&obj->entries, dobj);
-				continue;
-			}
 
 			/* create sfx
 			 */

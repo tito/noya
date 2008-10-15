@@ -72,6 +72,12 @@ function noya()
 	LC_ALL=C ./noya $@
 }
 
+function debugnoya()
+{
+	scons
+	LC_ALL=C gdb -args ./noya $@
+}
+
 case "$1" in
 	"simulator")
 		simulator;;
@@ -81,6 +87,8 @@ case "$1" in
 		ladspa;;
 	"noya")
 		noya $@;;
+	"debugnoya")
+		debugnoya $@;;
 	*)
 		usage;;
 esac
