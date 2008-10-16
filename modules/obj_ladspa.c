@@ -173,6 +173,15 @@ static void __audio_sfx_connect(void *userdata, na_chunk_t *in, na_chunk_t *out)
 	LADSPA_Data				dummy_port;
 	LADSPA_PortDescriptor	port;
 
+	/* We only support :
+	 * mono/stereo input chunk
+	 * mono/stereo input plugin
+	 * -> 1-1, 1-2, 2-1, 2-2
+	 */
+
+	if ( na_chunk_get_channels(in) > NA_OUTPUT_CHANNELS )
+		return;
+
 	/* create an instance of ladspa plugin for this object
 	 */
 	entry->pl_ladspa_handle = entry->parent->pl_ladspa_desc->instantiate(
