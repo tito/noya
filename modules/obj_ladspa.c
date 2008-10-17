@@ -31,7 +31,8 @@ typedef struct obj_entry_s
 	na_audio_t				*audio;
 
 	na_audio_sfx_t			*sfx;		/* buffer for sfx */
-	LADSPA_Handle			*pl_ladspa_handle; /* effect instance for sfx */
+	LADSPA_Handle			**hld_list; /* effect instance for sfx */
+	ushort					hld_count;
 
 	LIST_ENTRY(obj_entry_s) next;
 } obj_entry_t;
@@ -56,6 +57,10 @@ typedef struct obj_s
 
 	int					pl_input_count;
 	int					pl_output_count;
+	int					pl_ctl_input_count;
+	int					pl_ctl_output_count;
+	float				*ctl_list;
+	ushort				ctl_count;
 
 	/* list of connected object
 	 */
@@ -166,118 +171,187 @@ static void __event_dispatch(ushort ev_type, void *userdata, void *object)
 
 static void __audio_sfx_connect(void *userdata, na_chunk_t *in, na_chunk_t *out)
 {
-	uint					i,
-							in_audio = 0,
-							out_audio = 0;
+	uint					i, j,
+							in_audio,
+							out_audio,
+							in_ctl,
+							out_reset	= 0;
 	obj_entry_t				*entry = (obj_entry_t *)userdata;
-	LADSPA_Data				dummy_port;
+	LADSPA_Data				dummy_port = 0;
 	LADSPA_PortDescriptor	port;
+	LADSPA_Handle			*ladspa_handle;
 
-	/* We only support :
-	 * mono/stereo input chunk
-	 * mono/stereo input plugin
-	 * -> 1-1, 1-2, 2-1, 2-2
+	/* Here are the scheme that algo support :
+	 * - 1 IN / 1 OUT plugin : 2 instances needed
+	 * - 2 IN / 2 OUT plugin : 1 instance needed
+	 * - 1 IN / 2 OUT plugin : 2 instances needed + pre output buffer
+	 * other : not supported.
+	 *
+	 * Also, output MUST be stereo...
 	 */
 
-	if ( na_chunk_get_channels(in) > NA_OUTPUT_CHANNELS )
-		return;
+	assert( na_chunk_get_channels(in) <= NA_OUTPUT_CHANNELS );
+	assert( na_chunk_get_channels(out) == NA_OUTPUT_CHANNELS );
+	assert( entry->parent->pl_input_count > 0 );
+	assert( entry->parent->pl_input_count <= NA_OUTPUT_CHANNELS );
+	assert( entry->parent->pl_output_count > 0 );
+	assert( entry->parent->pl_output_count <= NA_OUTPUT_CHANNELS );
 
-	/* create an instance of ladspa plugin for this object
+	/* Compute IN channels
 	 */
-	entry->pl_ladspa_handle = entry->parent->pl_ladspa_desc->instantiate(
-		entry->parent->pl_ladspa_desc, NA_DEF_SAMPLERATE
-	);
-	if ( entry->pl_ladspa_handle == NULL )
+	if ( na_chunk_get_channels(in) == 1 )
 	{
-		l_errorf("Unable to have a plugin instance !");
+		if ( entry->parent->pl_input_count == 1 )
+			entry->hld_count = 1;
+		else
+			entry->hld_count = 2;
+	}
+	else if ( na_chunk_get_channels(in) == 2 )
+	{
+		if ( entry->parent->pl_input_count == 1 )
+			entry->hld_count = 2;
+		else
+			entry->hld_count = 1;
+	}
+	entry->hld_list		= malloc(sizeof(entry->hld_list) * entry->hld_count);
+	if ( entry->hld_list == NULL )
+	{
+		l_errorf("Cannot malloc hld_list");
+		entry->hld_count = 0;
 		return;
 	}
+	bzero(entry->hld_list, sizeof(entry->hld_list) * entry->hld_count);
 
-	/* we cannot handle differents channels between IO from chunk and plugin
+	/* Compute OUT channels
 	 */
-	if ( na_chunk_get_channels(in)  != entry->parent->pl_input_count ||
-		 na_chunk_get_channels(out) != entry->parent->pl_output_count )
+	if ( entry->parent->pl_output_count == 2 && entry->hld_count == 2 )
 	{
-		l_errorf("I/O channels not corresponding : Chunk [%d,%d] vs Effect [%d,%d]",
-			na_chunk_get_channels(in), na_chunk_get_channels(out),
-			entry->parent->pl_input_count, entry->parent->pl_output_count
+		out_reset = 1;
+		/* TODO create pre-output buffer for this case.
+		 */
+	}
+
+	in_audio	= 0;
+	out_audio	= 0;
+	in_ctl		= 0;
+
+	for ( j = 0; j < entry->hld_count; j++ )
+	{
+		/* create an instance of ladspa plugin for this object
+		 */
+		ladspa_handle = entry->parent->pl_ladspa_desc->instantiate(
+			entry->parent->pl_ladspa_desc, NA_DEF_SAMPLERATE
 		);
-		return;
-	}
-
-	for ( i = 0; i < entry->parent->pl_ladspa_desc->PortCount; i++ )
-	{
-		port = entry->parent->pl_ladspa_desc->PortDescriptors[i];
-
-		if ( ! LADSPA_IS_PORT_AUDIO(port) )
+		if ( ladspa_handle == NULL )
 		{
-			l_printf("call ladspa connect_port DUMMY %d", i);
-			entry->parent->pl_ladspa_desc->connect_port(
-				entry->pl_ladspa_handle, i,
-				&dummy_port
-			);
+			l_errorf("Unable to have a plugin instance !");
+			return;
 		}
-		else if ( LADSPA_IS_PORT_INPUT(port) )
-		{
-			l_printf("call ladspa connect_port IN %d, %p", i,
-				na_chunk_get_channel(in, in_audio)
-			);
-			entry->parent->pl_ladspa_desc->connect_port(
-				entry->pl_ladspa_handle, i,
-				na_chunk_get_channel(in, in_audio)
-			);
-			in_audio++;
-		}
-		else if ( LADSPA_IS_PORT_OUTPUT(port) )
-		{
-			l_printf("call ladspa connect_port OUT %d, %p", i,
-				na_chunk_get_channel(out, out_audio)
-			);
-			entry->parent->pl_ladspa_desc->connect_port(
-				entry->pl_ladspa_handle, i,
-				na_chunk_get_channel(out, out_audio)
-			);
-			out_audio++;
-		}
-	}
 
-	if ( entry->parent->pl_ladspa_desc->activate );
-	{
-		l_printf("call ladspa activate");
-		entry->parent->pl_ladspa_desc->activate(entry->pl_ladspa_handle);
+		entry->hld_list[j] = ladspa_handle;
+
+		if ( out_reset == 1 )
+			out_audio = 0;
+
+		for ( i = 0; i < entry->parent->pl_ladspa_desc->PortCount; i++ )
+		{
+			port = entry->parent->pl_ladspa_desc->PortDescriptors[i];
+
+			if ( LADSPA_IS_PORT_CONTROL(port) )
+			{
+				if ( LADSPA_IS_PORT_INPUT(port) )
+				{
+					l_printf("call ladspa connect_port CTL_IN %d to %d", i, in_ctl);
+					entry->parent->pl_ladspa_desc->connect_port(
+						ladspa_handle, i,
+						&entry->parent->ctl_list[in_ctl]
+					);
+					in_ctl++;
+				}
+				else if ( LADSPA_IS_PORT_OUTPUT(port) )
+				{
+					l_printf("call ladspa connect_port DUMMY %d", i);
+					entry->parent->pl_ladspa_desc->connect_port(
+						ladspa_handle, i,
+						&dummy_port
+					);
+				}
+			}
+			else if ( LADSPA_IS_PORT_INPUT(port) )
+			{
+				l_printf("call ladspa connect_port IN %d, %p", i,
+					na_chunk_get_channel(in, in_audio)
+				);
+				entry->parent->pl_ladspa_desc->connect_port(
+					ladspa_handle, i,
+					na_chunk_get_channel(in, in_audio)
+				);
+				in_audio++;
+			}
+			else if ( LADSPA_IS_PORT_OUTPUT(port) )
+			{
+				l_printf("call ladspa connect_port OUT %d, %p", i,
+					na_chunk_get_channel(out, out_audio)
+				);
+				entry->parent->pl_ladspa_desc->connect_port(
+					ladspa_handle, i,
+					na_chunk_get_channel(out, out_audio)
+				);
+				out_audio++;
+			}
+		}
+
+		if ( entry->parent->pl_ladspa_desc->activate );
+		{
+			l_printf("call ladspa activate");
+			entry->parent->pl_ladspa_desc->activate(ladspa_handle);
+		}
 	}
 }
 
 static void __audio_sfx_disconnect(void *userdata)
 {
-	obj_entry_t *entry = (obj_entry_t *)userdata;
+	uint			i;
+	LADSPA_Handle	*ladspa_handle;
+	obj_entry_t	*entry = (obj_entry_t *)userdata;
 
-	if ( entry->pl_ladspa_handle == NULL )
-		return;
-
-	if ( entry->parent->pl_ladspa_desc->deactivate )
+	for ( i = 0; i < entry->hld_count; i++ )
 	{
-		l_printf("call ladspa deactivate");
-		entry->parent->pl_ladspa_desc->deactivate(entry->pl_ladspa_handle);
+		ladspa_handle = entry->hld_list[i];
+
+		if ( entry->parent->pl_ladspa_desc->deactivate )
+		{
+			l_printf("call ladspa deactivate");
+			entry->parent->pl_ladspa_desc->deactivate(ladspa_handle);
+		}
+
+		if ( entry->parent->pl_ladspa_desc->cleanup )
+		{
+			l_printf("call ladspa cleanup");
+			entry->parent->pl_ladspa_desc->cleanup(ladspa_handle);
+		}
 	}
 
-	if ( entry->parent->pl_ladspa_desc->cleanup )
-	{
-		l_printf("call ladspa cleanup");
-		entry->parent->pl_ladspa_desc->cleanup(entry->pl_ladspa_handle);
-	}
-
-	entry->pl_ladspa_handle = NULL;
+	if ( entry->hld_list )
+		free(entry->hld_list), entry->hld_list = NULL;
+	entry->hld_count = 0;
 }
 
 static void __audio_sfx_process(void *userdata)
 {
+	uint			i;
+	LADSPA_Handle	*ladspa_handle;
 	obj_entry_t *entry = (obj_entry_t *)userdata;
 
-	entry->parent->pl_ladspa_desc->run(
-		entry->pl_ladspa_handle,
-		entry->sfx->out->size
-	);
+	for ( i = 0; i < entry->hld_count; i++ )
+	{
+		ladspa_handle = entry->hld_list[i];
+
+		entry->parent->pl_ladspa_desc->run(
+			ladspa_handle,
+			entry->sfx->out->size
+		);
+	}
 }
 
 static void __scene_update(ushort type, void *userdata, void *data)
@@ -430,6 +504,25 @@ static unsigned long __ladspa_count_port(
 	return lCount;
 }
 
+static float *__ladspa_get_control_input_idx(obj_entry_t *entry, ushort idx)
+{
+	LADSPA_PortDescriptor	port;
+	uint i, ctl_in = 0;
+
+	for ( i = 0; i < entry->parent->pl_ladspa_desc->PortCount; i++ )
+	{
+			port = entry->parent->pl_ladspa_desc->PortDescriptors[i];
+			if ( !LADSPA_IS_PORT_CONTROL(port) )
+				continue;
+			if ( !LADSPA_IS_PORT_INPUT(port) )
+				continue;
+			if ( i == idx )
+				return &entry->parent->ctl_list[ctl_in];
+			ctl_in ++;
+	}
+
+	return NULL;
+}
 static void __load_ladspa(obj_t *obj)
 {
 	l_printf("Load ladspa on %p", obj);
@@ -460,8 +553,23 @@ static void __load_ladspa(obj_t *obj)
 	 */
 	obj->pl_input_count = __ladspa_count_port(obj->pl_ladspa_desc, LADSPA_PORT_AUDIO | LADSPA_PORT_INPUT);
 	obj->pl_output_count = __ladspa_count_port(obj->pl_ladspa_desc, LADSPA_PORT_AUDIO | LADSPA_PORT_OUTPUT);
+	obj->pl_ctl_input_count = __ladspa_count_port(obj->pl_ladspa_desc, LADSPA_PORT_CONTROL | LADSPA_PORT_INPUT);
+	obj->pl_ctl_output_count = __ladspa_count_port(obj->pl_ladspa_desc, LADSPA_PORT_CONTROL | LADSPA_PORT_INPUT);
+
+	/* Control ports
+	 */
+	obj->ctl_count	= obj->pl_ctl_input_count;
+	obj->ctl_list		= malloc(sizeof(float) * obj->ctl_count);
+	if ( obj->ctl_list == NULL )
+	{
+		l_errorf("Cannont malloc ctl_list");
+		return;
+	}
+	bzero(obj->ctl_list, sizeof(float) * obj->ctl_count);
+
 
 	l_printf("Ladspa plugin have %d IN, %d OUT", obj->pl_input_count, obj->pl_output_count);
+	l_printf("Ladspa plugin have control %d IN, %d OUT", obj->pl_ctl_input_count, obj->pl_ctl_output_count);
 
 	return;
 
@@ -771,15 +879,53 @@ void lib_object_update(obj_t *obj)
 		(*obj->right->widget_update)(obj->data_right);
 }
 
-#if 0
-void ctl_volume(obj_t *obj, float value)
-{
-	assert( obj != NULL );
-}
-#endif
+/* FIXME Following code is VERY VERY UGLY !
+ */
+
+#define DECLARE_CTL_INPUT(n) \
+	void ctl_input##n(void *data, float value) { \
+		obj_t *obj = (obj_t *)data; \
+		assert( obj != NULL ); \
+		obj->ctl_list[n] = value; \
+		return; }
+DECLARE_CTL_INPUT(0);
+DECLARE_CTL_INPUT(1);
+DECLARE_CTL_INPUT(2);
+DECLARE_CTL_INPUT(3);
+DECLARE_CTL_INPUT(4);
+DECLARE_CTL_INPUT(5);
+DECLARE_CTL_INPUT(6);
+DECLARE_CTL_INPUT(7);
+DECLARE_CTL_INPUT(8);
+DECLARE_CTL_INPUT(9);
+DECLARE_CTL_INPUT(10);
+DECLARE_CTL_INPUT(11);
+DECLARE_CTL_INPUT(12);
+DECLARE_CTL_INPUT(13);
+DECLARE_CTL_INPUT(14);
+DECLARE_CTL_INPUT(15);
+
 _fn_control lib_object_get_control(char *name)
 {
+	uint	idx;
 //	if ( strcmp(name, "volume") == 0 )
 //		return ctl_volume;
+	idx = atoi(name);
+	if ( idx == 0 ) return ctl_input0;
+	else if ( idx == 1 ) return ctl_input1;
+	else if ( idx == 2 ) return ctl_input2;
+	else if ( idx == 3 ) return ctl_input3;
+	else if ( idx == 4 ) return ctl_input4;
+	else if ( idx == 5 ) return ctl_input5;
+	else if ( idx == 6 ) return ctl_input6;
+	else if ( idx == 7 ) return ctl_input7;
+	else if ( idx == 8 ) return ctl_input8;
+	else if ( idx == 9 ) return ctl_input9;
+	else if ( idx == 10 ) return ctl_input10;
+	else if ( idx == 11 ) return ctl_input11;
+	else if ( idx == 12 ) return ctl_input12;
+	else if ( idx == 13 ) return ctl_input13;
+	else if ( idx == 14 ) return ctl_input14;
+	else if ( idx == 15 ) return ctl_input15;
 	return NULL;
 }
