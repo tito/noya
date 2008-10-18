@@ -244,7 +244,10 @@ void na_audio_sfx_connect(na_audio_t *audio, na_audio_sfx_t *sfx)
 	/* connect plugin
 	 */
 	if ( sfx->fn_connect )
+	{
 		sfx->fn_connect(sfx->userdata, sfx->in, sfx->out);
+		na_audio_update_output(audio);
+	}
 }
 
 void na_audio_sfx_disconnect(na_audio_t *audio, na_audio_sfx_t *sfx)

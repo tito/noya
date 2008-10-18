@@ -47,6 +47,7 @@ typedef struct obj_s
 {
 	na_scene_t			*scene;
 	manager_actor_t		*actor;
+	na_config_t			config;
 
 	/* ladspa issue
 	 */
@@ -204,11 +205,12 @@ static void __audio_sfx_connect(void *userdata, na_chunk_t *in, na_chunk_t *out)
 	assert( entry->parent->pl_output_count <= NA_OUTPUT_CHANNELS );
 
 	/* Compute IN channels
+	 * TODO rewrote this part please !
 	 */
 	if ( na_chunk_get_channels(in) == 1 )
 	{
 		if ( entry->parent->pl_input_count == 1 )
-			entry->hld_count = 1;
+			entry->hld_count = na_chunk_get_channels(out) / entry->parent->pl_output_count;
 		else
 			entry->hld_count = 2;
 	}
@@ -230,7 +232,7 @@ static void __audio_sfx_connect(void *userdata, na_chunk_t *in, na_chunk_t *out)
 
 	/* Compute OUT channels
 	 */
-	if ( entry->parent->pl_output_count == 2 && entry->hld_count == 2 )
+	if ( entry->parent->pl_output_count == 2 && entry->hld_count > 1 )
 	{
 		out_reset = 1;
 		/* TODO create pre-output buffer for this case.
@@ -543,7 +545,7 @@ static void __load_ladspa(obj_t *obj)
 		goto load_cleanup;
 	}
 
-	obj->pl_ladspa_desc = (LADSPA_Descriptor *)obj->pl_ladspa_fn(0);
+	obj->pl_ladspa_desc = (LADSPA_Descriptor *)obj->pl_ladspa_fn(obj->pl_idx);
 	if ( obj->pl_ladspa_desc == NULL )
 	{
 		l_errorf("Unable to get a ladspa descriptor in %s", obj->pl_name);
@@ -778,7 +780,7 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 	else if ( strcmp(key, "idx") == 0 )
 		obj->pl_idx = strtol(value, NULL, 10);
 	else
-		l_printf("Invalid configuration %s", key);
+		na_config_set(&obj->config, key, value);
 }
 
 void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
@@ -890,8 +892,11 @@ void lib_object_update(obj_t *obj)
 
 #define DECLARE_CTL_INPUT(n) \
 	void ctl_input##n(void *data, float value) { \
-		obj_t *obj = (obj_t *)data; \
+		obj_t	*obj = (obj_t *)data; \
+		int		mul; \
 		assert( obj != NULL ); \
+		mul = na_config_get_int(&obj->config, "multiplier."#n); \
+		if ( mul > 0 ) value *= (float)mul;	\
 		obj->ctl_list[n] = value; \
 		return; }
 DECLARE_CTL_INPUT(0);
