@@ -241,7 +241,7 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 	}
 	else if ( strcmp(key, "volume") == 0 )
 	{
-		obj->cfg_volume = strtof(value, NULL);
+		obj->cfg_volume = (float)strtod(value, NULL);
 		l_printf("Set volume to %f (from %s)", obj->cfg_volume, value);
 	}
 	else
