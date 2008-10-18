@@ -50,6 +50,7 @@ typedef struct obj_s
 	/* ladspa issue
 	 */
 	char				*pl_name;
+	uint				pl_idx;
 	char				*pl_filename;
 	void				*pl_handle;
 	LADSPA_Descriptor_Function pl_ladspa_fn;
@@ -523,6 +524,7 @@ static float *__ladspa_get_control_input_idx(obj_entry_t *entry, ushort idx)
 
 	return NULL;
 }
+
 static void __load_ladspa(obj_t *obj)
 {
 	l_printf("Load ladspa on %p", obj);
@@ -765,12 +767,11 @@ void lib_object_config(obj_t *obj, char *key, char *value)
 		__load_ladspa(obj);
 	}
 	else if ( strcmp(key, "distmin") == 0 )
-	{
 		obj->dist_min = (float)strtod(value, NULL);
-		l_printf("obj->distmin = %f", obj->dist_min);
-	}
 	else if ( strcmp(key, "distmax") == 0 )
 		obj->dist_max = (float)strtod(value, NULL);
+	else if ( strcmp(key, "idx") == 0 )
+		obj->pl_idx = strtol(value, NULL, 10);
 	else
 		l_printf("Invalid configuration %s", key);
 }
