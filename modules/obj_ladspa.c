@@ -19,6 +19,7 @@
 #define DEFAULT_LADSPA_PATH		"/usr/lib/ladspa/"
 
 LOG_DECLARE("MOD_OBJ_LADSPA");
+MUTEX_IMPORT(audiosfx);
 
 struct obj_s;
 
@@ -149,12 +150,16 @@ static void __event_dispatch(ushort ev_type, void *userdata, void *object)
 	{
 		case NA_EV_AUDIO_PLAY:
 			l_printf("Event AUDIO_PLAY : connect sfx");
+			MUTEX_LOCK(audiosfx);
 			na_audio_sfx_connect((na_audio_t *)object, dobj->sfx);
+			MUTEX_UNLOCK(audiosfx);
 			dobj->audio = object;
 			break;
 		case NA_EV_AUDIO_STOP:
 			l_printf("Event AUDIO_PLAY : disconnect sfx");
+			MUTEX_LOCK(audiosfx);
 			na_audio_sfx_disconnect((na_audio_t *)object, dobj->sfx);
+			MUTEX_UNLOCK(audiosfx);
 			dobj->audio = object;
 			break;
 		case NA_EV_ACTOR_PREPARE:
@@ -431,7 +436,7 @@ static void __scene_update(ushort type, void *userdata, void *data)
 			 */
 			dobj->sfx = na_audio_sfx_new(
 				obj->pl_input_count,
-				obj->pl_output_count,
+				NA_OUTPUT_CHANNELS,
 				__audio_sfx_connect,
 				__audio_sfx_disconnect,
 				__audio_sfx_process,
