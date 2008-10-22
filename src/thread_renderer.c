@@ -27,16 +27,13 @@ static int						ui_width		= 640;
 static int						ui_height		= 480;
 static na_atomic_t				clutter_running = 0;
 
-static gboolean renderer_key_handle(
-	ClutterActor	*actor,
-	ClutterKeyEvent	*event,
-	gpointer		data)
+static gboolean renderer_key_handle(ClutterActor *actor, ClutterKeyEvent *event, gpointer data)
 {
 	gboolean is_fullscreen = FALSE;
-	switch (event->keyval)
+	switch ( event->keyval )
 	{
 		case CLUTTER_f:
-			g_object_get (G_OBJECT (stage), "fullscreen", &is_fullscreen, NULL);
+			g_object_get( G_OBJECT(stage), "fullscreen", &is_fullscreen, NULL);
 			if ( is_fullscreen )
 				clutter_stage_unfullscreen(CLUTTER_STAGE(stage));
 			else
