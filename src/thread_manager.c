@@ -242,9 +242,10 @@ static void manager_event_cursor_new(unsigned short type, void *userdata, void *
 
 	el->id = o->s_id;
 	snprintf(el->label, sizeof(el->label), "%d", o->s_id);
-	el->actor = clutter_group_new();
 
 	clutter_threads_enter();
+
+	el->actor = clutter_group_new();
 
 	stage = clutter_stage_get_default();
 	clutter_actor_get_size(stage, &wx, &wy);
