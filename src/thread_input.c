@@ -17,7 +17,6 @@
 LOG_DECLARE("INPUT");
 MUTEX_DECLARE(input);
 pthread_t	thread_input;
-static na_atomic_t	c_want_leave	= 0;
 static na_atomic_t	c_running		= 0;
 static short		c_state			= THREAD_STATE_START;
 
@@ -36,15 +35,6 @@ static void _lo_error(int num, const char *msg, const char *path)
 {
     l_errorf("liblo server error %d in path %s: %s\n", num, path, msg);
 }
-
-#if 0
-static int _lo_quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
-		 void *data, void *user_data)
-{
-	c_want_leave = 1;
-    return 0;
-}
-#endif
 
 static inline tuio_object_t *_tuio_object_get_by_idx(uint id)
 {
@@ -343,7 +333,7 @@ static void *thread_input_run(void *arg)
 				break;
 
 			case THREAD_STATE_RUNNING:
-				if ( c_want_leave )
+				if ( g_want_leave )
 				{
 					c_state = THREAD_STATE_STOP;
 					break;
@@ -396,7 +386,6 @@ int thread_input_start(void)
 
 int thread_input_stop(void)
 {
-	c_want_leave = 1;
 	while ( c_running )
 		usleep(1000);
 	return NA_OK;

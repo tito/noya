@@ -17,7 +17,6 @@ LOG_DECLARE("AUDIO");
 MUTEX_IMPORT(audiosfx);
 
 pthread_t	thread_audio;
-static na_atomic_t	c_want_leave	= 0;
 static na_atomic_t	c_running		= 0;
 static short		c_state			= THREAD_STATE_START;
 static PaStream		*c_stream		= NULL;
@@ -107,7 +106,7 @@ static int audio_output_callback(
 	(void) inputBuffer;
 	(void) userData;
 
-	if ( c_want_leave )
+	if ( g_want_leave )
 		return paComplete;
 
 	/* initialize values
@@ -267,8 +266,7 @@ static void *thread_audio_run(void *arg)
 				if ( ret != paNoError )
 				{
 					l_errorf("unable to initialize PA : %s", Pa_GetErrorText(ret));
-					g_want_leave = 1;
-					c_want_leave = 1;
+					na_quit();
 					continue;
 				}
 
@@ -298,8 +296,7 @@ static void *thread_audio_run(void *arg)
 				if ( ret != paNoError )
 				{
 					l_errorf("unable to open default stream : %s", Pa_GetErrorText(ret));
-					g_want_leave = 1;
-					c_want_leave = 1;
+					na_quit();
 					continue;
 				}
 
@@ -309,7 +306,7 @@ static void *thread_audio_run(void *arg)
 				if ( ret != paNoError )
 				{
 					l_errorf("unable to start stream : %s", Pa_GetErrorText(ret));
-					g_want_leave = 1;
+					na_quit();
 					continue;
 				}
 
@@ -342,7 +339,7 @@ static void *thread_audio_run(void *arg)
 				break;
 
 			case THREAD_STATE_RUNNING:
-				if ( c_want_leave )
+				if ( g_want_leave )
 				{
 					c_state = THREAD_STATE_STOP;
 					break;
@@ -381,7 +378,6 @@ int thread_audio_start(void)
 
 int thread_audio_stop(void)
 {
-	c_want_leave = 1;
 	while ( c_running )
 		usleep(1000);
 	return NA_OK;

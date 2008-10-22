@@ -47,7 +47,7 @@ void signal_leave(int sig)
 		l_printf("Signal suck ? Ok, leave...");
 		exit(-1);
 	}
-	g_want_leave = 1;
+	na_quit();
 }
 
 /* show usage
@@ -61,6 +61,21 @@ void usage(void)
 	printf("\n");
 
 	exit(EXIT_SUCCESS);
+}
+
+/* leave application
+ */
+void na_quit(void)
+{
+	static sig_atomic_t showprint = 1;
+	if ( showprint )
+	{
+		l_printf("Stopping services...");
+		showprint = 0;
+	}
+
+	na_event_stop();
+	g_want_leave = 1;
 }
 
 /* read options from command line
@@ -148,9 +163,12 @@ int main(int argc, char **argv)
 	while ( g_want_leave == 0 )
 		sleep(1);
 
+	/* stop events
+	 */
+	na_event_stop();
+
 cleaning:;
 
-	l_printf("Stopping services...");
 	service = services;
 	while ( service->fn_start )
 	{

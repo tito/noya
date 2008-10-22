@@ -9,7 +9,9 @@
 #include "event.h"
 
 LOG_DECLARE("EVENT")
+MUTEX_DECLARE(event);
 
+static na_atomic_t		event_lock;
 static na_event_list_t	na_event_list;
 
 void na_event_init_ex(na_event_list_t *list)
@@ -115,10 +117,17 @@ void na_event_observe(ushort ev_type, na_event_callback callback, void *userdata
 
 void na_event_send(ushort ev_type, void *data)
 {
+	if ( event_lock )
+		return;
 	na_event_send_ex(&na_event_list, ev_type, data);
 }
 
 void na_event_remove(ushort ev_type, na_event_callback callback, void *userdata)
 {
 	na_event_remove_ex(&na_event_list, ev_type, callback, userdata);
+}
+
+void na_event_stop(void)
+{
+	event_lock = 1;
 }

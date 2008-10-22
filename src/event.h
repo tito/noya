@@ -41,6 +41,7 @@ void na_event_free(void);
 void na_event_observe(ushort ev_type, na_event_callback callback, void *userdata);
 void na_event_send(ushort ev_type, void *data);
 void na_event_remove(ushort ev_type, na_event_callback callback, void *userdata);
+void na_event_stop(void);
 
 /* for other event list (modules...)
  */

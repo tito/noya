@@ -16,7 +16,6 @@ pthread_t	thread_renderer;
 
 /* static
  */
-static na_atomic_t	c_want_leave	= 0;
 static na_atomic_t	c_running		= 0;
 static short					c_state			= THREAD_STATE_START;
 static ClutterColor				stage_color		= { 0x33, 0x09, 0x3b, 0xff };
@@ -44,6 +43,7 @@ static gboolean renderer_key_handle(
 				clutter_stage_fullscreen(CLUTTER_STAGE(stage));
 			break;
 		case CLUTTER_q:
+			na_quit();
 			clutter_main_quit();
 			break;
 		default:
@@ -104,7 +104,7 @@ static void *thread_renderer_run(void *arg)
 				break;
 
 			case THREAD_STATE_RUNNING:
-				if ( c_want_leave )
+				if ( g_want_leave )
 				{
 					c_state = THREAD_STATE_STOP;
 					break;
@@ -119,8 +119,7 @@ static void *thread_renderer_run(void *arg)
 
 				/* if we leave... stop app ?
 				 */
-				g_want_leave = 1;
-				c_want_leave = 1;
+				na_quit();
 				clutter_running = 0;
 
 				break;
@@ -163,7 +162,6 @@ int thread_renderer_start(void)
 
 int thread_renderer_stop(void)
 {
-	c_want_leave = 1;
 	if ( clutter_running )
 	{
 		MUTEX_LOCK(renderer);

@@ -19,7 +19,6 @@
 
 LOG_DECLARE("MANAGER");
 pthread_t				thread_manager;
-static na_atomic_t		c_want_leave	= 0;
 static na_atomic_t		c_running		= 0;
 static na_atomic_t		c_scene_changed	= 0;
 static short			c_state			= THREAD_STATE_START;
@@ -379,8 +378,7 @@ static void *thread_manager_run(void *arg)
 				if ( c_scene == NULL )
 				{
 					l_errorf("unable to load scene");
-					g_want_leave = 1;
-					c_want_leave = 1;
+					na_quit();
 					break;
 				}
 
@@ -388,8 +386,7 @@ static void *thread_manager_run(void *arg)
 				{
 					l_printf("Dump scene !");
 					na_dump(NULL, c_scene);
-					g_want_leave = 1;
-					c_want_leave = 1;
+					na_quit();
 					break;
 				}
 
@@ -433,7 +430,7 @@ static void *thread_manager_run(void *arg)
 				break;
 
 			case THREAD_STATE_RUNNING:
-				if ( c_want_leave )
+				if ( g_want_leave )
 				{
 					c_state = THREAD_STATE_STOP;
 					break;
@@ -494,7 +491,6 @@ int thread_manager_start(void)
 
 int thread_manager_stop(void)
 {
-	c_want_leave = 1;
 	while ( c_running )
 		usleep(1000);
 	return NA_OK;

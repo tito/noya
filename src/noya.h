@@ -66,4 +66,8 @@ extern na_atomic_t g_threads;
 extern na_atomic_t g_want_leave;
 MUTEX_IMPORT(global);
 
+/* Functions
+ */
+void na_quit(void);
+
 #endif
