@@ -60,7 +60,7 @@ static void thread_audio_preload(void)
 		entry->totalframes = sf_seek(sfp, (sf_count_t) 0, SEEK_END);
 		sf_seek(sfp, 0, SEEK_SET);
 
-		entry->duration = sinfo.frames / sinfo.samplerate;
+		entry->duration = (float)sinfo.frames / (float)sinfo.samplerate;
 
 		entry->data = (float *)malloc(entry->totalframes * sizeof(float) * NA_OUTPUT_CHANNELS);
 		if ( entry->data == NULL )

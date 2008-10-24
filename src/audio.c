@@ -119,6 +119,8 @@ void na_audio_free(na_audio_t *entry)
 void na_audio_play(na_audio_t *entry)
 {
 	assert( entry != NULL );
+	if ( entry->flags & NA_AUDIO_FL_PLAY )
+		return;
 	na_audio_update_output(entry);
 	entry->flags |= NA_AUDIO_FL_PLAY;
 }

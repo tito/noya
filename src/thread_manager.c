@@ -339,12 +339,15 @@ static void manager_event_bpm(unsigned short type, void *userdata, void *data)
 
 			/* enough data for play ?
 			*/
-			if ( entry->bpmidx <= entry->bpmduration )
+			if ( entry->bpmidx < (int)entry->bpmduration )
+			{
 				continue;
+			}
 
 			/* back to start of sample
 			*/
 			na_audio_seek(entry, 0);
+			entry->bpmidx++;
 
 			/* if it's not a loop, stop it.
 			*/
@@ -448,7 +451,7 @@ static void *thread_manager_run(void *arg)
 				 */
 				gettimeofday(&st_beat, NULL);
 				t_beat = st_beat.tv_sec + st_beat.tv_usec * 0.000001;
-				t_beatinterval = 60.0 / c_scene->bpm;
+				t_beatinterval = (float)(60.0f / (float)c_scene->bpm);
 
 				if ( t_beat - t_lastbeat > t_beatinterval )
 				{
@@ -465,7 +468,7 @@ static void *thread_manager_run(void *arg)
 				}
 
 
-				usleep(10);
+				usleep(100);
 				break;
 		}
 	}

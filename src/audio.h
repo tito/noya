@@ -76,7 +76,7 @@ typedef struct na_audio_s
 	float			volume;				/*< RW : 0 - 1 (percent) */
 	float			position;			/*< R  : 0 - 1 (percent) */
 	float			duration;			/*< R  : 0 - n (seconds) */
-	uint			bpmduration;		/*< R  : 0 - n (bpm) */
+	float			bpmduration;		/*< R  : 0 - n (bpm) */
 	int				bpmidx;				/*< RW : 0 - n (bpm from dataidx) */
 
 	/* reference counter
