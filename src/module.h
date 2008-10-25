@@ -7,6 +7,7 @@
 #define NA_MOD_WIDGET			0x0002			/* provide widget interface */
 #define NA_MOD_EVENT			0x0004			/* provide event interface */
 
+/* args: data object, value, delta */
 typedef void (*_fn_control)(void*, float);
 
 typedef struct na_module_s

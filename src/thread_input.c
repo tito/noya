@@ -49,6 +49,41 @@ static inline tuio_object_t *_tuio_object_get_by_idx(uint id)
 	return NULL;
 }
 
+#define TUIO_CALIBRATION_X		0x00
+#define TUIO_CALIBRATION_Y		0x01
+static float _tuio_calibrate(uint type, float value)
+{
+	float min, max, delta, d;
+
+	switch ( type )
+	{
+		case TUIO_CALIBRATION_X:
+			min = na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.x.min");
+			max = na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.x.max");
+			delta = na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.x.delta");
+			break;
+
+		case TUIO_CALIBRATION_Y:
+			min = na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.y.min");
+			max = na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.y.max");
+			delta = na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.y.delta");
+			break;
+	}
+
+	d = max - min;
+	if ( d <= 0 )
+		d = 0.000001;
+	if ( d >= 1 )
+		d = 1;
+
+	if ( value < min )
+		value = min;
+	if ( value > max )
+		value = max;
+
+	return ((value - min) / d) + delta;
+}
+
 
 static int _lo_tuio_object_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 void *data, void *user_data)
@@ -67,8 +102,8 @@ static int _lo_tuio_object_handler(const char *path, const char *types, lo_arg *
 		o			= & t_objs[argv[2]->i];
 		o->s_id		= argv[1]->i32;
 		o->f_id		= argv[2]->i32;
-		o->xpos		= argv[3]->f;
-		o->ypos		= argv[4]->f;
+		o->xpos		= _tuio_calibrate(TUIO_CALIBRATION_X, argv[3]->f);
+		o->ypos		= _tuio_calibrate(TUIO_CALIBRATION_Y, argv[4]->f);
 		o->angle	= argv[5]->f;
 		o->xspeed	= argv[6]->f;
 		o->yspeed	= argv[7]->f;
@@ -202,8 +237,8 @@ static int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg *
 			c->flags	= TUIO_CURSOR_FL_INIT;
 		}
 		c->s_id		= argv[1]->i32;
-		c->xpos		= argv[2]->f;
-		c->ypos		= argv[3]->f;
+		c->xpos		= _tuio_calibrate(TUIO_CALIBRATION_X, argv[2]->f);
+		c->ypos		= _tuio_calibrate(TUIO_CALIBRATION_Y, argv[3]->f);
 		c->mov++;
 
 		/* send cursor new event

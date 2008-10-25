@@ -92,6 +92,13 @@ void na_config_set(na_config_t *head, char *key, char *value)
 	LIST_INSERT_HEAD(head, entry, next);
 }
 
+void na_config_set_float(na_config_t *head, char *key, float value)
+{
+	char buffer[64];
+	snprintf(buffer, sizeof(buffer), "%f", value);
+	na_config_set(head, key, buffer);
+}
+
 char *na_config_get(na_config_t *head, char *key)
 {
 	na_config_entry_t *entry;
@@ -117,6 +124,19 @@ int na_config_get_int(na_config_t *head, char *key)
 		return -1;
 
 	return strtol(value, NULL, 10);
+}
+
+float na_config_get_float(na_config_t *head, char *key)
+{
+	char *value;
+
+	assert( head != NULL );
+
+	value = na_config_get(head, key);
+	if ( value == NULL )
+		return -1;
+
+	return (float)strtod(value, NULL);
 }
 
 void na_config_free(na_config_t *config)

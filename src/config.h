@@ -47,8 +47,10 @@ typedef struct na_config_entry_s {
 int		na_config_init(char *filename);
 int		na_config_load(na_config_t *head, char *filename);
 void	na_config_set(na_config_t *head, char *key, char *value);
+void	na_config_set_float(na_config_t *head, char *key, float value);
 char	*na_config_get(na_config_t *head, char *key);
 int		na_config_get_int(na_config_t *head, char *key);
+float	na_config_get_float(na_config_t *head, char *key);
 void	na_config_free(na_config_t *config);
 
 extern	na_config_t na_config_entries;
