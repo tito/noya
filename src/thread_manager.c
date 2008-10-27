@@ -366,6 +366,7 @@ static void manager_event_bpm(unsigned short type, void *userdata, void *data)
 static void *thread_manager_run(void *arg)
 {
 	manager_actor_t	*it = NULL;
+	na_bpm_t		bpm = {0};
 
 	THREAD_ENTER;
 
@@ -455,7 +456,6 @@ static void *thread_manager_run(void *arg)
 
 				if ( t_beat - t_lastbeat > t_beatinterval )
 				{
-					l_printf("BPM = %lu", t_bpm);
 					t_bpm++;
 
 					/* FIXME : how to handle lag ?
@@ -464,7 +464,13 @@ static void *thread_manager_run(void *arg)
 
 					/* send bpm event
 					 */
-					na_event_send(NA_EV_BPM, &t_bpm);
+					bpm.beat = t_bpm;
+					bpm.beatinmeasure = bpm.beat % c_scene->measure + 1;
+					if ( bpm.beatinmeasure == 1 )
+						bpm.measure++;
+					l_printf("BPM = %lu/%lu - %lu", bpm.measure,
+						bpm.beatinmeasure, bpm.beat);
+					na_event_send(NA_EV_BPM, &bpm);
 				}
 
 

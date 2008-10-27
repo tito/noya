@@ -41,6 +41,7 @@ na_scene_t *na_scene_load(char *name)
 	scene->name			= strdup(name);
 	scene->bpm			= 125;
 	scene->precision	= 4;
+	scene->measure		= 4;
 
 	if ( na_config_load(&config_init, filename) )
 		goto na_scene_load_error;
@@ -80,6 +81,8 @@ na_scene_t *na_scene_load(char *name)
 
 			if ( strcmp(k_prop, "bpm") == 0 )
 				scene->bpm = strtol(it->v, NULL, 10);
+			else if ( strcmp(k_prop, "measure") == 0 )
+				scene->measure = strtol(it->v, NULL, 10);
 			else if ( strcmp(k_prop, "precision") == 0 )
 				scene->precision = strtol(it->v, NULL, 10);
 		}
@@ -140,6 +143,26 @@ na_scene_t *na_scene_load(char *name)
 			}
 			continue;
 		}
+	}
+
+	/* fix error in loading
+	 */
+	if ( scene->measure <= 0 )
+	{
+		l_errorf("Invalid measure in scene, set it to 4.");
+		scene->measure = 4;
+	}
+
+	if ( scene->bpm <= 0 )
+	{
+		l_errorf("Invalid bpm in scene, set it to 125.");
+		scene->bpm = 125;
+	}
+
+	if ( scene->precision <= 0 )
+	{
+		l_errorf("Invalid precision in scene, set it to 4.");
+		scene->precision = 4;
 	}
 
 	na_config_free(&config);

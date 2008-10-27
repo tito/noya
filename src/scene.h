@@ -45,8 +45,16 @@ typedef struct
 	 */
 	short	precision;					/*< precision in bpm */
 	short	bpm;						/*< bpm ! */
+	short	measure;					/*< bpm per measure */
 
 } na_scene_t;
+
+typedef struct
+{
+	uint	beat;
+	uint	measure;
+	ushort	beatinmeasure;
+} na_bpm_t;
 
 na_scene_t	*na_scene_load(char *filename);
 void	na_scene_free(na_scene_t *scene);
