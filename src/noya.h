@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include "config.h"
+#include "atomic.h"
 
 /* Types
  */
@@ -23,8 +24,8 @@
 #define MUTEX_UNLOCK(a)			pthread_mutex_unlock(&__mtx__##a)
 #define THREAD_GLOBAL_LOCK		MUTEX_LOCK(global)
 #define THREAD_GLOBAL_UNLOCK	MUTEX_UNLOCK(global)
-#define THREAD_ENTER			do { THREAD_GLOBAL_LOCK; c_running = 1; g_threads++; THREAD_GLOBAL_UNLOCK; } while(0);
-#define THREAD_LEAVE			do { THREAD_GLOBAL_LOCK; c_running = 0; g_threads--; THREAD_GLOBAL_UNLOCK; } while(0);
+#define THREAD_ENTER			do { THREAD_GLOBAL_LOCK; atomic_set(&c_running, 1); atomic_inc(&g_threads); THREAD_GLOBAL_UNLOCK; } while(0);
+#define THREAD_LEAVE			do { THREAD_GLOBAL_LOCK; atomic_set(&c_running, 0); atomic_dec(&g_threads); THREAD_GLOBAL_UNLOCK; } while(0);
 
 /* Log
  */
@@ -49,7 +50,7 @@
 #define l_errorw(...)
 #endif
 
-typedef volatile sig_atomic_t  na_atomic_t;
+typedef atomic_t  na_atomic_t;
 
 /* Options
  */

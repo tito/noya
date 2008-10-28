@@ -57,7 +57,7 @@ na_audio_t *na_audio_get_by_filename(char *filename)
 
 	for ( it = na_audio_entries.lh_first; it != NULL; it = it->next.le_next )
 	{
-		if ( !(it->flags & NA_AUDIO_FL_USED) )
+		if ( !(atomic_read(&it->flags) & NA_AUDIO_FL_USED) )
 			continue;
 		if ( strcmp(filename, it->filename) == 0 )
 			return it;
@@ -82,7 +82,7 @@ na_audio_t *na_audio_load(char *filename)
 	if ( entry->filename == NULL )
 		goto na_audio_load_clean;
 
-	entry->flags	= NA_AUDIO_FL_USED;
+	atomic_set(&entry->flags, NA_AUDIO_FL_USED);
 	entry->bpmidx	= -1;
 
 	cfg_frames		= na_config_get_int(NA_CONFIG_DEFAULT, "noya.audio.frames");
@@ -119,39 +119,39 @@ void na_audio_free(na_audio_t *entry)
 void na_audio_play(na_audio_t *entry)
 {
 	assert( entry != NULL );
-	if ( entry->flags & NA_AUDIO_FL_PLAY )
+	if ( atomic_read(&entry->flags) & NA_AUDIO_FL_PLAY )
 		return;
 	na_audio_update_output(entry);
-	entry->flags |= NA_AUDIO_FL_PLAY;
+	atomic_set(&entry->flags, atomic_read(&entry->flags) | NA_AUDIO_FL_PLAY);
 }
 
 void na_audio_wantplay(na_audio_t *entry)
 {
 	assert( entry != NULL );
-	entry->flags |= NA_AUDIO_FL_WANTPLAY;
+	atomic_set(&entry->flags, atomic_read(&entry->flags) | NA_AUDIO_FL_WANTPLAY);
 }
 
 void na_audio_wantstop(na_audio_t *entry)
 {
 	assert( entry != NULL );
-	entry->flags |= NA_AUDIO_FL_WANTSTOP;
+	atomic_set(&entry->flags, atomic_read(&entry->flags) | NA_AUDIO_FL_WANTSTOP);
 }
 
 void na_audio_stop(na_audio_t *entry)
 {
 	assert( entry != NULL );
-	entry->flags &= ~NA_AUDIO_FL_PLAY;
-	entry->flags &= ~NA_AUDIO_FL_WANTPLAY;
-	entry->flags &= ~NA_AUDIO_FL_WANTSTOP;
+	atomic_set(&entry->flags, atomic_read(&entry->flags) & ~NA_AUDIO_FL_PLAY);
+	atomic_set(&entry->flags, atomic_read(&entry->flags) & ~NA_AUDIO_FL_WANTPLAY);
+	atomic_set(&entry->flags, atomic_read(&entry->flags) & ~NA_AUDIO_FL_WANTSTOP);
 }
 
 void na_audio_set_loop(na_audio_t *entry, short isloop)
 {
 	assert( entry != NULL );
 	if ( isloop )
-		entry->flags |= NA_AUDIO_FL_ISLOOP;
+		atomic_set(&entry->flags, atomic_read(&entry->flags) | NA_AUDIO_FL_ISLOOP);
 	else
-		entry->flags &= ~NA_AUDIO_FL_ISLOOP;
+		atomic_set(&entry->flags, atomic_read(&entry->flags) & ~NA_AUDIO_FL_ISLOOP);
 }
 
 void na_audio_set_volume(na_audio_t *entry, float volume)
@@ -163,7 +163,7 @@ void na_audio_set_volume(na_audio_t *entry, float volume)
 short na_audio_is_play(na_audio_t *entry)
 {
 	assert( entry != NULL );
-	return entry->flags & NA_AUDIO_FL_PLAY;
+	return atomic_read(&entry->flags) & NA_AUDIO_FL_PLAY;
 }
 
 void na_audio_seek(na_audio_t *entry, long position)

@@ -117,7 +117,7 @@ void na_event_observe(ushort ev_type, na_event_callback callback, void *userdata
 
 void na_event_send(ushort ev_type, void *data)
 {
-	if ( event_lock )
+	if ( atomic_read(&event_lock) )
 		return;
 	na_event_send_ex(&na_event_list, ev_type, data);
 }
@@ -129,5 +129,5 @@ void na_event_remove(ushort ev_type, na_event_callback callback, void *userdata)
 
 void na_event_stop(void)
 {
-	event_lock = 1;
+	atomic_set(&event_lock, 1);
 }

@@ -17,7 +17,7 @@
 LOG_DECLARE("INPUT");
 MUTEX_DECLARE(input);
 pthread_t	thread_input;
-static na_atomic_t	c_running		= 0;
+static na_atomic_t	c_running		= {0};
 static short		c_state			= THREAD_STATE_START;
 
 static tuio_object_t	t_objs[TUIO_OBJECT_MAX];				/*< object info */
@@ -368,7 +368,7 @@ static void *thread_input_run(void *arg)
 				break;
 
 			case THREAD_STATE_RUNNING:
-				if ( g_want_leave )
+				if ( atomic_read(&g_want_leave) )
 				{
 					c_state = THREAD_STATE_STOP;
 					break;
@@ -421,7 +421,7 @@ int thread_input_start(void)
 
 int thread_input_stop(void)
 {
-	while ( c_running )
+	while ( atomic_read(&c_running) )
 		usleep(1000);
 	return NA_OK;
 }

@@ -78,6 +78,12 @@ function debugnoya()
 	LC_ALL=C gdb -args ./noya $@
 }
 
+function valgrindnoya()
+{
+	scons
+	LC_ALL=C valgrind -v --tool=memcheck ./noya $@
+}
+
 case "$1" in
 	"simulator")
 		simulator;;
@@ -89,6 +95,8 @@ case "$1" in
 		noya $@;;
 	"debugnoya")
 		debugnoya $@;;
+	"valgrindnoya")
+		valgrindnoya $@;;
 	*)
 		usage;;
 esac

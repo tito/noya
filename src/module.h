@@ -5,7 +5,8 @@
 
 #define NA_MOD_OBJECT			0x0001			/* provide object interface */
 #define NA_MOD_WIDGET			0x0002			/* provide widget interface */
-#define NA_MOD_EVENT			0x0004			/* provide event interface */
+#define NA_MOD_EVENT			0x0004			/* provide event interface  */
+#define NA_MOD_MODULE			0x0008			/* provide module interface */
 
 /* args: data object, value, delta */
 typedef void (*_fn_control)(void*, float);
@@ -15,6 +16,7 @@ typedef struct na_module_s
 	char	*name;
 	int		type;
 	void	*dl_handle;
+	void	*data;						/*<! module case. */
 
 	/* init lib
 	 * arg: return name, return type
@@ -145,8 +147,12 @@ typedef struct
 	na_module_t *lh_first;
 } na_module_head_t;
 
+/* args module, userdata */
+typedef void (*na_module_callback)(na_module_t *, void *);
+
 void		na_modules_init();
 void		na_modules_free();
 na_module_t	*na_module_get(char *name, int type);
+void		na_module_yield(int type, na_module_callback callback, void *userdata);
 
 #endif

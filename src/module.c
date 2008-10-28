@@ -91,16 +91,20 @@ void na_modules_init()
 			goto na_module_init_failed; \
 		}
 
-		if ( module->type & NA_MOD_OBJECT )
+		if ( module->type & NA_MOD_OBJECT || module->type & NA_MOD_MODULE )
 		{
+			MODULE_LOAD_DEF(object_global_config);
 			MODULE_LOAD_DEF(object_new);
 			MODULE_LOAD_DEF(object_free);
-			MODULE_LOAD_DEF(object_config);
-			MODULE_LOAD_DEF(object_global_config);
-			MODULE_LOAD_DEF(object_update);
 			MODULE_LOAD_DEF(object_prepare);
 			MODULE_LOAD_DEF(object_unprepare);
-			MODULE_LOAD_DEF(object_get_control);
+
+			if ( module->type & NA_MOD_OBJECT )
+			{
+				MODULE_LOAD_DEF(object_config);
+				MODULE_LOAD_DEF(object_get_control);
+				MODULE_LOAD_DEF(object_update);
+			}
 		}
 
 		if ( module->type & NA_MOD_WIDGET )
@@ -182,4 +186,16 @@ na_module_t *na_module_get(char *name, int type)
 	l_errorf("unable to found %s", name);
 
 	return NULL;
+}
+
+void na_module_yield(int type, na_module_callback callback, void *userdata)
+{
+	na_module_t *module;
+
+	for ( module = na_module_list.lh_first; module != NULL; module = module->next.le_next )
+	{
+		if ( !(module->type & type) )
+			continue;
+		(callback)(module, userdata);
+	}
 }

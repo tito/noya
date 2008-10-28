@@ -17,8 +17,8 @@
 
 LOG_DECLARE("MAIN");
 MUTEX_DECLARE(global);
-na_atomic_t				g_threads		= 0;
-na_atomic_t				g_want_leave	= 0;
+na_atomic_t				g_threads		= {0};
+na_atomic_t				g_want_leave	= {0};
 na_options_t			g_options		= {0};
 
 /* services declaration
@@ -42,7 +42,7 @@ na_service_t services[] = {
 void signal_leave(int sig)
 {
 	l_printf("Catch signal %d, leave", sig);
-	if ( g_want_leave )
+	if ( atomic_read(&g_want_leave) )
 	{
 		l_printf("Signal suck ? Ok, leave...");
 		exit(-1);
@@ -75,7 +75,7 @@ void na_quit(void)
 	}
 
 	na_event_stop();
-	g_want_leave = 1;
+	atomic_set(&g_want_leave, 1);
 }
 
 /* read options from command line
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 
 	/* loop until we want to leave...
 	 */
-	while ( g_want_leave == 0 )
+	while ( atomic_read(&g_want_leave) == 0 )
 		sleep(1);
 
 	/* stop events
@@ -177,7 +177,7 @@ cleaning:;
 		service++;
 	}
 
-	while ( g_threads > 0 )
+	while ( atomic_read(&g_threads) > 0 )
 		usleep(100);
 
 	l_printf("Free modules...");

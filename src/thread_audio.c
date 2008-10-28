@@ -17,7 +17,7 @@ LOG_DECLARE("AUDIO");
 MUTEX_IMPORT(audiosfx);
 
 pthread_t	thread_audio;
-static na_atomic_t	c_running		= 0;
+static na_atomic_t	c_running		= {0};
 static short		c_state			= THREAD_STATE_START;
 static PaStream		*c_stream		= NULL;
 
@@ -32,11 +32,11 @@ static void thread_audio_preload(void)
 
 	for ( entry = na_audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
 	{
-		if ( !(entry->flags & NA_AUDIO_FL_USED) )
+		if ( !(atomic_read(&entry->flags) & NA_AUDIO_FL_USED) )
 			continue;
-		if ( entry->flags & NA_AUDIO_FL_LOADED )
+		if ( atomic_read(&entry->flags) & NA_AUDIO_FL_LOADED )
 			continue;
-		if ( entry->flags & NA_AUDIO_FL_FAILED )
+		if ( atomic_read(&entry->flags) & NA_AUDIO_FL_FAILED )
 			continue;
 
 		l_printf("Load %s", entry->filename);
@@ -70,7 +70,7 @@ static void thread_audio_preload(void)
 
 		sf_close(sfp), sfp = NULL;
 
-		entry->flags |= NA_AUDIO_FL_LOADED;
+		atomic_read(&entry->flags) |= NA_AUDIO_FL_LOADED;
 
 		continue;
 
@@ -80,7 +80,7 @@ na_audio_preload_clean:;
 			sf_close(sfp), sfp = NULL;
 		if ( entry->data != NULL )
 			free(entry->data), entry->data = NULL;
-		entry->flags |= NA_AUDIO_FL_FAILED;
+		atomic_read(&entry->flags) |= NA_AUDIO_FL_FAILED;
 		continue;
 	}
 }
@@ -106,8 +106,8 @@ static int audio_output_callback(
 	(void) inputBuffer;
 	(void) userData;
 
-	if ( g_want_leave )
-		return paComplete;
+	if ( atomic_read(&g_want_leave) )
+		return paAbort;
 
 	/* initialize values
 	 */
@@ -117,11 +117,11 @@ static int audio_output_callback(
 	 */
 	for ( entry = na_audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
 	{
-		if ( !(entry->flags & NA_AUDIO_FL_USED) )
+		if ( !(atomic_read(&entry->flags) & NA_AUDIO_FL_USED) )
 			continue;
-		if ( !(entry->flags & NA_AUDIO_FL_LOADED) )
+		if ( !(atomic_read(&entry->flags) & NA_AUDIO_FL_LOADED) )
 			continue;
-		if ( !(entry->flags & NA_AUDIO_FL_PLAY) )
+		if ( !(atomic_read(&entry->flags) & NA_AUDIO_FL_PLAY) )
 			continue;
 
 		/* if we don't have enought data for this frame, don't play sound.
@@ -339,7 +339,7 @@ static void *thread_audio_run(void *arg)
 				break;
 
 			case THREAD_STATE_RUNNING:
-				if ( g_want_leave )
+				if ( atomic_read(&g_want_leave) )
 				{
 					c_state = THREAD_STATE_STOP;
 					break;
@@ -378,7 +378,7 @@ int thread_audio_start(void)
 
 int thread_audio_stop(void)
 {
-	while ( c_running )
+	while ( atomic_read(&c_running) )
 		usleep(1000);
 	return NA_OK;
 }

@@ -16,7 +16,7 @@ pthread_t	thread_renderer;
 
 /* static
  */
-static na_atomic_t	c_running		= 0;
+static na_atomic_t	c_running		= {0};
 static short					c_state			= THREAD_STATE_START;
 static ClutterColor				stage_color		= { 0x33, 0x09, 0x3b, 0xff };
 static ClutterActor				*stage			= NULL;
@@ -25,7 +25,7 @@ static ClutterActor				*stage			= NULL;
  */
 static int						ui_width		= 640;
 static int						ui_height		= 480;
-static na_atomic_t				clutter_running = 0;
+na_atomic_t						g_clutter_running = {0};
 
 
 #define CALIBRATE_VALUE_EX(key, delta, min, max)				\
@@ -154,7 +154,7 @@ static void *thread_renderer_run(void *arg)
 				break;
 
 			case THREAD_STATE_RUNNING:
-				if ( g_want_leave )
+				if ( atomic_read(&g_want_leave) )
 				{
 					c_state = THREAD_STATE_STOP;
 					break;
@@ -163,14 +163,14 @@ static void *thread_renderer_run(void *arg)
 				/* run loop for clutter
 				 */
 				clutter_threads_enter();
-				clutter_running = 1;
+				atomic_set(&g_clutter_running, 1);
 				clutter_main();
 				clutter_threads_leave();
 
 				/* if we leave... stop app ?
 				 */
 				na_quit();
-				clutter_running = 0;
+				atomic_set(&g_clutter_running, 0);
 
 				break;
 		}
@@ -212,14 +212,14 @@ int thread_renderer_start(void)
 
 int thread_renderer_stop(void)
 {
-	if ( clutter_running )
+	if ( atomic_read(&g_clutter_running) )
 	{
 		MUTEX_LOCK(renderer);
 		clutter_main_quit();
 		MUTEX_UNLOCK(renderer);
 	}
 
-	while ( c_running )
+	while ( atomic_read(&c_running) )
 		usleep(1000);
 
 	/* Show calibration result

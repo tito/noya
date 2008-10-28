@@ -19,8 +19,8 @@
 
 LOG_DECLARE("MANAGER");
 pthread_t				thread_manager;
-static na_atomic_t		c_running		= 0;
-static na_atomic_t		c_scene_changed	= 0;
+static na_atomic_t		c_running		= {0};
+static na_atomic_t		c_scene_changed	= {0};
 static short			c_state			= THREAD_STATE_START;
 na_scene_t				*c_scene		= NULL;
 manager_actor_list_t	manager_actors_list;
@@ -31,6 +31,7 @@ double					t_lastbeat		= 0,
 						t_beatinterval	= 0,
 						t_current		= 0;
 long					t_bpm			= 0;
+extern na_atomic_t		g_clutter_running;
 
 ClutterColor obj_background	= { 0xff, 0xff, 0xff, 0x99 };
 ClutterColor obj_border		= { 0xff, 0xff, 0xff, 0xff };
@@ -136,7 +137,7 @@ static void manager_event_object_new(unsigned short type, void *userdata, void *
 
 	clutter_threads_leave();
 
-	c_scene_changed = 1;
+	atomic_set(&c_scene_changed, 1);
 }
 
 static void manager_event_object_del(unsigned short type, void *userdata, void *data)
@@ -171,7 +172,7 @@ static void manager_event_object_del(unsigned short type, void *userdata, void *
 	 */
 	free(it);
 
-	c_scene_changed = 1;
+	atomic_set(&c_scene_changed, 1);
 }
 
 static void manager_event_object_set(unsigned short type, void *userdata, void *data)
@@ -224,7 +225,7 @@ static void manager_event_object_set(unsigned short type, void *userdata, void *
 
 	clutter_threads_leave();
 
-	c_scene_changed = 1;
+	atomic_set(&c_scene_changed, 1);
 }
 
 static void manager_event_cursor_new(unsigned short type, void *userdata, void *data)
@@ -319,14 +320,14 @@ static void manager_event_bpm(unsigned short type, void *userdata, void *data)
 
 	for ( entry = na_audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
 	{
-		if ( !(entry->flags & NA_AUDIO_FL_USED) )
+		if ( !(atomic_read(&entry->flags) & NA_AUDIO_FL_USED) )
 			continue;
-		if ( !(entry->flags & NA_AUDIO_FL_LOADED) )
+		if ( !(atomic_read(&entry->flags) & NA_AUDIO_FL_LOADED) )
 			continue;
-		if ( entry->flags & NA_AUDIO_FL_FAILED )
+		if ( atomic_read(&entry->flags) & NA_AUDIO_FL_FAILED )
 			continue;
 
-		if ( entry->flags & NA_AUDIO_FL_WANTPLAY )
+		if ( atomic_read(&entry->flags) & NA_AUDIO_FL_WANTPLAY )
 		{
 			/* play audio
 			*/
@@ -351,16 +352,44 @@ static void manager_event_bpm(unsigned short type, void *userdata, void *data)
 
 			/* if it's not a loop, stop it.
 			*/
-			if ( !(entry->flags & NA_AUDIO_FL_ISLOOP) )
+			if ( !(atomic_read(&entry->flags) & NA_AUDIO_FL_ISLOOP) )
 				na_audio_stop(entry);
 		}
 
-		if ( entry->flags & NA_AUDIO_FL_WANTSTOP )
+		if ( atomic_read(&entry->flags) & NA_AUDIO_FL_WANTSTOP )
 		{
 			na_audio_stop(entry);
 			na_audio_seek(entry, 0);
 		}
 	}
+}
+
+void thread_manager_mod_init(na_module_t *module, void *userdata)
+{
+	assert( module != NULL );
+	if ( module->object_new )
+		module->data = (*module->object_new)(userdata);
+	if ( module->data == NULL )
+	{
+		l_errorf("failed to initialize static module %s", module->name);
+		return;
+	}
+
+	if ( module->object_prepare )
+		(*module->object_prepare)(module->data, NULL);
+}
+
+void thread_manager_mod_deinit(na_module_t *module, void *userdata)
+{
+	assert( module != NULL );
+	if ( module->data == NULL )
+		return;
+
+	if ( module->object_unprepare )
+		(*module->object_unprepare)(module->data);
+	if ( module->object_free )
+		(*module->object_free)(module->data);
+	module->data = NULL;
 }
 
 static void *thread_manager_run(void *arg)
@@ -375,6 +404,13 @@ static void *thread_manager_run(void *arg)
 		switch ( c_state )
 		{
 			case THREAD_STATE_START:
+
+				if ( !atomic_read(&g_clutter_running) )
+				{
+					usleep(100);
+					continue;
+				}
+
 				l_printf(" - MANAGER start...");
 				c_state = THREAD_STATE_RUNNING;
 
@@ -394,8 +430,16 @@ static void *thread_manager_run(void *arg)
 					break;
 				}
 
+				/* initialize actors
+				 */
 				LIST_INIT(&manager_actors_list);
 
+				/* initialize modules
+				 */
+				na_module_yield(NA_MOD_MODULE, thread_manager_mod_init, c_scene);
+
+				/* listening events
+				 */
 				na_event_observe(NA_EV_OBJECT_NEW, manager_event_object_new, NULL);
 				na_event_observe(NA_EV_OBJECT_SET, manager_event_object_set, NULL);
 				na_event_observe(NA_EV_OBJECT_DEL, manager_event_object_del, NULL);
@@ -411,6 +455,10 @@ static void *thread_manager_run(void *arg)
 			case THREAD_STATE_RESTART:
 			case THREAD_STATE_STOP:
 				l_printf(" - MANAGER stop...");
+
+				/* deinitialize modules
+				 */
+				na_module_yield(NA_MOD_MODULE, thread_manager_mod_deinit, NULL);
 
 				clutter_threads_enter();
 				while ( manager_actors_list.lh_first != NULL )
@@ -434,7 +482,7 @@ static void *thread_manager_run(void *arg)
 				break;
 
 			case THREAD_STATE_RUNNING:
-				if ( g_want_leave )
+				if ( atomic_read(&g_want_leave) )
 				{
 					c_state = THREAD_STATE_STOP;
 					break;
@@ -442,10 +490,10 @@ static void *thread_manager_run(void *arg)
 
 				/* scene changed, send event
 				*/
-				if ( c_scene_changed )
+				if ( atomic_read(&c_scene_changed) )
 				{
 					na_event_send(NA_EV_SCENE_UPDATE, NULL);
-					c_scene_changed = 0;
+					atomic_set(&c_scene_changed, 0);
 				}
 
 				/* let's do the beat !
@@ -468,7 +516,7 @@ static void *thread_manager_run(void *arg)
 					bpm.beatinmeasure = bpm.beat % c_scene->measure + 1;
 					if ( bpm.beatinmeasure == 1 )
 						bpm.measure++;
-					l_printf("BPM = %lu/%lu - %lu", bpm.measure,
+					l_printf("BPM = %u/%u - %u", bpm.measure,
 						bpm.beatinmeasure, bpm.beat);
 					na_event_send(NA_EV_BPM, &bpm);
 				}
@@ -500,7 +548,7 @@ int thread_manager_start(void)
 
 int thread_manager_stop(void)
 {
-	while ( c_running )
+	while ( atomic_read(&c_running) )
 		usleep(1000);
 	return NA_OK;
 }
