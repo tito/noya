@@ -334,7 +334,10 @@ static void manager_event_cursor_set(unsigned short type, void *userdata, void *
 
 static void manager_event_bpm(unsigned short type, void *userdata, void *data)
 {
+	na_bpm_t			*bpm	= (na_bpm_t *)data;
 	na_audio_t			*entry;
+
+	assert( bpm != NULL );
 
 	for ( entry = na_audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
 	{
@@ -349,7 +352,12 @@ static void manager_event_bpm(unsigned short type, void *userdata, void *data)
 		{
 			/* play audio
 			*/
-			na_audio_play(entry);
+			if ( bpm->beatinmeasure == 1 )
+			{
+				if ( !na_audio_is_play(entry) )
+					na_audio_seek(entry, 0);
+				na_audio_play(entry);
+			}
 
 			/* increment bpm idx
 			*/
@@ -359,9 +367,7 @@ static void manager_event_bpm(unsigned short type, void *userdata, void *data)
 			/* enough data for play ?
 			*/
 			if ( entry->bpmidx < (int)entry->bpmduration )
-			{
 				continue;
-			}
 
 			/* back to start of sample
 			*/
