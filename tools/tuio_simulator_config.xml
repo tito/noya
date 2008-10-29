@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+
+<!-- 
+
+shapes:
+circle, square, roundsquare, triangle, star
+octagon, ellipse, cross, hourglass, pentagon
+hexagon, sphere
+
+colors:
+RGB in HEX format
+white=FFFFFF, black=000000, red=FF0000, etc.
+
+-->
+
+<tuio>
+
+<class name="blue cube" shape="square" color="174EAA" description="blue cube"/>
+<class name="red cube" shape="square" color="DC1F2C" description="red cube"/>
+<class name="green cube" shape="square" color="0EA44A" description="green cube"/>
+<class name="yellow cube" shape="square" color="E4D81F" description="yellow cube"/>
+
+<class name="blue disk" shape="circle" color="174EAA" description="blue disk"/>
+<class name="red disk" shape="circle" color="DC1F2C" description="red disk"/>
+<class name="green disk" shape="circle" color="0EA44A" description="green disk"/>
+<class name="yellow disk" shape="circle" color="E4D81F" description="yellow disk"/>
+
+<class name="blue pentagon" shape="pentagon" color="174EAA" description="blue pentagon"/>
+<class name="red pentagon" shape="pentagon" color="DC1F2C" description="red pentagon"/>
+<class name="green pentagon" shape="pentagon" color="0EA44A" description="green pentagon"/>
+<class name="yellow pentagon" shape="pentagon" color="E4D81F" description="yellow pentagon"/>
+
+<class name="blue round" shape="roundsquare" color="174EAA" description="blue round"/>
+<class name="red round" shape="roundsquare" color="DC1F2C" description="red round"/>
+<class name="green round" shape="roundsquare" color="0EA44A" description="green round"/>
+<class name="yellow round" shape="roundsquare" color="E4D81F" description="yellow round"/>
+
+<class name="blue dome" shape="roundsquare" color="174EAA" description="blue dome"/>
+<class name="red dome" shape="roundsquare" color="DC1F2C" description="red dome"/>
+<class name="green dome" shape="roundsquare" color="E4D81F" description="green dome"/>
+<class name="yellow dome" shape="roundsquare" color="E4D81F" description="yellow dome"/>
+
+<class name="blue cross" shape="cross" color="174EAA" description="blue cross"/>
+<class name="red cross" shape="cross" color="DC1F2C" description="red cross"/>
+<class name="green cross" shape="cross" color="0EA44A" description="green cross"/>
+<class name="yellow cross" shape="cross" color="E4D81F" description="yellow cross"/>
+
+<object class="blue cube" fiducials="0" active="false" xpos="150" ypos="40" angle="180"/>
+<object class="red cube" fiducials="1" active="false" xpos="225" ypos="40" angle="180"/>
+<object class="yellow cube" fiducials="2" active="false" xpos="300" ypos="40" angle="180"/>
+<object class="green cube" fiducials="3" active="false" xpos="375" ypos="40" angle="180"/>
+
+<object class="blue disk" fiducials="4" active="false" xpos="650" ypos="40" angle="180"/>
+<object class="red disk" fiducials="5" active="false" xpos="725" ypos="40" angle="180"/>
+<object class="yellow disk" fiducials="6" active="false" xpos="800" ypos="40" angle="180"/>
+<object class="green disk" fiducials="7" active="false" xpos="875" ypos="40" angle="180"/>
+
+<object class="blue pentagon" fiducials="8" active="false" xpos="150" ypos="725" angle="180"/>
+<object class="red pentagon" fiducials="9" active="false" xpos="225" ypos="725" angle="180"/>
+<object class="yellow pentagon" fiducials="10" active="false" xpos="300" ypos="725" angle="180"/>
+<object class="green pentagon" fiducials="11" active="false" xpos="375" ypos="725" angle="180"/>
+
+<object class="blue round" fiducials="12" active="false" xpos="650" ypos="725" angle="180"/>
+<object class="red round" fiducials="13" active="false" xpos="725" ypos="725" angle="180"/>
+<object class="yellow round" fiducials="14" active="false" xpos="800" ypos="725" angle="180"/>
+<object class="green round" fiducials="15" active="false" xpos="875" ypos="725" angle="180"/>
+
+<object class="blue dome" fiducials="16" active="false" xpos="50" ypos="150" angle="180"/>
+<object class="red dome" fiducials="17" active="false" xpos="50" ypos="225" angle="180"/>
+<object class="yellow dome" fiducials="18" active="false" xpos="50" ypos="300" angle="180"/>
+<object class="green dome" fiducials="19" active="false" xpos="50" ypos="375" angle="180"/>
+
+<object class="blue cross" fiducials="20" active="false" xpos="975" ypos="150" angle="180"/>
+<object class="red cross" fiducials="21" active="false" xpos="975" ypos="225" angle="180"/>
+<object class="yellow cross" fiducials="22" active="false" xpos="975" ypos="300" angle="180"/>
+<object class="green cross" fiducials="23" active="false" xpos="975" ypos="375" angle="180"/>
+
+</tuio>
