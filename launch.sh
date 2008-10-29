@@ -47,8 +47,10 @@ function simulator()
 	if [ ! -d $SIMULATOR_DIR ]; then
 		unzip $SIMULATOR_ZIP
 	fi
+	cd ../..
 
-	cd TUIO_Simulator
+	cp $TOOLS_DIR/tuio_simulator_config.xml $TOOLS_DIR/tuio/TUIO_Simulator/resources/config.xml
+	cd $TOOLS_DIR/tuio/TUIO_Simulator
 	java -jar TuioSimulator.jar
 
 	popd >/dev/null
