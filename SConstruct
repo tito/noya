@@ -31,6 +31,12 @@ env = Environment()
 for lib_file in lib_files:
 	env.ParseConfig('pkg-config %s --cflags' % lib_file)
 
+# Testing configuration
+conf = Configure(env)
+if conf.CheckHeader('rtc.h') or conf.CheckHeader('linux/rtc.h'):
+	env.AppendUnique(CCFLAGS='-DHAVE_RTC')
+conf.Finish()
+
 # Debug
 env.AppendUnique(CCFLAGS='-Wall')
 env.AppendUnique(CCFLAGS='-ggdb')

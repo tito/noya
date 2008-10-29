@@ -1,3 +1,7 @@
+/*
+ * Note: RTC code is taken from mplayer code, thanks to you guys !
+ * http://www.mplayerhq.hu/
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -7,6 +11,20 @@
 #include <assert.h>
 #include <clutter/clutter.h>
 #include <sys/time.h>
+#include <sys/ioctl.h>
+#include <errno.h>
+#include <fcntl.h>
+
+
+#ifdef HAVE_RTC
+#ifdef __linux__
+#include <linux/rtc.h>
+#else
+#include <rtc.h>
+#define RTC_IRQP_SET RTCIO_IRQP_SET
+#define RTC_PIE_ON   RTCIO_PIE_ON
+#endif /* __linux__ */
+#endif /* HAVE_RTC */
 
 #include "noya.h"
 #include "event.h"
@@ -394,6 +412,11 @@ void thread_manager_mod_deinit(na_module_t *module, void *userdata)
 
 static void *thread_manager_run(void *arg)
 {
+#ifdef HAVE_RTC
+	unsigned long	rtc_ts;
+	int				rtc_fd = -1;
+	char			*rtc_device = NULL;
+#endif
 	manager_actor_t	*it = NULL;
 	na_bpm_t		bpm = {0};
 
@@ -413,6 +436,35 @@ static void *thread_manager_run(void *arg)
 
 				l_printf(" - MANAGER start...");
 				c_state = THREAD_STATE_RUNNING;
+
+#ifdef HAVE_RTC
+				if ( (rtc_fd = open(rtc_device ? rtc_device : "/dev/rtc", O_RDONLY)) < 0 )
+				{
+					l_errorf("RTC timer: unable to open %s", rtc_device ? rtc_device : "/dev/rtc");
+				}
+				else
+				{
+					unsigned long irqp = 1024; /* 512 seemed OK. 128 is jerky. */
+
+					if ( ioctl(rtc_fd, RTC_IRQP_SET, irqp) < 0)
+					{
+						l_errorf("RTC timer: error in RTC_IRQP_SET : %s", strerror(errno));
+						l_errorf("RTC timer: try adding \"echo %lu >" \
+								 "/proc/sys/dev/rtc/max-user-freq\" to your system startup scripts. !", irqp);
+						close(rtc_fd);
+						rtc_fd = -1;
+					}
+					else if ( ioctl(rtc_fd, RTC_PIE_ON, 0) < 0 )
+					{
+						/* variable only by the root */
+						l_errorf("RTC timer: error in ioctl RTC_PIE_ON : %s", strerror(errno));
+						close(rtc_fd);
+						rtc_fd = -1;
+					}
+					else
+						l_printf("RTC timer: activated.");
+				}
+#endif
 
 				c_scene = na_scene_load(g_options.scene_fn);
 				if ( c_scene == NULL )
@@ -498,31 +550,48 @@ static void *thread_manager_run(void *arg)
 
 				/* let's do the beat !
 				 */
-				gettimeofday(&st_beat, NULL);
-				t_beat = st_beat.tv_sec + st_beat.tv_usec * 0.000001;
-				t_beatinterval = (float)(60.0f / (float)c_scene->bpm);
-
-				if ( t_beat - t_lastbeat > t_beatinterval )
+				do
 				{
-					t_bpm++;
-
-					/* FIXME : how to handle lag ?
+					/* RTC sleep first
 					 */
-					t_lastbeat = t_beat;
-
-					/* send bpm event
+#ifdef HAVE_RTC
+					if ( rtc_fd >= 0 )
+					{
+						if ( read(rtc_fd, &rtc_ts, sizeof(rtc_ts)) <= 0 )
+							l_errorf("error while reading RTC timer !");
+					}
+					else
+#endif
+					/* Soft sleep
+					 * TODO check mplayer code for soft sleep ?
 					 */
-					bpm.beat = t_bpm;
-					bpm.beatinmeasure = bpm.beat % c_scene->measure + 1;
-					if ( bpm.beatinmeasure == 1 )
-						bpm.measure++;
-					l_printf("BPM = %u/%u - %u", bpm.measure,
-						bpm.beatinmeasure, bpm.beat);
-					na_event_send(NA_EV_BPM, &bpm);
-				}
+					{
+						usleep(100);
+					}
 
+					/* get time
+					 */
+					gettimeofday(&st_beat, NULL);
+					t_beat = st_beat.tv_sec + st_beat.tv_usec * 0.000001;
+					t_beatinterval = (float)(60.0f / (float)c_scene->bpm);
+				} while ( t_beat - t_lastbeat < t_beatinterval );
 
-				usleep(100);
+				t_bpm++;
+
+				/* FIXME : how to handle lag ?
+				 */
+				t_lastbeat = t_beat;
+
+				/* send bpm event
+				 */
+				bpm.beat = t_bpm;
+				bpm.beatinmeasure = bpm.beat % c_scene->measure + 1;
+				if ( bpm.beatinmeasure == 1 )
+					bpm.measure++;
+				l_printf("BPM = %u/%u - %u", bpm.measure,
+					bpm.beatinmeasure, bpm.beat);
+				na_event_send(NA_EV_BPM, &bpm);
+
 				break;
 		}
 	}
