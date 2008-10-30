@@ -1,80 +1,201 @@
 #!/usr/bin/env bash
 
-WPATH=$1
+#
+# Default configuration
+#
+DEF_FILENAME=test
+DEF_TITLE="Test scene"
+DEF_AUTHOR="$USER"
+DEF_BPM=125
+
+#
+# Dynamic configuration
+#
 DATE=`date +'%d.%m.%Y'`
-BASEPATH=`dirname $0`
-NOYAPATH="$BASEPATH/../.."
+BASEPATH=$(realpath $(dirname $0))
+NOYAPATH=$(realpath $BASEPATH/../..)
 TEMPLATE="$BASEPATH/template.ini"
 
+
+#
+# Variables
+#
+FILENAME=
+TITLE=
+AUTHOR=
+BPM=
+WPATH=
+FORCE=0
+
+echo "Noya scene builder, ver 0.1 - by Mathieu Virbel <tito@bankiz.org>"
+echo ""
+
 usage() {
-	echo "Usage: scenebuilder.sh <path>"
+	echo "Usage: scenebuilder.sh [options] <path>"
+	echo " -a, --author <author>      Scene author"
+	echo " -b, --bpm <bpm>            Set BPM (beat per minutes)"
+	echo " -h, --help                 Show help"
+	echo " -o, --output <filename>    Output filename"
+	echo " -t, --title <title>        Scene title"
+	echo " -f, --force                Force write if exist"
 }
+
+#
+# Test template.ini
+#
+
+if [ ! -r "$TEMPLATE" ]; then
+	echo "Unable to found template.ini in $TEMPLATE"
+	exit
+fi
+
+
+#
+# Read parameters
+#
+
+while [ -n "$1" ]; do
+	case "$1" in
+		"-h" | "--help")
+			usage
+			;;
+		"-a" | "--author")
+			shift
+			AUTHOR="$1"
+			;;
+		"-b" | "--bpm")
+			shift
+			BPM="$1"
+			;;
+		"-o" | "--output")
+			shift
+			FILENAME="$1"
+			;;
+		"-t" | "--title")
+			shift
+			TITLE="$1"
+			;;
+		"-f" | "--force")
+			FORCE=1
+			;;
+		*)
+			WPATH="$1"
+			break
+			;;
+	esac
+	shift
+done
+
+
+
+#
+# Verify parameters
+#
 
 if [ "X$WPATH" = "X" ]; then
 	usage
 	exit
 fi
 
-echo -n "Scene filename : "
-read FILENAME
+if [ ! -d "$WPATH" ]; then
+	echo "Invalid directory: $WPATH"
+	exit
+fi
 
 if [ "X$FILENAME" = "X" ]; then
-	echo "No filename specified... >_<"
-	exit
-fi
+	echo -n "Scene filename [$DEF_FILENAME]: "
+	read FILENAME
 
-echo -n "Title of scene : "
-read TITLE
+	if [ "X$FILENAME" = "X" ]; then
+		FILENAME="$DEF_FILENAME"
+	fi
+fi
 
 if [ "X$TITLE" = "X" ]; then
-	echo "No title specified... >_<"
-	exit
-fi
+	echo -n "Title of scene [$DEF_TITLE]: "
+	read TITLE
 
-echo -n "Author : "
-read AUTHOR
+	if [ "X$TITLE" = "X" ]; then
+		TITLE="$DEF_TITLE"
+	fi
+fi
 
 if [ "X$AUTHOR" = "X" ]; then
-	echo "No author specified... >_<"
-	exit
-fi
+	echo -n "Author [$DEF_AUTHOR]: "
+	read AUTHOR
 
-echo -n "BPM : "
-read BPM
+	if [ "X$AUTHOR" = "X" ]; then
+		AUTHOR="$DEF_AUTHOR"
+	fi
+fi
 
 if [ "X$BPM" = "X" ]; then
-	echo "No bpm specified... >_<"
+	echo -n "Beat per minutes [$DEF_BPM]: "
+	read BPM
+
+	if [ "X$BPM" = "X" ]; then
+		BPM="$DEF_BPM"
+	fi
+fi
+
+
+#
+# Create output directory
+#
+
+OUTPUT_DIRECTORY="$NOYAPATH/scenes/$FILENAME"
+if [ -d "$OUTPUT_DIRECTORY" ]; then
+	echo "Warning, scene already exists with this name !"
+	if [ "X$FORCE" = "X0" ]; then
+		echo "Please remove $OUTPUT_DIRECTORY before generate scene."
+		exit
+	fi
+
+	rm -rf $OUTPUT_DIRECTORY
+fi
+mkdir -p $OUTPUT_DIRECTORY
+if [ ! -d "$OUTPUT_DIRECTORY" ]; then
+	echo "Error, unable to create $OUTPUT_DIRECTORY"
 	exit
 fi
 
-# Create directory
-mkdir "$NOYAPATH/scenes/$FILENAME"
+#
+# Create output file from template
+#
 
-# Initialize template
-OUT="$NOYAPATH/scenes/$FILENAME/$FILENAME.ini"
-cat $TEMPLATE | sed 's/$TITLE/'$TITLE'/g' | sed 's/$AUTHOR/'$AUTHOR'/g' | sed 's/$BPM/'$BPM'/g' | sed 's/$DATE/'$DATE'/g' > $OUT
-idx=0
+OUTPUT_FILENAME="$OUTPUT_DIRECTORY/$FILENAME.ini"
+touch $OUTPUT_FILENAME
+if [ ! -w "$OUTPUT_FILENAME" ]; then
+	echo "Error, unable to create $OUTPUT_FILENAME"
+	exit
+fi
 
+cat $TEMPLATE | sed "s/\$TITLE/$TITLE/g" | sed "s/\$AUTHOR/$AUTHOR/g" | sed "s/\$BPM/$BPM/g" | sed "s/\$DATE/$DATE/g" > $OUTPUT_FILENAME
+
+#
 # Copy files
+#
+idx=0
 IFS='
 '
-for foo in `find "$WPATH" -iname *.WAV`; do
-	wavname=`basename $foo`
+for wavfile in `find "$WPATH" -iname *.WAV`; do
+	wavname=`basename $wavfile`
 
-	echo "Import $wavname"
+	echo "Map actor $idx to $wavname"
 
-	cp "$foo" "$NOYAPATH/scenes/$FILENAME/$wavname"
+	cp "$wavfile" "$OUTPUT_DIRECTORY/$wavname"
 
-	echo "scene.act.$idx.object = obj_sample" >> $OUT
-	echo "scene.act.$idx.file = \"$wavname\"" >> $OUT
-	echo "scene.act.$idx.ctl.angle = volume" >> $OUT
-	echo "" >> $OUT
+	echo "scene.act.$idx.object = obj_sample" >> $OUTPUT_FILENAME
+	echo "scene.act.$idx.file = \"$wavname\"" >> $OUTPUT_FILENAME
+	echo "scene.act.$idx.ctl.angle = volume" >> $OUTPUT_FILENAME
+	echo "" >> $OUTPUT_FILENAME
 
 	idx=$((idx+1))
 done
 
-# Complete !
+# complete !
 echo 
-echo "Build complete."
+echo "Build complete, $idx actors imported."
+echo "Scene saved to $OUTPUT_DIRECTORY"
 echo
 
