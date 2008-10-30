@@ -2,7 +2,9 @@
 
 WPATH=$1
 DATE=`date +'%d.%m.%Y'`
-
+BASEPATH=`dirname $0`
+NOYAPATH="$BASEPATH/../.."
+TEMPLATE="$BASEPATH/template.ini"
 
 usage() {
 	echo "Usage: scenebuilder.sh <path>"
@@ -46,11 +48,11 @@ if [ "X$BPM" = "X" ]; then
 fi
 
 # Create directory
-mkdir $FILENAME
+mkdir "$NOYAPATH/scenes/$FILENAME"
 
 # Initialize template
-OUT="$FILENAME/$FILENAME.ini"
-cat template.ini | sed 's/$TITLE/'$TITLE'/g' | sed 's/$AUTHOR/'$AUTHOR'/g' | sed 's/$BPM/'$BPM'/g' | sed 's/$DATE/'$DATE'/g' > $OUT
+OUT="$NOYAPATH/scenes/$FILENAME/$FILENAME.ini"
+cat $TEMPLATE | sed 's/$TITLE/'$TITLE'/g' | sed 's/$AUTHOR/'$AUTHOR'/g' | sed 's/$BPM/'$BPM'/g' | sed 's/$DATE/'$DATE'/g' > $OUT
 idx=0
 
 # Copy files
@@ -61,7 +63,7 @@ for foo in `find "$WPATH" -iname *.WAV`; do
 
 	echo "Import $wavname"
 
-	cp "$foo" "$FILENAME/$wavname"
+	cp "$foo" "$NOYAPATH/scenes/$FILENAME/$wavname"
 
 	echo "scene.act.$idx.object = obj_sample" >> $OUT
 	echo "scene.act.$idx.file = \"$wavname\"" >> $OUT
@@ -74,7 +76,5 @@ done
 # Complete !
 echo 
 echo "Build complete."
-echo "Now, copy your scene in noya/scenes directory :"
-echo " mv" $FILENAME "../../scenes/"
 echo
 
