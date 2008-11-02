@@ -6,13 +6,14 @@
 /* Configuration
  * FIXME Move this !
  */
+#define NA_VERSION				"0.1"
 #ifdef HAVE_RTC
-#define NA_VERSION				"0.1alpha (rtc)"
+#define NA_ADDVERSION			"(rtc)"
 #else
-#define NA_VERSION				"0.1alpha (no rtc)"
+#define NA_ADDVERSION			"(no rtc)"
 #endif
 #define NA_TITLE				"NOYA - Real time music"
-#define NA_BANNER				"Noya, ver " NA_VERSION " - by Mathieu Virbel <tito@bankiz.org>"
+#define NA_BANNER				"Noya, ver " NA_VERSION NA_ADDVERSION " - by Mathieu Virbel <tito@bankiz.org>"
 #define NA_WEBSITE				"Visit http://noya.txzone.net/ for more information"
 #define	NA_TUIO_PORT			"3333"
 #define NA_CONFIG_FN			"config.ini"
