@@ -9,7 +9,7 @@ LIBDC=libdc1394-2.0.2.tar.bz2
 
 function usage()
 {
-	echo "Usage: launch.sh <simulator|reactivision|ladspa>"
+	echo "Usage: launch.sh <simulator|reactivision|ladspa|noya>"
 	exit
 }
 
