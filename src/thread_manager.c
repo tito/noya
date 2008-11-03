@@ -416,6 +416,20 @@ void thread_manager_mod_deinit(na_module_t *module, void *userdata)
 	module->data = NULL;
 }
 
+static gboolean manager_renderer_update(gpointer data)
+{
+	manager_actor_t	*it;
+
+	for ( it = manager_actors_list.lh_first; it != NULL; it = it->next.le_next )
+	{
+		(*it->scene_actor->mod->object_update)(it->scene_actor->data_mod);
+		clutter_actor_queue_redraw(clutter_stage_get_default());
+	}
+
+	return TRUE;
+}
+
+
 static void *thread_manager_run(void *arg)
 {
 #ifdef HAVE_RTC
@@ -508,6 +522,7 @@ static void *thread_manager_run(void *arg)
 
 				na_event_observe(NA_EV_BPM, manager_event_bpm, NULL);
 
+				clutter_threads_add_timeout(25, manager_renderer_update, NULL);
 				break;
 
 			case THREAD_STATE_RESTART:
