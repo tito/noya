@@ -10,6 +10,8 @@
 #include "thread_manager.h"
 #include "event.h"
 
+#include "actors/clutter-circle.h"
+
 #define MODULE_NAME "obj_sample"
 
 LOG_DECLARE("MOD_OBJ_SAMPLE");
@@ -17,11 +19,13 @@ LOG_DECLARE("MOD_OBJ_SAMPLE");
 typedef struct
 {
 	na_scene_t			*scene;
-	manager_actor_t	*actor;
+	manager_actor_t		*actor;
 
 	/* rendering issues
 	 */
 	ClutterActor	*group_cube;
+	ClutterActor	*circle_volume;
+	ClutterActor	*circle_position;
 
 	/* audio attached for sample
 	 */
@@ -260,13 +264,29 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 	 */
 	memcpy(&obj_background, &actor->scene_actor->background_color, sizeof(obj_background));
 	memcpy(&obj_border, &actor->scene_actor->border_color, sizeof(obj_border));
-	ac = clutter_rectangle_new_with_color(&obj_background);
-	clutter_rectangle_set_border_color((ClutterRectangle *)ac, &obj_border);
-	clutter_rectangle_set_border_width((ClutterRectangle *)ac, actor->scene_actor->border_width);
+	ac = clutter_circle_new_with_color(&obj_background);
+	clutter_circle_set_angle_stop(CLUTTER_CIRCLE(ac), 360);
+//	clutter_rectangle_set_border_color((ClutterRectangle *)ac, &obj_border);
+//	clutter_rectangle_set_border_width((ClutterRectangle *)ac, actor->scene_actor->border_width);
 	clutter_actor_set_width(ac, actor->scene_actor->width);
 	clutter_actor_set_height(ac, actor->scene_actor->height);
-
 	clutter_container_add_actor(CLUTTER_CONTAINER(obj->group_cube), ac);
+
+	ac = clutter_circle_new_with_color(&obj_border);
+	clutter_actor_set_width(ac, actor->scene_actor->width);
+	clutter_actor_set_height(ac, actor->scene_actor->height);
+	clutter_circle_set_radius(ac, actor->scene_actor->width);
+	clutter_circle_set_width(ac, 10);
+	clutter_container_add_actor(CLUTTER_CONTAINER(actor->clutter_actor), ac);
+	obj->circle_position = ac;
+
+	ac = clutter_circle_new_with_color(&obj_border);
+	clutter_actor_set_width(ac, actor->scene_actor->width);
+	clutter_actor_set_height(ac, actor->scene_actor->height);
+	clutter_circle_set_radius(ac, actor->scene_actor->width+10);
+	clutter_circle_set_width(ac, 10);
+	clutter_container_add_actor(CLUTTER_CONTAINER(actor->clutter_actor), ac);
+	obj->circle_volume = ac;
 
 	/* create text
 	 */
@@ -321,6 +341,16 @@ void lib_object_unprepare(obj_t *obj)
 void lib_object_update(obj_t *obj)
 {
 	assert( obj != NULL );
+
+	clutter_circle_set_angle_stop(
+		CLUTTER_CIRCLE(obj->circle_volume),
+		(uint) (obj->audio->volume * 360.0f)
+	);
+
+	clutter_circle_set_angle_stop(
+		CLUTTER_CIRCLE(obj->circle_position),
+		(uint) (obj->audio->position * 360.0f)
+	);
 
 	if ( obj->top )
 		(*obj->top->widget_update)(obj->data_top);

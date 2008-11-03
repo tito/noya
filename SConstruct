@@ -2,7 +2,7 @@
 # @Author Mathieu Virbel <tito@bankiz.org>
 
 # Enumerate sources and libraries
-src_files = Glob('src/*.c')
+src_files = Glob('src/*.c') + Glob('src/actors/*.c')
 mod_files = Glob('modules/*.c');
 lib_files = [
 	# handle OSC message
