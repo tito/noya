@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 
 #include "noya.h"
 #include "audio.h"
@@ -225,6 +226,7 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 					obj_border;
 	ClutterActor	*ac;
 	char			number[5];
+	guint			radius;
 
 	assert( obj != NULL );
 	assert( actor != NULL );
@@ -262,6 +264,8 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 
 	/* create object
 	 */
+	radius = actor->scene_actor->width >> 1;
+
 	memcpy(&obj_background, &actor->scene_actor->background_color, sizeof(obj_background));
 	memcpy(&obj_border, &actor->scene_actor->border_color, sizeof(obj_border));
 	ac = clutter_circle_new_with_color(&obj_background);
@@ -270,12 +274,13 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 //	clutter_rectangle_set_border_width((ClutterRectangle *)ac, actor->scene_actor->border_width);
 	clutter_actor_set_width(ac, actor->scene_actor->width);
 	clutter_actor_set_height(ac, actor->scene_actor->height);
+	clutter_circle_set_radius(ac, radius);
 	clutter_container_add_actor(CLUTTER_CONTAINER(obj->group_cube), ac);
 
 	ac = clutter_circle_new_with_color(&obj_border);
 	clutter_actor_set_width(ac, actor->scene_actor->width);
 	clutter_actor_set_height(ac, actor->scene_actor->height);
-	clutter_circle_set_radius(ac, actor->scene_actor->width);
+	clutter_circle_set_radius(ac, radius);
 	clutter_circle_set_width(ac, 10);
 	clutter_container_add_actor(CLUTTER_CONTAINER(actor->clutter_actor), ac);
 	obj->circle_position = ac;
@@ -283,7 +288,7 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 	ac = clutter_circle_new_with_color(&obj_border);
 	clutter_actor_set_width(ac, actor->scene_actor->width);
 	clutter_actor_set_height(ac, actor->scene_actor->height);
-	clutter_circle_set_radius(ac, actor->scene_actor->width+10);
+	clutter_circle_set_radius(ac, radius + 10);
 	clutter_circle_set_width(ac, 10);
 	clutter_container_add_actor(CLUTTER_CONTAINER(actor->clutter_actor), ac);
 	obj->circle_volume = ac;
