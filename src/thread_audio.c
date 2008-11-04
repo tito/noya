@@ -62,7 +62,7 @@ static void thread_audio_preload(void)
 
 		entry->duration = (float)sinfo.frames / (float)sinfo.samplerate;
 
-		entry->data = (float *)malloc(entry->totalframes * sizeof(float) * NA_OUTPUT_CHANNELS);
+		entry->data = (float *)malloc(entry->totalframes * sizeof(float) * sinfo.channels);
 		if ( entry->data == NULL )
 			goto na_audio_preload_clean;
 
