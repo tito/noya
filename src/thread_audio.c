@@ -179,7 +179,7 @@ static int audio_output_callback(
 		{
 			/* change this if we support more than stereo
 			 */
-			assert( entry->channels < 2 );
+			assert( entry->channels <= 2 );
 			entry->position = (float)(entry->dataidx >> (entry->channels - 1)) /  (float)entry->totalframes;
 		}
 		else
