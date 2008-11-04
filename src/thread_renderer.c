@@ -8,6 +8,7 @@
 #include <clutter/clutter.h>
 
 #include "noya.h"
+#include "event.h"
 #include "thread_renderer.h"
 
 LOG_DECLARE("RENDERER");
@@ -91,6 +92,9 @@ static gboolean renderer_key_handle(ClutterActor *actor, ClutterKeyEvent *event,
 				clutter_stage_unfullscreen(CLUTTER_STAGE(stage));
 			else
 				clutter_stage_fullscreen(CLUTTER_STAGE(stage));
+
+			g_object_get( G_OBJECT(stage), "fullscreen", &is_fullscreen, NULL);
+			na_event_send(NA_EV_WINDOW_UPDATE, NULL);
 			break;
 		case CLUTTER_q:
 			na_quit();
