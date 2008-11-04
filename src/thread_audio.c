@@ -176,7 +176,12 @@ static int audio_output_callback(
 		 */
 		entry->dataidx += framesPerBuffer * entry->channels;
 		if ( entry->totalframes > 0 )
-			entry->position = (entry->dataidx * 0.5) /  entry->totalframes;
+		{
+			/* change this if we support more than stereo
+			 */
+			assert( entry->channels < 2 );
+			entry->position = (float)(entry->dataidx >> (entry->channels - 1)) /  (float)entry->totalframes;
+		}
 		else
 			entry->position = 0;
 	}

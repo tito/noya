@@ -14,7 +14,7 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <fcntl.h>
-
+#include <math.h>
 
 #ifdef HAVE_RTC
 #ifdef __linux__
@@ -359,9 +359,13 @@ static void manager_event_bpm(unsigned short type, void *userdata, void *data)
 				na_audio_play(entry);
 			}
 
+			/* first time, calculate duration
+			 */
+			if ( entry->bpmduration <= 0 )
+				entry->bpmduration = nearbyintf(entry->duration / t_beatinterval);
+
 			/* increment bpm idx
 			*/
-			entry->bpmduration = entry->duration / t_beatinterval;
 			entry->bpmidx++;
 
 			/* enough data for play ?
