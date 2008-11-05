@@ -32,6 +32,71 @@ struct _ClutterCirclePrivate
 };
 
 static void
+cc_cogl_path_arc (ClutterFixed center_x,
+		ClutterFixed center_y,
+		ClutterFixed radius_x,
+		ClutterFixed radius_y,
+		ClutterAngle angle_1,
+		ClutterAngle angle_2,
+		ClutterAngle angle_step,
+		guint        move_first)
+{
+	ClutterAngle a     = 0x0;
+	ClutterFixed cosa  = 0x0;
+	ClutterFixed sina  = 0x0;
+	ClutterFixed px    = 0x0;
+	ClutterFixed py    = 0x0;
+
+	/* Fix invalid angles */
+
+	if (angle_1 == angle_2 || angle_step == 0x0)
+		return;
+
+	if (angle_step < 0x0)
+		angle_step = -angle_step;
+
+	/* Walk the arc by given step */
+
+	a = angle_1;
+	while (a != angle_2)
+	{
+		cosa = clutter_cosi (a);
+		sina = clutter_sini (a);
+
+		px = center_x + CFX_MUL (cosa, radius_x);
+		py = center_y + CFX_MUL (sina, radius_y);
+
+		if (a == angle_1 && move_first)
+			cogl_path_move_to (px, py);
+		else
+			cogl_path_line_to (px, py);
+
+		if (G_LIKELY (angle_2 > angle_1))
+		{
+			a += angle_step;
+			if (a > angle_2)
+				a = angle_2;
+		}
+		else
+		{
+			a -= angle_step;
+			if (a < angle_2)
+				a = angle_2;
+		}
+	}
+
+	/* Make sure the final point is drawn */
+
+	cosa = clutter_cosi (angle_2);
+	sina = clutter_sini (angle_2);
+
+	px = center_x + CFX_MUL (cosa, radius_x);
+	py = center_y + CFX_MUL (sina, radius_y);
+
+	cogl_path_line_to (px, py);
+}
+
+static void
 clutter_circle_paint (ClutterActor *self)
 {
 	ClutterFixed				dw, dh;
@@ -39,7 +104,7 @@ clutter_circle_paint (ClutterActor *self)
 	ClutterCirclePrivate		*priv;
 	ClutterGeometry				geom;
 	ClutterColor				tmp_col;
-	ClutterFixed				precision = 1;
+	ClutterFixed				precision = 2;
 
 	circle = CLUTTER_CIRCLE(self);
 	priv = circle->priv;
@@ -60,34 +125,41 @@ clutter_circle_paint (ClutterActor *self)
 
 	dw = CLUTTER_INT_TO_FIXED(geom.width) >> 1;
 	dh = CLUTTER_INT_TO_FIXED(geom.height) >> 1;
-	/**
-	cogl_path_ellipse (dw, dh,
-		CLUTTER_INT_TO_FIXED(geom.width),
-		CLUTTER_INT_TO_FIXED(geom.height),
-		);
-	**/
+
 	cogl_path_move_to(dw, dh);
-	cogl_path_arc_rel(0, 0,
+	cc_cogl_path_arc(dw, dh,
 		CLUTTER_INT_TO_FIXED(priv->radius),
 		CLUTTER_INT_TO_FIXED(priv->radius),
 		CLUTTER_ANGLE_FROM_DEG(priv->angle_start + 270),
 		CLUTTER_ANGLE_FROM_DEG(priv->angle_stop + 270),
-		precision
+		precision, 1
 	);
 
 	if ( priv->width != 0 )
 	{
-		cogl_path_line_to(dw, dh);
-		cogl_path_arc_rel(0, 0,
+		cc_cogl_path_arc(dw, dh,
 			CLUTTER_INT_TO_FIXED(priv->radius + priv->width),
 			CLUTTER_INT_TO_FIXED(priv->radius + priv->width),
 			CLUTTER_ANGLE_FROM_DEG(priv->angle_stop + 270),
 			CLUTTER_ANGLE_FROM_DEG(priv->angle_start + 270),
-			precision
+			precision, 0
 		);
 	}
 	cogl_path_close();
+
+	/* fill path
+	 */
 	cogl_path_fill();
+
+	/* and stroke border
+	 */
+    glEnable(GL_LINE_SMOOTH);
+    glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+    glLineWidth(1.5);
+
+	cogl_path_stroke();
+
+	glDisable(GL_LINE_SMOOTH);
 
 }
 
