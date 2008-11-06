@@ -31,7 +31,8 @@ na_atomic_t						g_clutter_running = {0};
 
 #define CALIBRATE_VALUE_EX(key, delta, min, max)				\
 	do {														\
-		value = config_lookup_float(&g_config, key);	\
+		value = config_lookup_float(&g_config, key);			\
+		l_printf("%s = %f", key, value);						\
 		value += delta;											\
 		if ( value < min )										\
 			value = min;										\

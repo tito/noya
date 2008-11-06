@@ -58,15 +58,15 @@ static float _tuio_calibrate(uint type, float value)
 	switch ( type )
 	{
 		case TUIO_CALIBRATION_X:
-			min = config_lookup_float(&g_config, "noya.cal.x.min");
-			max = config_lookup_float(&g_config, "noya.cal.x.max");
-			delta = config_lookup_float(&g_config, "noya.cal.x.delta");
+			min = config_lookup_float(&g_config, "noya.tuio.calibration.xmin");
+			max = config_lookup_float(&g_config, "noya.tuio.calibration.xmax");
+			delta = config_lookup_float(&g_config, "noya.tuio.calibration.xdelta");
 			break;
 
 		case TUIO_CALIBRATION_Y:
-			min = config_lookup_float(&g_config, "noya.cal.y.min");
-			max = config_lookup_float(&g_config, "noya.cal.y.max");
-			delta = config_lookup_float(&g_config, "noya.cal.y.delta");
+			min = config_lookup_float(&g_config, "noya.tuio.calibration.ymin");
+			max = config_lookup_float(&g_config, "noya.tuio.calibration.ymax");
+			delta = config_lookup_float(&g_config, "noya.tuio.calibration.ydelta");
 			break;
 	}
 
