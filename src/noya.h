@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include <signal.h>
+#include <libconfig.h>
 #include "config.h"
 #include "atomic.h"
 
@@ -57,14 +58,14 @@ typedef atomic_t  na_atomic_t;
 typedef struct
 {
 	char			*scene_fn;
-	short			dump;
 } na_options_t;
 extern na_options_t g_options;
 
 /* Globals
  */
-extern na_atomic_t g_threads;
-extern na_atomic_t g_want_leave;
+extern na_atomic_t	g_threads;
+extern na_atomic_t	g_want_leave;
+extern config_t		g_config;
 MUTEX_IMPORT(global);
 
 /* Functions

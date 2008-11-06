@@ -4,7 +4,87 @@
 #include <assert.h>
 #include <clutter/clutter.h>
 
+#include "noya.h"
 #include "utils.h"
+
+LOG_DECLARE("UTILS");
+
+config_setting_t *config_setting_get_member_with_class(config_setting_t *classes, char *class, config_setting_t *current, char *name)
+{
+	config_setting_t	*setting,
+						*prop,
+						*parent;
+	char				*s1, *s2;
+
+	/* search in current setting
+	 */
+	setting = config_setting_get_member(current, name);
+	if ( setting )
+		return setting;
+
+	/* or search in class
+	 */
+	if ( classes == NULL || class == NULL )
+		return NULL;
+
+	setting = config_setting_get_member(classes, class);
+	if ( setting == NULL )
+		return NULL;
+
+retry_parent:
+	prop = config_setting_get_member(setting, name);
+	if ( prop != NULL )
+		return prop;
+
+	/* class have parent ?
+	 */
+	parent = config_setting_get_member(setting, "parent");
+	if ( parent == NULL )
+		return NULL;
+
+	s1 = config_setting_name(setting);
+	s2 = config_setting_name(parent);
+
+	if ( s1 && s2 && strcasecmp(s1, s2) == 0 )
+	{
+		l_errorf("recursion detected, abort!");
+		return NULL;
+	}
+
+	/* seem ok, retry with parent
+	 */
+	setting = parent;
+	goto retry_parent;
+}
+
+config_setting_t *config_lookup_with_default(config_t *base, config_t *current, char *name)
+{
+	char				basename[256];
+	config_setting_t	*setting;
+
+	setting = config_lookup(current, name);
+	if ( setting != NULL )
+		return setting;
+
+	snprintf(basename, sizeof(basename), "noya.%s", name);
+	setting = config_lookup(base, name);
+	if ( setting != NULL )
+		return setting;
+
+	return NULL;
+}
+
+int fileexist(char *name)
+{
+	FILE *file;
+
+	file = fopen(name, "r");
+	if ( file == NULL )
+		return 0;
+
+	fclose(file);
+	return 1;
+}
 
 void trim(char *s)
 {
@@ -44,7 +124,7 @@ void na_color_write(char *buffer, int len, na_color_t *color)
 	);
 }
 
-int na_color_read(na_color_t *color, char *in)
+int na_color_read(na_color_t *color, const char *in)
 {
 	char	buf[2] = {0};
 	char	*dst = (char *)color;

@@ -23,7 +23,11 @@ lib_files = [
 
 	# audio management
 	# http://www.portaudio.com/
-	'portaudio-2.0'
+	'portaudio-2.0',
+
+	# libconfig
+	# http://www.hyperrealm.com/libconfig
+	'libconfig'
 ]
 
 # Add library

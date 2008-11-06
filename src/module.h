@@ -15,13 +15,14 @@ typedef struct na_module_s
 {
 	char	*name;
 	int		type;
+	char	**settings;
 	void	*dl_handle;
 	void	*data;						/*<! module case. */
 
 	/* init lib
 	 * arg: return name, return type
 	 */
-	void (*init)(void **, void *);
+	void (*init)(void **, void *, void ***);
 
 	/* exit lib
 	 */
@@ -29,11 +30,6 @@ typedef struct na_module_s
 
 	/* object
 	 */
-
-	/* global object config
-	 * args: key, value
-	 */
-	void (*object_global_config)(void *, void *);
 
 	/* create object on actor
 	 * args: scene
@@ -152,7 +148,7 @@ typedef void (*na_module_callback)(na_module_t *, void *);
 
 void		na_modules_init();
 void		na_modules_free();
-na_module_t	*na_module_get(char *name, int type);
+na_module_t	*na_module_get(const char *name, int type);
 void		na_module_yield(int type, na_module_callback callback, void *userdata);
 
 #endif

@@ -20,6 +20,7 @@ MUTEX_DECLARE(global);
 na_atomic_t				g_threads		= {0};
 na_atomic_t				g_want_leave	= {0};
 na_options_t			g_options		= {0};
+config_t				g_config		= {0};
 
 /* services declaration
  */
@@ -55,7 +56,6 @@ void signal_leave(int sig)
 void usage(void)
 {
 	printf("Usage: noya [OPTIONS]...\n");
-	printf("  -d                         Dump scene and quit\n");
 	printf("  -h                         Show usage\n");
 	printf("  -s <name>                  Load a scene\n");
 	printf("\n");
@@ -88,9 +88,6 @@ void na_options_read(int argc, char **argv)
 	{
 		switch ( opt )
 		{
-			case 'd':
-				g_options.dump = 1;
-				break;
 			case 's':
 				g_options.scene_fn = strdup(optarg);
 				break;
@@ -135,9 +132,14 @@ int main(int argc, char **argv)
 
 	/* read config
 	 */
-	if ( na_config_init(NA_CONFIG_FN) )
+	config_init(&g_config);
+	if ( !config_read_file(&g_config, NA_CONFIG_FN) )
 	{
-		l_errorf("config file %s : %s", NA_CONFIG_FN, strerror(errno));
+		l_errorf("unable to read config file %s", NA_CONFIG_FN);
+		l_errorf("line %d: %s",
+				config_error_line(&g_config),
+				config_error_text(&g_config)
+			);
 		return -1;
 	}
 
@@ -186,6 +188,7 @@ cleaning:;
 	l_printf("Free events...");
 	na_event_free();
 
+	config_destroy(&g_config);
 	na_options_free();
 
 	l_printf("Done.");

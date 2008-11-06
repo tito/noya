@@ -20,7 +20,7 @@ typedef struct manager_actor_s
 
 	/* base actor from scene
 	 */
-	na_scene_actor_base_t	*scene_actor;
+	na_scene_actor_t		*scene_actor;
 
 	/* rendering actor
 	 */

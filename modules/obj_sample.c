@@ -17,6 +17,12 @@
 
 LOG_DECLARE("MOD_OBJ_SAMPLE");
 
+static char *mod_settings[] =
+{
+	"file",
+	NULL
+};
+
 typedef struct
 {
 	na_scene_t			*scene;
@@ -37,24 +43,11 @@ typedef struct
 	 */
 	na_event_list_t	observers;
 
-	/* widget that we accept
-	 */
-	na_module_t		*top;
-	void			*data_top;
-	char			*value_top;
-	na_module_t		*bottom;
-	void			*data_bottom;
-	char			*value_bottom;
-	na_module_t		*left;
-	void			*data_left;
-	char			*value_left;
-	na_module_t		*right;
-	void			*data_right;
-	char			*value_right;
 } obj_t;
 
 obj_t def_obj = {0};
 
+#if 0
 static void *object_resolve_value(obj_t *obj, char *value)
 {
 	assert( obj != NULL );
@@ -66,88 +59,17 @@ static void *object_resolve_value(obj_t *obj, char *value)
 		return &obj->audio->position;
 	return NULL;
 }
+#endif
 
-void lib_init(char **name, int *type)
+void lib_init(char **name, int *type, char ***settings)
 {
 	*name = strdup(MODULE_NAME);
 	*type = NA_MOD_OBJECT | NA_MOD_EVENT;
+	*settings = mod_settings;
 }
 
 void lib_exit(void)
 {
-}
-
-void lib_object_global_config(char *key, char *value)
-{
-	char		*k_pos, *k_prop;
-	na_module_t	**module;
-	void		**data;
-	char		**w_value;
-
-	k_pos = strtok(key, ".");
-	if ( k_pos == NULL )
-		return;
-
-	k_prop = strtok(NULL, ".");
-	if ( k_prop == NULL )
-		return;
-
-	module = NULL;
-	if ( strcmp(k_pos, "top") == 0 )
-	{
-		module	= &def_obj.top;
-		data	= &def_obj.data_top;
-		w_value	= &def_obj.value_top;
-	}
-	else if ( strcmp(k_pos, "bottom") == 0 )
-	{
-		module	= &def_obj.bottom;
-		data	= &def_obj.data_bottom;
-		w_value	= &def_obj.value_bottom;
-	}
-	else if ( strcmp(k_pos, "left") == 0 )
-	{
-		module	= &def_obj.left;
-		data	= &def_obj.data_left;
-		w_value	= &def_obj.value_left;
-	}
-	else if ( strcmp(k_pos, "right") == 0 )
-	{
-		module	= &def_obj.right;
-		data	= &def_obj.data_right;
-		w_value	= &def_obj.value_right;
-	}
-	else
-		return;
-
-	/* first command must be a type !
-	 */
-	if ( strcmp(k_prop, "widget") == 0 )
-	{
-		*module = na_module_get(value, NA_MOD_WIDGET);
-
-		if ( *module == NULL )
-		{
-			l_printf("Widget %s not found", value);
-			return;
-		}
-		*data = (*(*module)->widget_new)(NULL);
-		return;
-	}
-	else if ( strcmp(k_prop, "value") == 0 )
-	{
-		*w_value = strdup(value);
-	}
-	else
-	{
-		if ( *module == NULL )
-		{
-			l_printf("Error : %s invalid configuration for %s module", key, MODULE_NAME);
-			return;
-		}
-
-		(*(*module)->widget_config)(*data, k_prop, value);
-	}
 }
 
 obj_t *lib_object_new(na_scene_t *scene)
@@ -163,19 +85,6 @@ obj_t *lib_object_new(na_scene_t *scene)
 
 	na_event_init_ex(&obj->observers);
 
-	obj->top = def_obj.top;
-	if ( obj->top )
-		obj->data_top = (*obj->top->widget_clone)(def_obj.data_top, scene);
-	obj->bottom = def_obj.bottom;
-	if ( obj->bottom )
-		obj->data_bottom = (*obj->bottom->widget_clone)(def_obj.data_bottom, scene);
-	obj->left = def_obj.left;
-	if ( obj->left )
-		obj->data_left = (*obj->left->widget_clone)(def_obj.data_left, scene);
-	obj->right = def_obj.right;
-	if ( obj->right )
-		obj->data_right = (*obj->right->widget_clone)(def_obj.data_right, scene);
-
 	return obj;
 }
 
@@ -190,30 +99,22 @@ void lib_object_free(obj_t *obj)
 	if ( obj->audio != NULL )
 		na_audio_free(obj->audio);
 
-	if ( obj->top )
-		(*obj->top->widget_free)(obj->data_top);
-	if ( obj->bottom )
-		(*obj->bottom->widget_free)(obj->data_bottom);
-	if ( obj->left )
-		(*obj->left->widget_free)(obj->data_left);
-	if ( obj->right )
-		(*obj->right->widget_free)(obj->data_right);
-
 	free(obj);
 }
 
-void lib_object_config(obj_t *obj, char *key, char *value)
+void lib_object_config(obj_t *obj, char *key, config_setting_t *value)
 {
-	char filename[512];
+	char		filename[512];
+	const char	 *s_value;
 
 	if ( strcmp(key, "file") == 0 )
 	{
-		snprintf(filename, sizeof(filename), "%s/%s/%s",
-			na_config_get(NA_CONFIG_DEFAULT, "noya.path.scenes"),
-			obj->scene->name,
-			value
+		s_value = config_setting_get_string(value);
+		snprintf(filename, sizeof(filename), "%s/%s",
+			obj->scene->path,
+			s_value
 		);
-		obj->filename = strdup(value);
+		obj->filename = strdup(s_value);
 		obj->audio = na_audio_load(filename);
 	}
 	else
@@ -234,17 +135,6 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 	/* save actor
 	 */
 	obj->actor = actor;
-
-	/* link widget for value
-	 */
-	if ( obj->top )
-		(*obj->top->widget_set_data)(obj->data_top, object_resolve_value(obj, def_obj.value_top));
-	if ( obj->bottom )
-		(*obj->bottom->widget_set_data)(obj->data_bottom, object_resolve_value(obj, def_obj.value_bottom));
-	if ( obj->left )
-		(*obj->left->widget_set_data)(obj->data_left, object_resolve_value(obj, def_obj.value_left));
-	if ( obj->right )
-		(*obj->right->widget_set_data)(obj->data_right, object_resolve_value(obj, def_obj.value_right));
 
 	/* send events
 	 */
@@ -274,22 +164,22 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 //	clutter_rectangle_set_border_width((ClutterRectangle *)ac, actor->scene_actor->border_width);
 	clutter_actor_set_width(ac, actor->scene_actor->width);
 	clutter_actor_set_height(ac, actor->scene_actor->height);
-	clutter_circle_set_radius(ac, radius);
+	clutter_circle_set_radius(CLUTTER_CIRCLE(ac), radius);
 	clutter_container_add_actor(CLUTTER_CONTAINER(obj->group_cube), ac);
 
 	ac = clutter_circle_new_with_color(&obj_border);
 	clutter_actor_set_width(ac, actor->scene_actor->width);
 	clutter_actor_set_height(ac, actor->scene_actor->height);
-	clutter_circle_set_radius(ac, radius);
-	clutter_circle_set_width(ac, 10);
+	clutter_circle_set_radius(CLUTTER_CIRCLE(ac), radius);
+	clutter_circle_set_width(CLUTTER_CIRCLE(ac), 10);
 	clutter_container_add_actor(CLUTTER_CONTAINER(actor->clutter_actor), ac);
 	obj->circle_position = ac;
 
 	ac = clutter_circle_new_with_color(&obj_border);
 	clutter_actor_set_width(ac, actor->scene_actor->width);
 	clutter_actor_set_height(ac, actor->scene_actor->height);
-	clutter_circle_set_radius(ac, radius + 10);
-	clutter_circle_set_width(ac, 10);
+	clutter_circle_set_radius(CLUTTER_CIRCLE(ac), radius + 10);
+	clutter_circle_set_width(CLUTTER_CIRCLE(ac), 10);
 	clutter_container_add_actor(CLUTTER_CONTAINER(actor->clutter_actor), ac);
 	obj->circle_volume = ac;
 
@@ -300,19 +190,6 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 	clutter_actor_set_position(ac, actor->scene_actor->width / 2 -6, actor->scene_actor->height / 2 -10);
 
 	clutter_container_add_actor(CLUTTER_CONTAINER(obj->group_cube), ac);
-
-
-	/* prepare widget too
-	 */
-	if ( obj->top )
-		(*obj->top->widget_prepare)(obj->data_top, actor);
-	if ( obj->bottom )
-		(*obj->bottom->widget_prepare)(obj->data_bottom, actor);
-	if ( obj->left )
-		(*obj->left->widget_prepare)(obj->data_left, actor);
-	if ( obj->right )
-		(*obj->right->widget_prepare)(obj->data_right, actor);
-
 }
 
 void lib_object_unprepare(obj_t *obj)
@@ -332,15 +209,6 @@ void lib_object_unprepare(obj_t *obj)
 	 */
 	obj->actor		= NULL;
 	obj->group_cube	= NULL;
-
-	if ( obj->top )
-		(*obj->top->widget_unprepare)(obj->data_top);
-	if ( obj->bottom )
-		(*obj->bottom->widget_unprepare)(obj->data_bottom);
-	if ( obj->left )
-		(*obj->left->widget_unprepare)(obj->data_left);
-	if ( obj->right )
-		(*obj->right->widget_unprepare)(obj->data_right);
 }
 
 void lib_object_update(obj_t *obj)
@@ -356,15 +224,6 @@ void lib_object_update(obj_t *obj)
 		CLUTTER_CIRCLE(obj->circle_position),
 		(uint) (obj->audio->position * 360.0f)
 	);
-
-	if ( obj->top )
-		(*obj->top->widget_update)(obj->data_top);
-	if ( obj->bottom )
-		(*obj->bottom->widget_update)(obj->data_bottom);
-	if ( obj->left )
-		(*obj->left->widget_update)(obj->data_left);
-	if ( obj->right )
-		(*obj->right->widget_update)(obj->data_right);
 }
 
 void ctl_volume(void *data, float value)

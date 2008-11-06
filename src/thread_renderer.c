@@ -31,15 +31,16 @@ na_atomic_t						g_clutter_running = {0};
 
 #define CALIBRATE_VALUE_EX(key, delta, min, max)				\
 	do {														\
-		value = na_config_get_float(NA_CONFIG_DEFAULT, key);	\
+		value = config_lookup_float(&g_config, key);	\
 		value += delta;											\
 		if ( value < min )										\
 			value = min;										\
 		if ( value > max )										\
 			value = max;										\
 		l_printf("Set %s to %f", key, value);					\
-		na_config_set_float(NA_CONFIG_DEFAULT, key, value);		\
 	} while ( 0 );
+// TODO use new library libconfig
+//		na_config_set_float(NA_CONFIG_DEFAULT, key, value);		\
 
 #define CALIBRATE_VALUE(key, delta)	CALIBRATE_VALUE_EX(key, delta, 0, 1);
 
@@ -51,40 +52,40 @@ static gboolean renderer_key_handle(ClutterActor *actor, ClutterKeyEvent *event,
 	switch ( event->keyval )
 	{
 		case CLUTTER_u:
-			CALIBRATE_VALUE("noya.cal.x.min", 0.01);
+			CALIBRATE_VALUE("noya.tuio.calibration.xmin", 0.01);
 			break;
 		case CLUTTER_j:
-			CALIBRATE_VALUE("noya.cal.x.min", -0.01);
+			CALIBRATE_VALUE("noya.tuio.calibration.xmin", -0.01);
 			break;
 		case CLUTTER_i:
-			CALIBRATE_VALUE("noya.cal.x.max", 0.01);
+			CALIBRATE_VALUE("noya.tuio.calibration.xmax", 0.01);
 			break;
 		case CLUTTER_k:
-			CALIBRATE_VALUE("noya.cal.x.max", -0.01);
+			CALIBRATE_VALUE("noya.tuio.calibration.xmax", -0.01);
 			break;
 		case CLUTTER_o:
-			CALIBRATE_VALUE("noya.cal.y.min", 0.01);
+			CALIBRATE_VALUE("noya.tuio.calibration.ymin", 0.01);
 			break;
 		case CLUTTER_l:
-			CALIBRATE_VALUE("noya.cal.y.min", -0.01);
+			CALIBRATE_VALUE("noya.tuio.calibration.ymin", -0.01);
 			break;
 		case CLUTTER_p:
-			CALIBRATE_VALUE("noya.cal.y.max", 0.01);
+			CALIBRATE_VALUE("noya.tuio.calibration.ymax", 0.01);
 			break;
 		case CLUTTER_m:
-			CALIBRATE_VALUE("noya.cal.y.max", -0.01);
+			CALIBRATE_VALUE("noya.tuio.calibration.ymax", -0.01);
 			break;
 		case CLUTTER_t:
-			CALIBRATE_VALUE_EX("noya.cal.x.delta", 0.01, -1, 1);
+			CALIBRATE_VALUE_EX("noya.tuio.calibration.xdelta", 0.01, -1, 1);
 			break;
 		case CLUTTER_g:
-			CALIBRATE_VALUE_EX("noya.cal.x.delta", -0.01, -1, 1);
+			CALIBRATE_VALUE_EX("noya.tuio.calibration.xdelta", -0.01, -1, 1);
 			break;
 		case CLUTTER_y:
-			CALIBRATE_VALUE_EX("noya.cal.y.delta", 0.01, -1, 1);
+			CALIBRATE_VALUE_EX("noya.tuio.calibration.ydelta", 0.01, -1, 1);
 			break;
 		case CLUTTER_h:
-			CALIBRATE_VALUE_EX("noya.cal.y.delta", -0.01, -1, 1);
+			CALIBRATE_VALUE_EX("noya.tuio.calibration.ydelta", -0.01, -1, 1);
 			break;
 		case CLUTTER_f:
 			g_object_get( G_OBJECT(stage), "fullscreen", &is_fullscreen, NULL);
@@ -121,8 +122,22 @@ static void *thread_renderer_run(void *arg)
 
 				/* read config
 				 */
-				ui_width	= na_config_get_int(NA_CONFIG_DEFAULT, "noya.ui.width");
-				ui_height	= na_config_get_int(NA_CONFIG_DEFAULT, "noya.ui.height");
+				ui_width	= config_lookup_int(&g_config, "noya.ui.width");
+				if ( ui_width <= 0 )
+				{
+					l_errorf("invalid noya.ui.width configuration (%d)", ui_width);
+					na_quit();
+					c_state = THREAD_STATE_STOP;
+					continue;
+				}
+				ui_height	= config_lookup_int(&g_config, "noya.ui.height");
+				if ( ui_height <= 0 )
+				{
+					l_errorf("invalid noya.ui.height configuration (%d)", ui_height);
+					na_quit();
+					c_state = THREAD_STATE_STOP;
+					continue;
+				}
 
 				/* init clutter
 				 */
@@ -228,21 +243,23 @@ int thread_renderer_stop(void)
 
 	/* Show calibration result
 	 */
+#if 0
 	l_printf(
 		"Calibration configuration :\n" \
-		"noya.cal.x.min = %f\n"			\
-		"noya.cal.x.max = %f\n"			\
-		"noya.cal.y.min = %f\n"			\
-		"noya.cal.y.max = %f\n"			\
-		"noya.cal.x.delta = %f\n"		\
-		"noya.cal.y.delta = %f",
-		na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.x.min"),
-		na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.x.max"),
-		na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.y.min"),
-		na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.y.max"),
-		na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.x.delta"),
-		na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.y.delta")
+		"noya.tuio.calibration.x.min = %f\n"			\
+		"noya.tuio.calibration.x.max = %f\n"			\
+		"noya.tuio.calibration.y.min = %f\n"			\
+		"noya.tuio.calibration.y.max = %f\n"			\
+		"noya.tuio.calibration.x.delta = %f\n"		\
+		"noya.tuio.calibration.y.delta = %f",
+		na_config_get_float(NA_CONFIG_DEFAULT, "noya.tuio.calibration.x.min"),
+		na_config_get_float(NA_CONFIG_DEFAULT, "noya.tuio.calibration.x.max"),
+		na_config_get_float(NA_CONFIG_DEFAULT, "noya.tuio.calibration.y.min"),
+		na_config_get_float(NA_CONFIG_DEFAULT, "noya.tuio.calibration.y.max"),
+		na_config_get_float(NA_CONFIG_DEFAULT, "noya.tuio.calibration.x.delta"),
+		na_config_get_float(NA_CONFIG_DEFAULT, "noya.tuio.calibration.y.delta")
 	);
+#endif
 
 	return NA_OK;
 }

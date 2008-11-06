@@ -85,7 +85,7 @@ na_audio_t *na_audio_load(char *filename)
 	atomic_set(&entry->flags, NA_AUDIO_FL_USED);
 	entry->bpmidx	= -1;
 
-	cfg_frames		= na_config_get_int(NA_CONFIG_DEFAULT, "noya.audio.frames");
+	cfg_frames		= config_lookup_int(&g_config, "noya.audio.frames");
 	entry->input	= na_chunk_new(NA_OUTPUT_CHANNELS, cfg_frames);
 	if ( entry->input == NULL )
 		goto na_audio_load_clean;
@@ -214,7 +214,7 @@ na_audio_sfx_t *na_audio_sfx_new(
 
 	/* create chunk for output
 	 */
-	cfg_frames		= na_config_get_int(NA_CONFIG_DEFAULT, "noya.audio.frames");
+	cfg_frames		= config_lookup_int(&g_config, "noya.audio.frames");
 	sfx->out		= na_chunk_new(out_channels, cfg_frames);
 	if ( sfx->out == NULL )
 		goto na_audio_sfx_add_failed;

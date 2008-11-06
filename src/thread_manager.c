@@ -32,7 +32,6 @@
 #include "thread_input.h"
 #include "thread_audio.h"
 #include "scene.h"
-#include "dump.h"
 #include "utils.h"
 
 LOG_DECLARE("MANAGER");
@@ -70,7 +69,7 @@ manager_actor_t *na_manager_actor_get_by_fid(uint fid)
 
 static void manager_event_object_new(unsigned short type, void *userdata, void *data)
 {
-	na_scene_actor_base_t	*actor;
+	na_scene_actor_t		*actor;
 	tuio_object_t			*o = (tuio_object_t *)data;
 	manager_actor_t			*el;
 	ClutterActor			*stage;
@@ -494,14 +493,6 @@ static void *thread_manager_run(void *arg)
 				if ( c_scene == NULL )
 				{
 					l_errorf("unable to load scene");
-					na_quit();
-					break;
-				}
-
-				if ( g_options.dump )
-				{
-					l_printf("Dump scene !");
-					na_dump(NULL, c_scene);
 					na_quit();
 					break;
 				}

@@ -58,15 +58,15 @@ static float _tuio_calibrate(uint type, float value)
 	switch ( type )
 	{
 		case TUIO_CALIBRATION_X:
-			min = na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.x.min");
-			max = na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.x.max");
-			delta = na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.x.delta");
+			min = config_lookup_float(&g_config, "noya.cal.x.min");
+			max = config_lookup_float(&g_config, "noya.cal.x.max");
+			delta = config_lookup_float(&g_config, "noya.cal.x.delta");
 			break;
 
 		case TUIO_CALIBRATION_Y:
-			min = na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.y.min");
-			max = na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.y.max");
-			delta = na_config_get_float(NA_CONFIG_DEFAULT, "noya.cal.y.delta");
+			min = config_lookup_float(&g_config, "noya.cal.y.min");
+			max = config_lookup_float(&g_config, "noya.cal.y.max");
+			delta = config_lookup_float(&g_config, "noya.cal.y.delta");
 			break;
 	}
 
@@ -314,7 +314,7 @@ static int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg *
 
 static void *thread_input_run(void *arg)
 {
-	char				*port;
+	const char			*port;
     int					lo_fd;
     fd_set				rfds;
     int					retval;
@@ -333,7 +333,13 @@ static void *thread_input_run(void *arg)
 
 				/* get osc port
 				 */
-				port = na_config_get(NA_CONFIG_DEFAULT, "noya.net.port");
+				port = config_lookup_string(&g_config, "noya.tuio.port");
+				if ( port == NULL )
+				{
+					l_errorf("invalid tuio port (%s), cannot listening !", port);
+					na_quit();
+					goto thread_leave;
+				}
 
 				/* instanciate service
 				 */

@@ -6,9 +6,10 @@
 #include "utils.h"
 #include "module.h"
 
-typedef struct na_scene_actor_base_s
+typedef struct na_scene_actor_s
 {
 	int			id;							/*< id of object */
+	char		*class;						/*< object class */
 
 	int			width;						/*< width */
 	int			height;						/*< height */
@@ -25,20 +26,20 @@ typedef struct na_scene_actor_base_s
 	na_module_t	*mod;						/*< module to extend base object */
 	void		*data_mod;					/*< private data for module */
 
-	LIST_ENTRY(na_scene_actor_base_s) next;
+	LIST_ENTRY(na_scene_actor_s) next;
 
-} na_scene_actor_base_t;
+} na_scene_actor_t;
 
 typedef struct na_scene_actor_head_s
 {
-	na_scene_actor_base_t	*lh_first;
+	na_scene_actor_t	*lh_first;
 } na_scene_actor_list_t;
 
 typedef struct
 {
 	char					*name;				/*< name of scene */
+	char					*path;				/*< scene path */
 	na_color_t				background_color;	/*< scene background color */
-	na_scene_actor_base_t	def_actor;			/*< default params for actor */
 	na_scene_actor_list_t	actors;				/*< actors list */
 
 	/* general scene config
@@ -58,9 +59,8 @@ typedef struct
 
 na_scene_t	*na_scene_load(char *filename);
 void	na_scene_free(na_scene_t *scene);
-na_scene_actor_base_t *na_scene_actor_get(na_scene_t *scene, int idx);
-na_scene_actor_base_t *na_scene_actor_new(na_scene_t *scene, int idx);
-void	na_scene_actor_free(na_scene_actor_base_t *actor);
-void	na_scene_prop_set(na_scene_t *scene, na_scene_actor_base_t *actor, char *key, char *value);
+na_scene_actor_t *na_scene_actor_get(na_scene_t *scene, int idx);
+na_scene_actor_t *na_scene_actor_new(na_scene_t *scene, int idx);
+void	na_scene_actor_free(na_scene_actor_t *actor);
 
 #endif

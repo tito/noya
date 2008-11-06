@@ -47,19 +47,15 @@ ClutterColor beat_backgroundhi	= { 0xff, 0x66, 0x66, 0xaa };
 ClutterColor beat_backgroundhili= { 0x66, 0x66, 0x66, 0xaa };
 ClutterColor beat_border		= { 0xff, 0xff, 0xff, 0xaa };
 
-void lib_init(char **name, int *type)
+void lib_init(char **name, int *type, char ***settings)
 {
 	*name = strdup(MODULE_NAME);
 	*type = NA_MOD_MODULE;
+	*settings = NULL;
 }
 
 void lib_exit(void)
 {
-}
-
-void lib_object_global_config(char *key, char *value)
-{
-	return;
 }
 
 obj_t *lib_object_new(na_scene_t *scene)
@@ -105,8 +101,10 @@ void lib_object_free(obj_t *obj)
 	free(obj);
 }
 
-void lib_object_config(obj_t *obj, char *key, char *value)
+void lib_object_config(obj_t *obj, char *key, config_setting_t *value)
 {
+	/* no config yet.
+	 */
 	return;
 }
 

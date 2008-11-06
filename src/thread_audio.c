@@ -277,8 +277,8 @@ static void *thread_audio_run(void *arg)
 
 				/* get some configs
 				 */
-				cfg_samplerate	= na_config_get_int(NA_CONFIG_DEFAULT, "noya.audio.samplerate");
-				cfg_frames		= na_config_get_int(NA_CONFIG_DEFAULT, "noya.audio.frames");
+				cfg_samplerate	= config_lookup_int(&g_config, "noya.audio.samplerate");
+				cfg_frames		= config_lookup_int(&g_config, "noya.audio.frames");
 
 				/* open stream
 				 */
