@@ -14,7 +14,7 @@ DEF_BPM=125
 DATE=`date +'%d.%m.%Y'`
 BASEPATH=$(realpath $(dirname $0))
 NOYAPATH=$(realpath $BASEPATH/../..)
-TEMPLATE="$BASEPATH/template.ini"
+TEMPLATE="$BASEPATH/template.cfg"
 
 
 #
@@ -41,11 +41,11 @@ usage() {
 }
 
 #
-# Test template.ini
+# Test template.cfg
 #
 
 if [ ! -r "$TEMPLATE" ]; then
-	echo "Unable to found template.ini in $TEMPLATE"
+	echo "Unable to found template.cfg in $TEMPLATE"
 	exit
 fi
 
@@ -163,7 +163,7 @@ fi
 # Create output file from template
 #
 
-OUTPUT_FILENAME="$OUTPUT_DIRECTORY/$FILENAME.ini"
+OUTPUT_FILENAME="$OUTPUT_DIRECTORY/$FILENAME.cfg"
 touch $OUTPUT_FILENAME
 if [ ! -w "$OUTPUT_FILENAME" ]; then
 	echo "Error, unable to create $OUTPUT_FILENAME"
@@ -185,13 +185,16 @@ for wavfile in `find "$WPATH" -iname *.WAV`; do
 
 	cp "$wavfile" "$OUTPUT_DIRECTORY/$wavname"
 
-	echo "scene.act.$idx.object = obj_sample" >> $OUTPUT_FILENAME
-	echo "scene.act.$idx.file = \"$wavname\"" >> $OUTPUT_FILENAME
-	echo "scene.act.$idx.ctl.angle = volume" >> $OUTPUT_FILENAME
-	echo "" >> $OUTPUT_FILENAME
+	echo "		{" >> $OUTPUT_FILENAME
+	echo "			id = $idx;" >> $OUTPUT_FILENAME
+	echo "			class = \"default\";" >> $OUTPUT_FILENAME
+	echo "			file = \"$wavname\";" >> $OUTPUT_FILENAME
+	echo "		}," >> $OUTPUT_FILENAME
 
 	idx=$((idx+1))
 done
+echo "	{});" >> $OUTPUT_FILENAME
+echo "};" >> $OUTPUT_FILENAME
 
 # complete !
 echo 
