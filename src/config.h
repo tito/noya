@@ -12,7 +12,7 @@
 #else
 #define NA_ADDVERSION			"(no rtc)"
 #endif
-#define NA_TITLE				"NOYA - Real time music"
+#define NA_TITLE				"NOYA - live music sequencer"
 #define NA_BANNER				"Noya, ver " NA_VERSION NA_ADDVERSION " - by Mathieu Virbel <tito@bankiz.org>"
 #define NA_WEBSITE				"Visit http://noya.txzone.net/ for more information"
 #define	NA_TUIO_PORT			"3333"
