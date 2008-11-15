@@ -2,6 +2,7 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+#include <fftw3.h>
 
 #include "noya.h"
 #include "audio.h"
@@ -14,6 +15,7 @@
 #include "actors/clutter-circle.h"
 
 #define MODULE_NAME "obj_sample"
+#define BAR_COUNT	24
 
 LOG_DECLARE("MOD_OBJ_SAMPLE");
 
@@ -33,6 +35,7 @@ typedef struct
 	ClutterActor	*group_cube;
 	ClutterActor	*circle_volume;
 	ClutterActor	*circle_position;
+	ClutterActor	*bars[BAR_COUNT];
 
 	/* audio attached for sample
 	 */
@@ -128,6 +131,7 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 	ClutterActor	*ac;
 	char			number[5];
 	guint			radius;
+	int				i, d;
 
 	assert( obj != NULL );
 	assert( actor != NULL );
@@ -183,6 +187,20 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 	clutter_container_add_actor(CLUTTER_CONTAINER(actor->clutter_actor), ac);
 	obj->circle_volume = ac;
 
+	for ( i = 0; i < BAR_COUNT; i++ )
+	{
+		ac = clutter_circle_new_with_color(&obj_border);
+		clutter_actor_set_width(ac, actor->scene_actor->width);
+		clutter_actor_set_height(ac, actor->scene_actor->height);
+		clutter_circle_set_radius(CLUTTER_CIRCLE(ac), radius);
+		clutter_circle_set_width(CLUTTER_CIRCLE(ac), 10);
+		d = 360 / BAR_COUNT;
+		clutter_circle_set_angle_start(CLUTTER_CIRCLE(ac), i * d);
+		clutter_circle_set_angle_stop(CLUTTER_CIRCLE(ac), i * d + d);
+		clutter_container_add_actor(CLUTTER_CONTAINER(actor->clutter_actor), ac);
+		obj->bars[i] = ac;
+	}
+
 	/* create text
 	 */
 	snprintf(number, sizeof(number), "%d", actor->tuio->f_id);
@@ -224,6 +242,27 @@ void lib_object_update(obj_t *obj)
 		CLUTTER_CIRCLE(obj->circle_position),
 		(uint) (obj->audio->position * 360.0f)
 	);
+
+	/* bar graph
+	 */
+	if ( obj->audio->input != NULL && obj->audio->input->data != NULL )
+	{
+		int		n		= obj->audio->input->size,
+				i;
+		float	*out	= malloc(sizeof(float) * n),
+				v;
+		fftwf_plan p1	= fftwf_plan_r2r_1d(n, obj->audio->input->data, out, FFTW_R2HC, FFTW_FORWARD | FFTW_PRESERVE_INPUT);
+		fftwf_execute(p1);
+		for ( i = 0; i < n && i < BAR_COUNT; i++ )
+		{
+			v = sqrtf(out[i] * out[i]) * 30;
+			if ( v > 50 )
+				v = 50;
+			clutter_circle_set_width(CLUTTER_CIRCLE(obj->bars[i]), v);
+		}
+		fftwf_destroy_plan(p1);
+		free(out);
+	}
 }
 
 void ctl_volume(void *data, float value)

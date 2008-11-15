@@ -27,7 +27,11 @@ lib_files = [
 
 	# libconfig
 	# http://www.hyperrealm.com/libconfig
-	'libconfig'
+	'libconfig',
+
+	# fftw3
+	# http://www.fftw.org/
+	'fftw3f',
 ]
 
 # Add library
