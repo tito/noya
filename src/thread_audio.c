@@ -129,7 +129,7 @@ static int audio_output_callback(
 		 *
 		 * FIXME: try to play all rest data
 		 */
-		if ( (entry->dataidx / 2) + (framesPerBuffer * 2) >= entry->totalframes)
+		if ( (entry->dataidx / entry->channels) + (framesPerBuffer * entry->channels) >= entry->totalframes)
 			continue;
 
 		entries_count++;
