@@ -71,12 +71,18 @@ function ladspa()
 function noya()
 {
 	scons
+	if [ ! -f "noya.sqlite" ]; then
+		./noya -i scenes
+	fi
 	LC_ALL=C ./noya $@
 }
 
 function debugnoya()
 {
 	scons
+	if [ ! -f "noya.sqlite" ]; then
+		./noya -i scenes
+	fi
 	LC_ALL=C gdb -args ./noya $@
 }
 

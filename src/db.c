@@ -180,7 +180,11 @@ void na_db_import_directory(char *directory, int *stat_ok, int *stat_exist, int 
 		if ( strlen(p_dirent->d_name) > 0 && p_dirent->d_name[0] == '.' )
 			continue;
 
-		snprintf(dl_name, sizeof(dl_name), "%s/%s", directory, p_dirent->d_name);
+		if ( strlen(directory) > 0 && directory[strlen(directory) - 1] == '/' )
+			snprintf(dl_name, sizeof(dl_name), "%s%s", directory, p_dirent->d_name);
+		else
+			snprintf(dl_name, sizeof(dl_name), "%s/%s", directory, p_dirent->d_name);
+
 		if ( stat(dl_name, &s) == -1 )
 			continue;
 
