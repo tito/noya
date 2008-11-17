@@ -10,6 +10,7 @@
 #include "noya.h"
 
 #include "module.h"
+#include "db.h"
 #include "thread_input.h"
 #include "thread_renderer.h"
 #include "thread_audio.h"
@@ -58,6 +59,7 @@ void usage(void)
 	printf("Usage: noya [OPTIONS]...\n");
 	printf("  -h                         Show usage\n");
 	printf("  -s <name>                  Load a scene\n");
+	printf("  -i <directory>             Import waves from directory\n");
 	printf("\n");
 
 	exit(EXIT_SUCCESS);
@@ -84,17 +86,37 @@ void na_options_read(int argc, char **argv)
 {
 	int opt;
 
-	while ( (opt = getopt(argc, argv, "s:d")) != -1 )
+	while ( (opt = getopt(argc, argv, "s:di:")) != -1 )
 	{
 		switch ( opt )
 		{
 			case 's':
 				g_options.scene_fn = strdup(optarg);
 				break;
+			case 'i':
+				g_options.import_dir = strdup(optarg);
+				break;
 			default:
 				usage();
 				break;
 		}
+	}
+
+	/* import directory ?
+	 */
+	if ( g_options.import_dir != NULL )
+	{
+		int stat_ok		= 0,
+			stat_exist	= 0,
+			stat_err	= 0;
+		l_printf("import directory %s", g_options.import_dir);
+		na_db_init();
+		na_db_import_directory(g_options.import_dir, &stat_ok, &stat_exist, &stat_err);
+		na_db_free();
+		l_printf("DONE: %d new sounds imported, %d exists, %d errors",
+			stat_ok, stat_exist, stat_err
+		);
+		exit(0);
 	}
 
 	/* don't start noya if we don't have scene
@@ -145,6 +167,7 @@ int main(int argc, char **argv)
 
 	/* load modules
 	 */
+	na_db_init();
 	na_event_init();
 	na_modules_init();
 
@@ -187,6 +210,9 @@ cleaning:;
 
 	l_printf("Free events...");
 	na_event_free();
+
+	l_printf("Free db...");
+	na_db_free();
 
 	config_destroy(&g_config);
 	na_options_free();

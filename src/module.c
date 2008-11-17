@@ -16,7 +16,7 @@ static na_module_head_t na_module_list;
 static int na_module_filter(const struct dirent *dirent)
 {
 	unsigned int len;
-	len = strlen (dirent->d_name);
+	len = strlen(dirent->d_name);
 	return (len > 3 && strcmp (".so", dirent->d_name + len - 3) == 0) ? 1 : 0;
 }
 
@@ -69,7 +69,7 @@ void na_modules_init()
 
 			l_printf("Load %s", dl_name);
 
-			dl_handle = dlopen (dl_name, RTLD_NOW);
+			dl_handle = dlopen(dl_name, RTLD_NOW);
 			if ( dl_handle == NULL )
 			{
 				l_errorf("unable to load %s: %s", name, dlerror());

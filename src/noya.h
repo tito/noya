@@ -58,6 +58,7 @@ typedef atomic_t  na_atomic_t;
 typedef struct
 {
 	char			*scene_fn;
+	char			*import_dir;
 } na_options_t;
 extern na_options_t g_options;
 

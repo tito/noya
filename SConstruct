@@ -32,6 +32,10 @@ lib_files = [
 	# fftw3
 	# http://www.fftw.org/
 	'fftw3f',
+
+	# sqlite3
+	# http://www.sqlite.org/
+	'sqlite3',
 ]
 
 # Add library
