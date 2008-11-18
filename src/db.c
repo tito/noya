@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <regex.h>
 
 #include <portaudio.h>
 #include <sndfile.h>
@@ -15,21 +16,20 @@
 #define SQL_TEST(a)	"select * from " a " LIMIT 1"
 
 #define SQL_CREATE_CONFIG \
-	"create table config (key varchar(200), value varchar(200), primary key (key, value));"
+	"create table config (key text primary key, value text);"
 
-#define SQL_CREATE_SOUNDS \
-	"create table sounds (" \
-	"id unsigned int auto_increment, " \
-	"filename varchar, " \
-	"title varchar, "\
-	"channels tinyint, " \
-	"samplerate int, " \
-	"duration float, " \
-	"bpm_duration int, " \
-	"score tinyint, " \
-	"is_imported tinyint, " \
-	"is_reviewed tinyint, " \
-	"primary key (id));"
+#define SQL_CREATE_SOUNDS				\
+	"create table sounds ("				\
+	"id integer primary key, "			\
+	"filename text, "					\
+	"title text, "						\
+	"channels integer, "				\
+	"samplerate integer, "				\
+	"frames integer,"					\
+	"bpm integer, "						\
+	"score integer, "					\
+	"is_imported integer, "				\
+	"is_reviewed integer); "
 
 LOG_DECLARE("DB");
 
@@ -39,6 +39,44 @@ na_db_t *na_db_open(char *filename);
 void na_db_close(na_db_t *db);
 int na_db_initialize(na_db_t *db);
 
+/* implements regexp functionality
+ * code taken from trackerd (thanks a lot guys !) */
+static void sqlite3_regexp(sqlite3_context *context, int argc, sqlite3_value **argv)
+{
+	int	ret;
+	regex_t	regex;
+	regmatch_t matches[10];
+	int matches_count = 10;
+
+	if ( argc != 2 )
+	{
+		sqlite3_result_error(context, "Invalid argument count", -1);
+		return;
+	}
+
+	ret = regcomp(&regex, (char *)sqlite3_value_text(argv[0]), REG_EXTENDED | REG_NOSUB);
+
+	if (ret != 0)
+	{
+		sqlite3_result_error(context, "error compiling regular expression", -1);
+		return;
+	}
+
+	ret = regexec(&regex, (char *)sqlite3_value_text(argv[1]), matches_count, matches, 0);
+	l_printf("==> %d, %d, %d", matches_count, matches[0].rm_eo , matches[0].rm_so);
+	regfree(&regex);
+
+	if ( ret == REG_NOMATCH || matches_count <= 0 )
+	{
+		sqlite3_result_int(context, (ret == REG_NOMATCH) ? 0 : 1);
+		return;
+	}
+
+	sqlite3_result_text(context,
+		(const char *)(sqlite3_value_text(argv[1]) + matches[0].rm_so),
+		matches[0].rm_eo - matches[0].rm_so, NULL
+	);
+}
 
 na_db_t *na_db_open(char *filename)
 {
@@ -60,6 +98,13 @@ na_db_t *na_db_open(char *filename)
 	if ( ret != SQLITE_OK )
 	{
 		l_errorf("unable to open database %s: %s", filename, sqlite3_errmsg(ret));
+		goto na_db_open_error;
+	}
+
+	ret = sqlite3_create_function(db->sq_hdl, "REGEXP", 2, SQLITE_ANY, NULL, &sqlite3_regexp, NULL, NULL);
+	if ( ret != SQLITE_OK )
+	{
+		l_errorf("unable to create function REGEXP: %s", sqlite3_errmsg(db->sq_hdl));
 		goto na_db_open_error;
 	}
 
@@ -96,7 +141,6 @@ int na_db_initialize(na_db_t *db)
 	ret = sqlite3_get_table(db->sq_hdl, SQL_TEST("config"), &result, &row, &column, NULL);
 	if ( ret != SQLITE_OK )
 	{
-		l_errorf("table ? %d", ret);
 		if ( sqlite3_exec(db->sq_hdl, SQL_CREATE_CONFIG, NULL, NULL, NULL) != SQLITE_OK )
 		{
 			l_errorf("unable to create config table");
@@ -139,21 +183,48 @@ void na_db_free()
 
 int na_db_filename_to_id(char *filename)
 {
-	int row, columns;
+	int rows, columns;
 	char **result, *sql;
 
 	if ( g_db == NULL )
 		return 0;
 
 	sql = sqlite3_mprintf("SELECT id FROM sounds WHERE filename = %Q", filename);
-	if ( sqlite3_get_table(g_db->sq_hdl, sql, &result, &row, &columns, NULL) != SQLITE_OK )
+	if ( sqlite3_get_table(g_db->sq_hdl, sql, &result, &rows, &columns, NULL) != SQLITE_OK )
 	{
 		sqlite3_free(sql);
 		return 0;
 	}
-	sqlite3_free(sql);
 
-	return row;
+	sqlite3_free(sql);
+	sqlite3_free_table(result);
+
+	return rows;
+}
+
+char *na_db_get_filename_from_title(char *title)
+{
+	int rows, columns;
+	char **result, *sql, *str = NULL;
+
+	if ( g_db == NULL )
+		return 0;
+
+	sql = sqlite3_mprintf("SELECT filename FROM sounds WHERE title = %Q", title);
+	if ( sqlite3_get_table(g_db->sq_hdl, sql, &result, &rows, &columns, NULL) != SQLITE_OK )
+	{
+		sqlite3_free(sql);
+		return NULL;
+	}
+
+	//l_printf("Result have %d rows, %d columns", rows, columns);
+	if ( rows > 1 && columns == 1 )
+		str = strdup(result[1]);
+
+	sqlite3_free(sql);
+	sqlite3_free_table(result);
+
+	return NULL;
 }
 
 void na_db_import_directory(char *directory, int *stat_ok, int *stat_exist, int *stat_err)
@@ -217,18 +288,20 @@ void na_db_import_directory(char *directory, int *stat_ok, int *stat_exist, int 
 		}
 
 		sql = sqlite3_mprintf(
-			"INSERT INTO sounds (filename, title, channels, samplerate, duration, is_imported)"
-			"VALUES (%Q, %Q, %d, %d, %f, 1)",
+			"INSERT INTO sounds (id, filename, title, bpm, channels, samplerate, frames, is_imported)"
+			"VALUES ((SELECT MAX(id) FROM sounds) + 1, %Q, %Q, REGEXP(\"([1-9][0-9]+)bpm\", \"%s\"), %d, %d, %d, 1)",
 			dl_name,
+			p_dirent->d_name,
 			p_dirent->d_name,
 			sinfo.channels,
 			sinfo.samplerate,
-			(float)sinfo.frames / (float)sinfo.samplerate
+			sinfo.frames
 		);
 
 		sf_close(sfp), sfp = NULL;
 
-		sqlite3_exec(g_db->sq_hdl, sql, NULL, NULL, NULL);
+		if ( sqlite3_exec(g_db->sq_hdl, sql, NULL, NULL, NULL) != SQLITE_OK )
+			l_errorf("error while exec sql : %s", sqlite3_errmsg(g_db->sq_hdl));
 		sqlite3_free(sql);
 
 		*stat_ok = *stat_ok + 1;
