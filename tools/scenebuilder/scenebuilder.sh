@@ -26,6 +26,7 @@ AUTHOR=
 BPM=
 WPATH=
 FORCE=0
+COPYAUDIO=0
 
 echo "Noya scene builder, ver 0.1 - by Mathieu Virbel <tito@bankiz.org>"
 echo ""
@@ -34,6 +35,7 @@ usage() {
 	echo "Usage: scenebuilder.sh [options] <path>"
 	echo " -a, --author <author>      Scene author"
 	echo " -b, --bpm <bpm>            Set BPM (beat per minutes)"
+	echo " -c, --copy                 Copy audio wave in directory (deprecated)"
 	echo " -h, --help                 Show help"
 	echo " -o, --output <filename>    Output filename"
 	echo " -t, --title <title>        Scene title"
@@ -77,6 +79,9 @@ while [ -n "$1" ]; do
 			;;
 		"-f" | "--force")
 			FORCE=1
+			;;
+		"-c" | "--copy")
+			COPYAUDIO=1
 			;;
 		*)
 			WPATH="$1"
@@ -183,7 +188,9 @@ for wavfile in `find "$WPATH" -iname *.WAV`; do
 
 	echo "Map actor $idx to $wavname"
 
-	cp "$wavfile" "$OUTPUT_DIRECTORY/$wavname"
+	if [ $COPYAUDIO -eq 1 ]; then
+		cp "$wavfile" "$OUTPUT_DIRECTORY/$wavname"
+	fi
 
 	echo "		{" >> $OUTPUT_FILENAME
 	echo "			id = $idx;" >> $OUTPUT_FILENAME
@@ -195,6 +202,13 @@ for wavfile in `find "$WPATH" -iname *.WAV`; do
 done
 echo "	{});" >> $OUTPUT_FILENAME
 echo "};" >> $OUTPUT_FILENAME
+
+if [ $COPYAUDIO -eq 1 ]; then
+	echo
+	echo "Don't forget to update your database !"
+	echo "Do: noya -i scenes"
+	echo
+fi
 
 # complete !
 echo 
