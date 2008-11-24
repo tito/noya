@@ -27,6 +27,7 @@
 	"samplerate integer, "				\
 	"frames integer,"					\
 	"bpm integer, "						\
+	"tone text, "						\
 	"score integer, "					\
 	"is_imported integer, "				\
 	"is_reviewed integer); "
@@ -67,13 +68,13 @@ static void sqlite3_regexp(sqlite3_context *context, int argc, sqlite3_value **a
 
 	if ( ret == REG_NOMATCH || matches_count <= 0 )
 	{
-		sqlite3_result_int(context, (ret == REG_NOMATCH) ? 0 : 1);
+		sqlite3_result_null(context);
 		return;
 	}
 
 	sqlite3_result_text(context,
-		(const char *)(sqlite3_value_text(argv[1]) + matches[0].rm_so),
-		matches[0].rm_eo - matches[0].rm_so, NULL
+		(const char *)(sqlite3_value_text(argv[1]) + matches[1].rm_so),
+		matches[1].rm_eo - matches[1].rm_so, NULL
 	);
 }
 
@@ -287,9 +288,13 @@ void na_db_import_directory(char *directory, int *stat_ok, int *stat_exist, int 
 		}
 
 		sql = sqlite3_mprintf(
-			"INSERT INTO sounds (id, filename, title, bpm, channels, samplerate, frames, is_imported)"
-			"VALUES ((SELECT MAX(id) FROM sounds) + 1, %Q, %Q, REGEXP(\"([1-9][0-9]+)bpm\", \"%s\"), %d, %d, %d, 1)",
+			"INSERT INTO sounds (id, filename, title, bpm, tone, channels, samplerate, frames, is_imported)"
+			"VALUES ((SELECT MAX(id) FROM sounds) + 1, %Q, %Q, "
+			"REGEXP(\"([1-9][0-9]+)bpm\", \"%s\"), "
+			"REGEXP(\"_([abcdefgABCDEFG]#?) \", \"%s\"), "
+			"%d, %d, %d, 1)",
 			dl_name,
+			p_dirent->d_name,
 			p_dirent->d_name,
 			p_dirent->d_name,
 			sinfo.channels,
