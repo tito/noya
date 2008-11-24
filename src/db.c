@@ -54,7 +54,7 @@ static void sqlite3_regexp(sqlite3_context *context, int argc, sqlite3_value **a
 		return;
 	}
 
-	ret = regcomp(&regex, (char *)sqlite3_value_text(argv[0]), REG_EXTENDED | REG_NOSUB);
+	ret = regcomp(&regex, (char *)sqlite3_value_text(argv[0]), REG_EXTENDED);
 
 	if (ret != 0)
 	{
@@ -63,7 +63,6 @@ static void sqlite3_regexp(sqlite3_context *context, int argc, sqlite3_value **a
 	}
 
 	ret = regexec(&regex, (char *)sqlite3_value_text(argv[1]), matches_count, matches, 0);
-	l_printf("==> %d, %d, %d", matches_count, matches[0].rm_eo , matches[0].rm_so);
 	regfree(&regex);
 
 	if ( ret == REG_NOMATCH || matches_count <= 0 )
