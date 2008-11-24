@@ -30,6 +30,9 @@ typedef struct
 	na_scene_t			*scene;
 	manager_actor_t		*actor;
 
+#define OBJ_FL_HIDE_BARGRAPH		0x01
+	unsigned int		flags;
+
 	/* rendering issues
 	 */
 	ClutterActor	*group_cube;
@@ -120,6 +123,12 @@ void lib_object_config(obj_t *obj, char *key, config_setting_t *value)
 		obj->filename = strdup(s_value);
 		obj->audio = na_audio_load(filename);
 	}
+	else if ( strcmp(key, "bargraph") == 0 )
+	{
+		s_value = config_setting_get_string(value);
+		if ( strcmp(s_value, "hide") == 0 )
+			obj->flags |= OBJ_FL_HIDE_BARGRAPH;
+	}
 	else
 		l_printf("Invalid configuration %s", key);
 }
@@ -187,18 +196,21 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 	clutter_container_add_actor(CLUTTER_CONTAINER(actor->clutter_actor), ac);
 	obj->circle_volume = ac;
 
-	for ( i = 0; i < BAR_COUNT; i++ )
+	if ( ! (obj->flags & OBJ_FL_HIDE_BARGRAPH) )
 	{
-		ac = clutter_circle_new_with_color(&obj_border);
-		clutter_actor_set_width(ac, actor->scene_actor->width);
-		clutter_actor_set_height(ac, actor->scene_actor->height);
-		clutter_circle_set_radius(CLUTTER_CIRCLE(ac), radius);
-		clutter_circle_set_width(CLUTTER_CIRCLE(ac), 10);
-		d = 360 / BAR_COUNT;
-		clutter_circle_set_angle_start(CLUTTER_CIRCLE(ac), i * d);
-		clutter_circle_set_angle_stop(CLUTTER_CIRCLE(ac), i * d + d);
-		clutter_container_add_actor(CLUTTER_CONTAINER(actor->clutter_actor), ac);
-		obj->bars[i] = ac;
+		for ( i = 0; i < BAR_COUNT; i++ )
+		{
+			ac = clutter_circle_new_with_color(&obj_border);
+			clutter_actor_set_width(ac, actor->scene_actor->width);
+			clutter_actor_set_height(ac, actor->scene_actor->height);
+			clutter_circle_set_radius(CLUTTER_CIRCLE(ac), radius);
+			clutter_circle_set_width(CLUTTER_CIRCLE(ac), 10);
+			d = 360 / BAR_COUNT;
+			clutter_circle_set_angle_start(CLUTTER_CIRCLE(ac), i * d);
+			clutter_circle_set_angle_stop(CLUTTER_CIRCLE(ac), i * d + d);
+			clutter_container_add_actor(CLUTTER_CONTAINER(actor->clutter_actor), ac);
+			obj->bars[i] = ac;
+		}
 	}
 
 	/* create text
@@ -243,25 +255,28 @@ void lib_object_update(obj_t *obj)
 		(uint) (obj->audio->position * 360.0f)
 	);
 
-	/* bar graph
-	 */
-	if ( obj->audio->input != NULL && obj->audio->input->data != NULL )
+	if ( ! (obj->flags & OBJ_FL_HIDE_BARGRAPH) )
 	{
-		int		n		= obj->audio->input->size,
-				i;
-		float	*out	= malloc(sizeof(float) * n),
-				v;
-		fftwf_plan p1	= fftwf_plan_r2r_1d(n, obj->audio->input->data, out, FFTW_R2HC, FFTW_FORWARD | FFTW_PRESERVE_INPUT);
-		fftwf_execute(p1);
-		for ( i = 0; i < n && i < BAR_COUNT; i++ )
+		/* bar graph
+		 */
+		if ( obj->audio->input != NULL && obj->audio->input->data != NULL )
 		{
-			v = sqrtf(out[i] * out[i]) * 30;
-			if ( v > 50 )
-				v = 50;
-			clutter_circle_set_width(CLUTTER_CIRCLE(obj->bars[i]), v);
+			int		n		= obj->audio->input->size,
+					i;
+			float	*out	= malloc(sizeof(float) * n),
+					v;
+			fftwf_plan p1	= fftwf_plan_r2r_1d(n, obj->audio->input->data, out, FFTW_R2HC, FFTW_FORWARD | FFTW_PRESERVE_INPUT);
+			fftwf_execute(p1);
+			for ( i = 0; i < n && i < BAR_COUNT; i++ )
+			{
+				v = sqrtf(out[i] * out[i]) * 30;
+				if ( v > 50 )
+					v = 50;
+				clutter_circle_set_width(CLUTTER_CIRCLE(obj->bars[i]), v);
+			}
+			fftwf_destroy_plan(p1);
+			free(out);
 		}
-		fftwf_destroy_plan(p1);
-		free(out);
 	}
 }
 
