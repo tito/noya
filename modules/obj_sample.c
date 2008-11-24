@@ -22,6 +22,7 @@ LOG_DECLARE("MOD_OBJ_SAMPLE");
 static char *mod_settings[] =
 {
 	"file",
+	"bargraph",
 	NULL
 };
 
