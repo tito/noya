@@ -111,18 +111,13 @@ void lib_object_free(obj_t *obj)
 
 void lib_object_config(obj_t *obj, char *key, config_setting_t *value)
 {
-	char		filename[512];
 	const char	 *s_value;
 
 	if ( strcmp(key, "file") == 0 )
 	{
 		s_value = config_setting_get_string(value);
-		snprintf(filename, sizeof(filename), "%s/%s",
-			obj->scene->path,
-			s_value
-		);
 		obj->filename = strdup(s_value);
-		obj->audio = na_audio_load(filename);
+		obj->audio = na_audio_load(s_value);
 	}
 	else if ( strcmp(key, "bargraph") == 0 )
 	{

@@ -217,14 +217,13 @@ char *na_db_get_filename_from_title(char *title)
 		return NULL;
 	}
 
-	//l_printf("Result have %d rows, %d columns", rows, columns);
-	if ( rows > 1 && columns == 1 )
+	if ( rows >= 1 && columns == 1 )
 		str = strdup(result[1]);
 
 	sqlite3_free(sql);
 	sqlite3_free_table(result);
 
-	return NULL;
+	return str;
 }
 
 void na_db_import_directory(char *directory, int *stat_ok, int *stat_exist, int *stat_err)

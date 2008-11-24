@@ -12,6 +12,8 @@
 #include "noya.h"
 #include "audio.h"
 #include "thread_audio.h"
+#include "db.h"
+#include "utils.h"
 
 LOG_DECLARE("AUDIO");
 MUTEX_IMPORT(audiosfx);
@@ -28,7 +30,8 @@ static void thread_audio_preload(void)
 {
 	SNDFILE			*sfp = NULL;
 	SF_INFO			sinfo;
-	na_audio_t	*entry;
+	na_audio_t		*entry;
+	char			*db_filename;
 
 	for ( entry = na_audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
 	{
@@ -41,7 +44,14 @@ static void thread_audio_preload(void)
 
 		l_printf("Load %s", entry->filename);
 
-		sfp = sf_open(entry->filename, SFM_READ, &sinfo);
+		/* try to find him in db
+		 */
+		db_filename = na_db_get_filename_from_title(entry->filename);
+		if ( db_filename == NULL )
+			goto na_audio_preload_clean;
+		sfp = sf_open(db_filename, SFM_READ, &sinfo);
+		free(db_filename);
+
 		if ( sfp == NULL )
 			goto na_audio_preload_clean;
 
@@ -75,7 +85,7 @@ static void thread_audio_preload(void)
 		continue;
 
 na_audio_preload_clean:;
-		l_printf("Failed to load %s", entry->filename);
+		l_errorf("Failed to load %s", entry->filename);
 		if ( sfp != NULL )
 			sf_close(sfp), sfp = NULL;
 		if ( entry->data != NULL )
