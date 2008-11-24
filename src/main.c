@@ -60,6 +60,7 @@ void usage(void)
 	printf("  -h                         Show usage\n");
 	printf("  -s <name>                  Load a scene\n");
 	printf("  -i <directory>             Import waves from directory\n");
+	printf("  -V                         Show version and quit\n");
 	printf("\n");
 
 	exit(EXIT_SUCCESS);
@@ -86,7 +87,7 @@ void na_options_read(int argc, char **argv)
 {
 	int opt;
 
-	while ( (opt = getopt(argc, argv, "s:di:")) != -1 )
+	while ( (opt = getopt(argc, argv, "s:di:V")) != -1 )
 	{
 		switch ( opt )
 		{
@@ -95,6 +96,9 @@ void na_options_read(int argc, char **argv)
 				break;
 			case 'i':
 				g_options.import_dir = strdup(optarg);
+				break;
+			case 'V':
+				exit(-1);
 				break;
 			default:
 				usage();
