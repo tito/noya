@@ -1,0 +1,9 @@
+syntax: glob
+config.log
+.sconsign.dblite
+.sconf_temp
+*.orig
+*.swp
+*.so
+*.os
+*.o
