@@ -15,6 +15,7 @@
 #include "thread_renderer.h"
 #include "thread_audio.h"
 #include "thread_manager.h"
+#include "context.h"
 
 LOG_DECLARE("MAIN");
 MUTEX_DECLARE(global);
@@ -22,6 +23,10 @@ na_atomic_t				g_threads		= {0};
 na_atomic_t				g_want_leave	= {0};
 na_options_t			g_options		= {0};
 config_t				g_config		= {0};
+
+/* contexts import
+ */
+void	context_menu_register(void);
 
 /* services declaration
  */
@@ -174,6 +179,12 @@ int main(int argc, char **argv)
 	na_db_init();
 	na_event_init();
 	na_modules_init();
+
+	/* register contexts
+	 */
+	l_printf("Register contexts...");
+	context_menu_register();
+	context_noya_register();
 
 	/* start INPUT service
 	 */
