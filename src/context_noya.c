@@ -40,6 +40,7 @@ LOG_DECLARE("CTXNOYA");
 
 static na_ctx_t		s_context;
 
+static int				c_running		= 0;
 static na_atomic_t		c_scene_changed	= {0};
 ClutterColor obj_background	= { 0xff, 0xff, 0xff, 0x99 };
 ClutterColor obj_border		= { 0xff, 0xff, 0xff, 0xff };
@@ -431,6 +432,9 @@ static gboolean manager_renderer_update(gpointer data)
 {
 	manager_actor_t	*it;
 
+	if ( c_running == 0 )
+		return FALSE;
+
 	for ( it = manager_actors_list.lh_first; it != NULL; it = it->next.le_next )
 	{
 		(*it->scene_actor->mod->object_update)(it->scene_actor->data_mod);
@@ -444,6 +448,8 @@ static gboolean manager_renderer_update(gpointer data)
 
 int context_noya_activate(void *ctx, void *userdata)
 {
+	c_running = 1;
+
 	c_scene = na_scene_load(g_options.scene_fn);
 	if ( c_scene == NULL )
 	{
@@ -480,6 +486,18 @@ int context_noya_activate(void *ctx, void *userdata)
 int context_noya_deactivate(void *ctx, void *userdata)
 {
 	manager_actor_t	*it = NULL;
+
+	c_running = 0;
+
+	/* remove events
+	 */
+	na_event_remove(NA_EV_OBJECT_NEW, manager_event_object_new, NULL);
+	na_event_remove(NA_EV_OBJECT_SET, manager_event_object_set, NULL);
+	na_event_remove(NA_EV_OBJECT_DEL, manager_event_object_del, NULL);
+	na_event_remove(NA_EV_CURSOR_NEW, manager_event_cursor_new, NULL);
+	na_event_remove(NA_EV_CURSOR_SET, manager_event_cursor_set, NULL);
+	na_event_remove(NA_EV_CURSOR_DEL, manager_event_cursor_del, NULL);
+	na_event_remove(NA_EV_BPM, manager_event_bpm, NULL);
 
 	/* deinitialize modules
 	 */
