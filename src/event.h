@@ -29,6 +29,7 @@ typedef struct
 #define NA_EV_BPM				0x08
 #define NA_EV_SCENE_UPDATE		0x09
 #define NA_EV_WINDOW_UPDATE		0x0A
+#define NA_EV_KEYPRESS			0x0B
 
 #define NA_EV_ACTOR_PREPARE		0xA1
 #define NA_EV_ACTOR_UNPREPARE	0xA2

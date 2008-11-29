@@ -103,6 +103,7 @@ static gboolean renderer_key_handle(ClutterActor *actor, ClutterKeyEvent *event,
 			clutter_main_quit();
 			break;
 		default:
+			na_event_send(NA_EV_KEYPRESS, event);
 			return TRUE;
 	}
 
