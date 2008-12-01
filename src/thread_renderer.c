@@ -19,7 +19,6 @@ pthread_t	thread_renderer;
  */
 static na_atomic_t	c_running		= {0};
 static short					c_state			= THREAD_STATE_START;
-static ClutterColor				stage_color		= { 0x33, 0x09, 0x3b, 0xff };
 static ClutterActor				*stage			= NULL;
 
 /* config
@@ -149,7 +148,7 @@ static void *thread_renderer_run(void *arg)
 				 */
 				stage = clutter_stage_get_default();
 				clutter_actor_set_size(stage, ui_width, ui_height);
-				clutter_stage_set_color(CLUTTER_STAGE(stage), &stage_color);
+				//clutter_stage_set_color(CLUTTER_STAGE(stage), &stage_color);
 				clutter_stage_set_title(CLUTTER_STAGE(stage), NA_TITLE);
 
 				/* prepare signals

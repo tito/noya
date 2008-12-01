@@ -42,8 +42,8 @@ static na_ctx_t		s_context;
 
 static int				c_running		= 0;
 static na_atomic_t		c_scene_changed	= {0};
-ClutterColor obj_background	= { 0xff, 0xff, 0xff, 0x99 };
-ClutterColor obj_border		= { 0xff, 0xff, 0xff, 0xff };
+static ClutterColor		obj_background	= { 0xff, 0xff, 0xff, 0x99 };
+static ClutterColor		obj_border		= { 0xff, 0xff, 0xff, 0xff };
 struct timeval			st_beat;
 double					t_lastbeat		= 0,
 						t_beat			= 0,
