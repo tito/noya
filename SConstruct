@@ -55,6 +55,7 @@ env.AppendUnique(CCFLAGS='-ggdb')
 env.AppendUnique(CCFLAGS='-O0')
 env.AppendUnique(CCFLAGS='-Isrc')
 env.AppendUnique(CCFLAGS='-DNA_DEBUG')
+env.AppendUnique(LINKFLAGS='-Wl,--export-dynamic')
 
 # Libs
 import os
