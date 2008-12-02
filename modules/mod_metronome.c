@@ -115,8 +115,6 @@ static void metronome_bpm(ushort ev_type, void *userdata, void *object)
 
 	assert( obj != NULL );
 
-	clutter_threads_enter();
-
 	if ( obj->beatidx >= 0 )
 		clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_background);
 	obj->beatidx = bpm->beatinmeasure - 1;
@@ -124,8 +122,6 @@ static void metronome_bpm(ushort ev_type, void *userdata, void *object)
 		clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_backgroundhi);
 	else
 		clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_backgroundhili);
-
-	clutter_threads_leave();
 }
 
 /* NOTE: actor is not used with MOD_MODULE

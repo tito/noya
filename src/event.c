@@ -4,6 +4,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <assert.h>
+#include <clutter/clutter.h>
 
 #include "noya.h"
 #include "event.h"
@@ -13,6 +14,13 @@ MUTEX_DECLARE(event);
 
 static na_atomic_t		event_lock;
 static na_event_list_t	na_event_list;
+
+typedef struct
+{
+	na_event_list_t		*list;
+	ushort				ev_type;
+	void				*data;
+} na_clutter_event_t;
 
 void na_event_init_ex(na_event_list_t *list)
 {
@@ -57,17 +65,34 @@ void na_event_observe_ex(na_event_list_t *list, ushort ev_type, na_event_callbac
 	list->have_changed = 1;
 }
 
+static gboolean na_event_clutter_idle_callback(gpointer data)
+{
+	na_event_t			*event;
+	na_clutter_event_t	*evc	= (na_clutter_event_t *)data;
+	for ( event = evc->list->lh_first; event != NULL; event = event->next.le_next )
+	{
+		if ( event->type == evc->ev_type )
+			(*event->callback)(evc->ev_type, event->userdata, evc->data);
+	}
+
+	free(evc);
+	return FALSE;
+}
+
 void na_event_send_ex(na_event_list_t *list, ushort ev_type, void *data)
 {
-	na_event_t	*event;
+	na_clutter_event_t *evc;
 
-	assert( list != NULL );
+	evc = malloc(sizeof(na_clutter_event_t));
+	if ( evc == NULL )
+		return;
 
-	for ( event = list->lh_first; event != NULL; event = event->next.le_next )
-	{
-		if ( event->type == ev_type )
-			(*event->callback)(ev_type, event->userdata, data);
-	}
+	bzero(evc, sizeof(na_clutter_event_t));
+	evc->list		= list;
+	evc->ev_type	= ev_type;
+	evc->data		= data;
+
+	clutter_threads_add_idle(na_event_clutter_idle_callback, evc);
 }
 
 void na_event_remove_ex(na_event_list_t *list, ushort ev_type, na_event_callback callback, void *userdata)

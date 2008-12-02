@@ -35,8 +35,6 @@ static void menu_cursor_handle(unsigned short type, void *userdata, void *data)
 	tuio_cursor_t	*c = (tuio_cursor_t *)data;
 	uint			wx, wy;
 
-	clutter_threads_enter();
-
 	stage = clutter_stage_get_default();
 	clutter_actor_get_size(stage, &wx, &wy);
 
@@ -53,12 +51,11 @@ static void menu_cursor_handle(unsigned short type, void *userdata, void *data)
 
 	clutter_container_add_actor(CLUTTER_CONTAINER(stage), circle);
 
-	/**
+	/**/
+	clutter_stage_ensure_current(stage);
 	actor = clutter_stage_get_actor_at_pos(stage, c->xpos * (float)wx, c->ypos * (float)wy);
 	l_printf("found %p", actor);
-	**/
-
-	clutter_threads_leave();
+	/**/
 }
 
 int context_menu_activate(void *ctx, void *userdata)
@@ -67,15 +64,12 @@ int context_menu_activate(void *ctx, void *userdata)
 
 	na_event_observe(NA_EV_CURSOR_NEW, menu_cursor_handle, NULL);
 
-	clutter_threads_enter();
 	stage = clutter_stage_get_default();
 	clutter_stage_set_color(CLUTTER_STAGE(stage), &stage_color);
 
 	s_menu_start = clutter_label_new_with_text("Lucida 30", "Start !");
 	clutter_label_set_color(s_menu_start, &obj_red);
 	clutter_container_add_actor(CLUTTER_CONTAINER(stage), s_menu_start);
-
-	clutter_threads_leave();
 
 	return 0;
 }
