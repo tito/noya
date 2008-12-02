@@ -48,7 +48,7 @@ static void *thread_manager_run(void *arg)
 				l_printf(" - MANAGER start...");
 				c_state = THREAD_STATE_RUNNING;
 
-				ctxmenu = na_ctx_resolve("menu");
+				ctxmenu = na_ctx_resolve("noya");
 				if ( ctxmenu == NULL )
 				{
 					l_errorf("cannot switch to menu, no context menu found");
