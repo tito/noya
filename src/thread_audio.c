@@ -269,11 +269,16 @@ static void *thread_audio_run(void *arg)
 
 	while ( 1 )
 	{
+		if ( atomic_read(&g_want_leave) )
+		{
+			c_state = THREAD_STATE_STOP;
+			break;
+		}
+
 		switch ( c_state )
 		{
 			case THREAD_STATE_START:
 				l_printf(" - AUDIO start...");
-				c_state = THREAD_STATE_RUNNING;
 
 				/* initialize portaudio
 				 */
@@ -281,7 +286,7 @@ static void *thread_audio_run(void *arg)
 				if ( ret != paNoError )
 				{
 					l_errorf("unable to initialize PA : %s", Pa_GetErrorText(ret));
-					na_quit();
+					sleep(5);
 					continue;
 				}
 
@@ -311,7 +316,7 @@ static void *thread_audio_run(void *arg)
 				if ( ret != paNoError )
 				{
 					l_errorf("unable to open default stream : %s", Pa_GetErrorText(ret));
-					na_quit();
+					sleep(5);
 					continue;
 				}
 
@@ -321,10 +326,11 @@ static void *thread_audio_run(void *arg)
 				if ( ret != paNoError )
 				{
 					l_errorf("unable to start stream : %s", Pa_GetErrorText(ret));
-					na_quit();
+					sleep(5);
 					continue;
 				}
 
+				c_state = THREAD_STATE_RUNNING;
 				break;
 
 			case THREAD_STATE_RESTART:
