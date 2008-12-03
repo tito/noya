@@ -44,6 +44,12 @@ na_atomic_t						g_clutter_running = {0};
 
 #define CALIBRATE_VALUE(key, delta)	CALIBRATE_VALUE_EX(key, delta, 0, 1);
 
+static gboolean renderer_button_handle(ClutterActor *actor, ClutterButtonEvent *event, gpointer data)
+{
+	na_event_send(NA_EV_BUTTONPRESS, event);
+	return FALSE;
+}
+
 static gboolean renderer_key_handle(ClutterActor *actor, ClutterKeyEvent *event, gpointer data)
 {
 	gboolean is_fullscreen = FALSE;
@@ -94,7 +100,7 @@ static gboolean renderer_key_handle(ClutterActor *actor, ClutterKeyEvent *event,
 			else
 				clutter_stage_fullscreen(CLUTTER_STAGE(stage));
 
-			g_object_get( G_OBJECT(stage), "fullscreen", &is_fullscreen, NULL);
+			g_object_get(G_OBJECT(stage), "fullscreen", &is_fullscreen, NULL);
 			na_event_send(NA_EV_WINDOW_UPDATE, NULL);
 			break;
 		case CLUTTER_q:
@@ -155,6 +161,9 @@ static void *thread_renderer_run(void *arg)
 				 */
 				g_signal_connect(stage, "key-press-event",
 					G_CALLBACK(renderer_key_handle), NULL
+				);
+				g_signal_connect(stage, "button-press-event",
+					G_CALLBACK(renderer_button_handle), NULL
 				);
 
 				/* show the stage
