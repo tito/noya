@@ -12,12 +12,14 @@
 #define MAX_CURSORS		20
 
 LOG_DECLARE("CTXMENU");
+MUTEX_IMPORT(context);
 
 static na_ctx_t		s_context;
 static ClutterColor	stage_color		= { 0x02, 0x02, 0x22, 0x00 };
 static ClutterColor obj_background	= { 0xff, 0xff, 0xff, 0x99 };
 static ClutterColor obj_red			= { 0xff, 0x00, 0x00, 0x99 };
 static ClutterActor	*s_menu_start	= NULL;
+static ClutterTexture *tex_bg		= NULL;
 
 static void menu_cursor_click_fade_complete(ClutterActor *actor, gpointer user_data)
 {
@@ -25,6 +27,28 @@ static void menu_cursor_click_fade_complete(ClutterActor *actor, gpointer user_d
 		CLUTTER_CONTAINER(clutter_stage_get_default()),
 		actor, NULL
 	);
+}
+
+static void ui_button_new(ClutterActor *stage, char *text)
+{
+	uint			wx, wy;
+	ClutterActor	*container,
+					*background,
+					*label;
+	stage = clutter_stage_get_default();
+	clutter_actor_get_size(stage, &wx, &wy);
+
+	container = clutter_group_new();
+	background = clutter_texture_new_from_file("data/ui-button.png", NULL);
+	clutter_container_add(CLUTTER_CONTAINER(container), background);
+
+	label = clutter_label_new_with_text("Lucida 30", text);
+	clutter_label_set_color(label, &obj_red);
+	clutter_container_add_actor(CLUTTER_CONTAINER(container), label);
+
+	clutter_container_add_actor(CLUTTER_CONTAINER(stage), container);
+
+	clutter_actor_show(container);
 }
 
 static void menu_cursor_handle(unsigned short type, void *userdata, void *data)
@@ -74,16 +98,18 @@ static void menu_cursor_handle(unsigned short type, void *userdata, void *data)
 int context_menu_activate(void *ctx, void *userdata)
 {
 	ClutterActor	*stage;
+	uint			wx, wy;
 
 	na_event_observe(NA_EV_CURSOR_NEW, menu_cursor_handle, NULL);
 	na_event_observe(NA_EV_BUTTONPRESS, menu_cursor_handle, NULL);
 
 	stage = clutter_stage_get_default();
 	clutter_stage_set_color(CLUTTER_STAGE(stage), &stage_color);
+	clutter_actor_get_size(stage, &wx, &wy);
 
-	s_menu_start = clutter_label_new_with_text("Lucida 30", "Start !");
-	clutter_label_set_color(s_menu_start, &obj_red);
-	clutter_container_add_actor(CLUTTER_CONTAINER(stage), s_menu_start);
+	tex_bg = clutter_texture_new_from_file("data/background.png", NULL);
+	clutter_actor_set_size(tex_bg, wx, wy);
+	clutter_container_add_actor(CLUTTER_CONTAINER(stage), tex_bg);
 
 	return 0;
 }
@@ -97,8 +123,7 @@ int context_menu_deactivate(void *ctx, void *userdata)
 
 int context_menu_update(void *ctx, void *userdata)
 {
-	usleep(20000);
-	return 0;
+	return 1000;
 }
 
 void context_menu_register()
@@ -110,5 +135,7 @@ void context_menu_register()
 	s_context.fn_deactivate	= context_menu_deactivate;
 	s_context.fn_update		= context_menu_update;
 
+	MUTEX_LOCK(context);
 	na_ctx_register(&s_context);
+	MUTEX_UNLOCK(context);
 }

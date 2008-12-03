@@ -4,15 +4,18 @@
 #include <string.h>
 #include <pthread.h>
 #include <signal.h>
+#include <assert.h>
 
 #include <clutter/clutter.h>
 
 #include "noya.h"
 #include "event.h"
+#include "context.h"
 #include "thread_renderer.h"
 
 LOG_DECLARE("RENDERER");
 MUTEX_DECLARE(renderer);
+MUTEX_IMPORT(context);
 pthread_t	thread_renderer;
 
 /* static
@@ -115,6 +118,25 @@ static gboolean renderer_key_handle(ClutterActor *actor, ClutterKeyEvent *event,
 	return TRUE;
 }
 
+gboolean thread_renderer_switch(gpointer data)
+{
+	int ts;
+
+	if ( atomic_read(&g_want_leave) )
+		return FALSE;
+
+	MUTEX_LOCK(context);
+
+	na_ctx_do_switch();
+	ts = na_ctx_do_update();
+	if ( ts > 0 )
+		clutter_threads_add_timeout(ts, thread_renderer_switch, NULL);
+
+	MUTEX_UNLOCK(context);
+
+	return ts > 0 ? FALSE : TRUE;
+}
+
 static void *thread_renderer_run(void *arg)
 {
 	THREAD_ENTER;
@@ -188,6 +210,15 @@ static void *thread_renderer_run(void *arg)
 					c_state = THREAD_STATE_STOP;
 					break;
 				}
+
+				/* set menu context
+				 */
+				assert( na_ctx_resolve("menu") != NULL );
+				na_ctx_switch(na_ctx_resolve("menu"));
+
+				/* context switch
+				 */
+				clutter_threads_add_timeout(250, thread_renderer_switch, NULL);
 
 				/* run loop for clutter
 				 */

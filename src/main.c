@@ -14,7 +14,6 @@
 #include "thread_input.h"
 #include "thread_renderer.h"
 #include "thread_audio.h"
-#include "thread_manager.h"
 #include "context.h"
 
 LOG_DECLARE("MAIN");
@@ -40,7 +39,6 @@ na_service_t services[] = {
 	{	thread_audio_start,		thread_audio_stop,		0	},
 	{	thread_input_start,		thread_input_stop,		0	},
 	{	thread_renderer_start,	thread_renderer_stop,	0	},
-	{	thread_manager_start,	thread_manager_stop,	0	},
 	{	NULL,					NULL,					0	}
 };
 

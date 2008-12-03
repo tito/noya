@@ -27,7 +27,7 @@ void		na_ctx_register(na_ctx_t *ctx);
 na_ctx_t	*na_ctx_resolve(const char *name);
 void		na_ctx_switch(na_ctx_t *to);
 na_ctx_t	*na_ctx_current(void);
-int			na_ctx_manager_switch(void);
-int			na_ctx_manager_update(void);
+int			na_ctx_do_switch(void);
+int			na_ctx_do_update(void);
 
 #endif

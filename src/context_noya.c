@@ -37,6 +37,7 @@
 #include "context.h"
 
 LOG_DECLARE("CTXNOYA");
+MUTEX_IMPORT(context);
 
 static na_ctx_t		s_context;
 
@@ -590,5 +591,7 @@ void context_noya_register()
 	s_context.fn_deactivate	= context_noya_deactivate;
 	s_context.fn_update		= context_noya_update;
 
+	MUTEX_LOCK(context);
 	na_ctx_register(&s_context);
+	MUTEX_UNLOCK(context);
 }

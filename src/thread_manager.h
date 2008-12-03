@@ -53,9 +53,4 @@ typedef struct
 manager_actor_list_t *na_manager_get_actors(void);
 manager_actor_t *na_manager_actor_get_by_fid(uint fid);
 
-/* thread management
- */
-int thread_manager_start(void);
-int thread_manager_stop(void);
-
 #endif
