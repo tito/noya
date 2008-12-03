@@ -319,6 +319,7 @@ static void *thread_input_run(void *arg)
     fd_set				rfds;
     int					retval;
 	lo_server			s;
+	struct timeval		ts;
 
 
 	THREAD_ENTER;
@@ -383,7 +384,10 @@ static void *thread_input_run(void *arg)
 				FD_ZERO(&rfds);
 				FD_SET(lo_fd, &rfds);
 
-				retval = select(lo_fd + 1, &rfds, NULL, NULL, NULL); /* no timeout */
+				ts.tv_sec	= 0;
+				ts.tv_usec	= 500;
+
+				retval = select(lo_fd + 1, &rfds, NULL, NULL, &ts);
 
 				if ( retval == -1 )
 				{
