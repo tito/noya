@@ -103,7 +103,23 @@ static void menu_cursor_handle(unsigned short type, void *userdata, void *data)
 	/**/
 	clutter_stage_ensure_current(stage);
 	actor = clutter_stage_get_actor_at_pos(stage, xpos * (float)wx, ypos * (float)wy);
-	l_printf("found %p", actor);
+
+	while ( actor != NULL )
+	{
+		l_printf("found %p", actor);
+		if ( actor == s_menu_start )
+		{
+			na_ctx_switch("noya");
+			break;
+		}
+		else if ( actor == s_menu_quit )
+		{
+			clutter_main_quit();
+			break;
+		}
+
+		actor = clutter_actor_get_parent(actor);
+	}
 	/**/
 }
 
