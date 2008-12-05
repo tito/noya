@@ -19,9 +19,10 @@ static ClutterColor	stage_color		= { 0x02, 0x02, 0x22, 0x00 };
 static ClutterColor obj_background	= { 0xff, 0xff, 0xff, 0x99 };
 static ClutterColor color_white		= { 0xff, 0xff, 0xff, 0x99 };
 static ClutterColor color_white_sh	= { 0xff, 0xff, 0xff, 0x33 };
-static ClutterActor	*s_menu_start	= NULL,
-					*s_menu_options	= NULL,
-					*s_menu_quit	= NULL;
+static ClutterActor	*menu			= NULL,
+					*menu_start		= NULL,
+					*menu_options	= NULL,
+					*menu_quit		= NULL;
 static ClutterTexture *tex_bg		= NULL;
 
 static void menu_cursor_click_fade_complete(ClutterActor *actor, gpointer user_data)
@@ -37,26 +38,26 @@ static ClutterActor *ui_button_new(ClutterActor *stage, char *text)
 	uint			bx, by;
 	ClutterActor	*container,
 					*background,
-					*label;
+					*label,
+					*labelsh;
 
 	container = clutter_group_new();
 
 	background = clutter_texture_new_from_file("data/ui-button.png", NULL);
 	clutter_actor_get_size(background, &bx, &by);
 	clutter_actor_set_position(background, - bx >> 1, - by >> 1);
-	clutter_container_add_actor(CLUTTER_CONTAINER(container), background);
 
 	label = clutter_label_new_with_text("Lucida Bold 30", text);
 	clutter_label_set_color(label, &color_white);
 	clutter_actor_get_size(label, &bx, &by);
 	clutter_actor_set_position(label, - bx >> 1, - by >> 1);
-	clutter_container_add_actor(CLUTTER_CONTAINER(container), label);
 
-	label = clutter_label_new_with_text("Lucida Bold 30", text);
-	clutter_label_set_color(label, &color_white_sh);
-	clutter_actor_get_size(label, &bx, &by);
-	clutter_actor_set_position(label, - (bx >> 1) + 2, - (by >> 1) + 2);
-	clutter_container_add_actor(CLUTTER_CONTAINER(stage), container);
+	labelsh = clutter_label_new_with_text("Lucida Bold 30", text);
+	clutter_label_set_color(labelsh, &color_white_sh);
+	clutter_actor_get_size(labelsh, &bx, &by);
+	clutter_actor_set_position(labelsh, - (bx >> 1) + 2, - (by >> 1) + 2);
+
+	clutter_group_add_many(CLUTTER_CONTAINER(container), background, label, labelsh, NULL);
 
 	clutter_actor_show(container);
 
@@ -107,12 +108,12 @@ static void menu_cursor_handle(unsigned short type, void *userdata, void *data)
 	while ( actor != NULL )
 	{
 		l_printf("found %p", actor);
-		if ( actor == s_menu_start )
+		if ( actor == menu_start )
 		{
-			na_ctx_switch("noya");
+			na_ctx_switch(na_ctx_resolve("noya"));
 			break;
 		}
-		else if ( actor == s_menu_quit )
+		else if ( actor == menu_quit )
 		{
 			clutter_main_quit();
 			break;
@@ -137,23 +138,39 @@ int context_menu_activate(void *ctx, void *userdata)
 
 	tex_bg = clutter_texture_new_from_file("data/background.png", NULL);
 	clutter_actor_set_size(CLUTTER_ACTOR(tex_bg), wx, wy);
-	clutter_container_add_actor(CLUTTER_CONTAINER(stage), CLUTTER_ACTOR(tex_bg));
 
-	s_menu_start = ui_button_new(stage, "Démarrer");
-	clutter_actor_set_position(s_menu_start, (wx >> 1), 100);
+	menu_start = ui_button_new(stage, "Démarrer");
+	clutter_actor_set_position(menu_start, (wx >> 1), 100);
 
-	s_menu_options = ui_button_new(stage, "Options");
-	clutter_actor_set_position(s_menu_options, (wx >> 1), 250);
+	menu_options = ui_button_new(stage, "Options");
+	clutter_actor_set_position(menu_options, (wx >> 1), 250);
 
-	s_menu_quit = ui_button_new(stage, "Quitter");
-	clutter_actor_set_position(s_menu_quit, (wx >> 1), 400);
+	menu_quit = ui_button_new(stage, "Quitter");
+	clutter_actor_set_position(menu_quit, (wx >> 1), 400);
+
+	menu = clutter_group_new();
+	clutter_group_add_many(CLUTTER_GROUP(menu),
+		CLUTTER_ACTOR(tex_bg),
+		menu_start,
+		menu_options,
+		menu_quit,
+		NULL
+	);
+
+	clutter_container_add_actor(CLUTTER_CONTAINER(stage), menu);
 
 	return 0;
 }
 
 int context_menu_deactivate(void *ctx, void *userdata)
 {
+	ClutterActor *stage;
+
 	na_event_remove(NA_EV_CURSOR_NEW, menu_cursor_handle, NULL);
+	na_event_remove(NA_EV_BUTTONPRESS, menu_cursor_handle, NULL);
+
+	stage = clutter_stage_get_default();
+	clutter_container_remove(CLUTTER_CONTAINER(stage), menu);
 
 	return 0;
 }
