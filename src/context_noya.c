@@ -41,7 +41,8 @@ MUTEX_IMPORT(context);
 
 static na_ctx_t		s_context;
 
-static int				c_running		= 0;
+static na_atomic_t		c_running		= {0},
+						c_running_timer = {0};
 static na_atomic_t		c_scene_changed	= {0};
 static ClutterColor		obj_background	= { 0xff, 0xff, 0xff, 0x99 };
 static ClutterColor		obj_border		= { 0xff, 0xff, 0xff, 0xff };
@@ -55,6 +56,7 @@ static na_bpm_t			bpm				= {0};
 na_scene_t				*c_scene		= NULL;
 manager_actor_list_t	manager_actors_list;
 manager_cursor_list_t	manager_cursors_list;
+static pthread_t		thread_timer;
 
 
 #ifdef HAVE_RTC
@@ -410,7 +412,7 @@ static gboolean manager_renderer_update(gpointer data)
 {
 	manager_actor_t	*it;
 
-	if ( c_running == 0 )
+	if ( !atomic_read(&c_running ) )
 		return FALSE;
 
 	for ( it = manager_actors_list.lh_first; it != NULL; it = it->next.le_next )
@@ -422,17 +424,90 @@ static gboolean manager_renderer_update(gpointer data)
 	return TRUE;
 }
 
+static void *context_noya_timer(void *data)
+{
+	atomic_set(&c_running_timer, 1);
 
+	while ( atomic_read(&c_running) )
+	{
+		pthread_testcancel();
+
+		/* scene changed, send event
+		*/
+		if ( atomic_read(&c_scene_changed) )
+		{
+			na_event_send(NA_EV_SCENE_UPDATE, NULL);
+			atomic_set(&c_scene_changed, 0);
+		}
+
+		/* let's do the beat !
+		 */
+		do
+		{
+			/* RTC sleep first
+			 */
+#ifdef HAVE_RTC
+			if ( rtc_fd >= 0 )
+			{
+				if ( read(rtc_fd, &rtc_ts, sizeof(rtc_ts)) <= 0 )
+					l_errorf("error while reading RTC timer !");
+			}
+			else
+#endif
+			/* Soft sleep
+			 * TODO check mplayer code for soft sleep ?
+			 */
+			{
+				usleep(100);
+			}
+
+			/* get time
+			 */
+			gettimeofday(&st_beat, NULL);
+			t_beat = st_beat.tv_sec + st_beat.tv_usec * 0.000001;
+			t_beatinterval = (float)(60.0f / (float)c_scene->bpm);
+		} while ( t_beat - t_lastbeat < t_beatinterval );
+
+		t_bpm++;
+
+		/* FIXME : how to handle lag ?
+		 */
+		t_lastbeat = t_beat;
+
+		/* send bpm event
+		 */
+		bpm.beat = t_bpm;
+		bpm.beatinmeasure = bpm.beat % c_scene->measure + 1;
+		if ( bpm.beatinmeasure == 1 )
+			bpm.measure++;
+		l_printf("BPM = %u/%u - %u", bpm.measure,
+			bpm.beatinmeasure, bpm.beat);
+		na_event_send(NA_EV_BPM, &bpm);
+	}
+
+	atomic_set(&c_running_timer, 0);
+
+	return NULL;
+}
 
 int context_noya_activate(void *ctx, void *userdata)
 {
-	c_running = 1;
+	int ret;
+
+	atomic_set(&c_running, 1);
 
 	c_scene = na_scene_load(g_options.scene_fn);
 	if ( c_scene == NULL )
 	{
 		l_errorf("unable to load scene");
 		na_quit();
+		return -1;
+	}
+
+	ret = pthread_create(&thread_timer, NULL, context_noya_timer, NULL);
+	if ( ret )
+	{
+		l_errorf("unable to create TIMER thread");
 		return -1;
 	}
 
@@ -465,7 +540,12 @@ int context_noya_deactivate(void *ctx, void *userdata)
 {
 	manager_actor_t	*it = NULL;
 
-	c_running = 0;
+	atomic_set(&c_running, 0);
+
+	/* stop thread
+	 */
+	while ( atomic_read(&c_running_timer) )
+		usleep(100);
 
 	/* remove events
 	 */
@@ -499,57 +579,6 @@ int context_noya_deactivate(void *ctx, void *userdata)
 
 int context_noya_update(void *ctx, void *userdata)
 {
-	/* scene changed, send event
-	*/
-	if ( atomic_read(&c_scene_changed) )
-	{
-		na_event_send(NA_EV_SCENE_UPDATE, NULL);
-		atomic_set(&c_scene_changed, 0);
-	}
-
-	/* let's do the beat !
-	 */
-	do
-	{
-		/* RTC sleep first
-		 */
-#ifdef HAVE_RTC
-		if ( rtc_fd >= 0 )
-		{
-			if ( read(rtc_fd, &rtc_ts, sizeof(rtc_ts)) <= 0 )
-				l_errorf("error while reading RTC timer !");
-		}
-		else
-#endif
-		/* Soft sleep
-		 * TODO check mplayer code for soft sleep ?
-		 */
-		{
-			usleep(100);
-		}
-
-		/* get time
-		 */
-		gettimeofday(&st_beat, NULL);
-		t_beat = st_beat.tv_sec + st_beat.tv_usec * 0.000001;
-		t_beatinterval = (float)(60.0f / (float)c_scene->bpm);
-	} while ( t_beat - t_lastbeat < t_beatinterval );
-
-	t_bpm++;
-
-	/* FIXME : how to handle lag ?
-	 */
-	t_lastbeat = t_beat;
-
-	/* send bpm event
-	 */
-	bpm.beat = t_bpm;
-	bpm.beatinmeasure = bpm.beat % c_scene->measure + 1;
-	if ( bpm.beatinmeasure == 1 )
-		bpm.measure++;
-	l_printf("BPM = %u/%u - %u", bpm.measure,
-		bpm.beatinmeasure, bpm.beat);
-	na_event_send(NA_EV_BPM, &bpm);
 	return 0;
 }
 
