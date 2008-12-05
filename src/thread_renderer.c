@@ -60,6 +60,9 @@ static gboolean renderer_key_handle(ClutterActor *actor, ClutterKeyEvent *event,
 
 	switch ( event->keyval )
 	{
+		case CLUTTER_F1:
+			na_ctx_switch(na_ctx_resolve("menu"));
+			break;
 		case CLUTTER_u:
 			CALIBRATE_VALUE("noya.tuio.calibration.xmin", 0.01);
 			break;
