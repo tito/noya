@@ -42,7 +42,7 @@ typedef struct
 void na_event_init(void);
 void na_event_free(void);
 void na_event_observe(ushort ev_type, na_event_callback callback, void *userdata);
-void na_event_send(ushort ev_type, void *data);
+void na_event_send(ushort ev_type, void *data, uint datasize);
 void na_event_remove(ushort ev_type, na_event_callback callback, void *userdata);
 void na_event_stop(void);
 
@@ -51,7 +51,7 @@ void na_event_stop(void);
 void na_event_init_ex(na_event_list_t *list);
 void na_event_free_ex(na_event_list_t *list);
 void na_event_observe_ex(na_event_list_t *list, ushort ev_type, na_event_callback callback, void *userdata);
-void na_event_send_ex(na_event_list_t *list, ushort ev_type, void *data);
+void na_event_send_ex(na_event_list_t *list, ushort ev_type, void *data, uint datasize);
 void na_event_remove_ex(na_event_list_t *list, ushort ev_type, na_event_callback callback, void *userdata);
 int  na_event_have_changed(na_event_list_t *list);
 void na_event_clear_changed(na_event_list_t *list);

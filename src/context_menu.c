@@ -22,8 +22,8 @@ static ClutterColor color_white_sh	= { 0xff, 0xff, 0xff, 0x33 };
 static ClutterActor	*menu			= NULL,
 					*menu_start		= NULL,
 					*menu_options	= NULL,
-					*menu_quit		= NULL;
-static ClutterTexture *tex_bg		= NULL;
+					*menu_quit		= NULL,
+					*tex_bg			= NULL;
 
 static void menu_cursor_click_fade_complete(ClutterActor *actor, gpointer user_data)
 {
@@ -48,16 +48,16 @@ static ClutterActor *ui_button_new(ClutterActor *stage, char *text)
 	clutter_actor_set_position(background, - bx >> 1, - by >> 1);
 
 	label = clutter_label_new_with_text("Lucida Bold 30", text);
-	clutter_label_set_color(label, &color_white);
+	clutter_label_set_color(CLUTTER_LABEL(label), &color_white);
 	clutter_actor_get_size(label, &bx, &by);
 	clutter_actor_set_position(label, - bx >> 1, - by >> 1);
 
 	labelsh = clutter_label_new_with_text("Lucida Bold 30", text);
-	clutter_label_set_color(labelsh, &color_white_sh);
+	clutter_label_set_color(CLUTTER_LABEL(labelsh), &color_white_sh);
 	clutter_actor_get_size(labelsh, &bx, &by);
 	clutter_actor_set_position(labelsh, - (bx >> 1) + 2, - (by >> 1) + 2);
 
-	clutter_group_add_many(CLUTTER_CONTAINER(container), background, label, labelsh, NULL);
+	clutter_group_add_many(CLUTTER_GROUP(container), background, label, labelsh, NULL);
 
 	clutter_actor_show(container);
 
@@ -91,7 +91,7 @@ static void menu_cursor_handle(unsigned short type, void *userdata, void *data)
 	circle = clutter_circle_new_with_color(&obj_background);
 	clutter_circle_set_angle_stop(CLUTTER_CIRCLE(circle), 360);
 	clutter_circle_set_radius(CLUTTER_CIRCLE(circle), 5);
-	clutter_actor_set_position(CLUTTER_CIRCLE(circle), xpos * (float)wx, ypos * (float)wy);
+	clutter_actor_set_position(circle, xpos * (float)wx, ypos * (float)wy);
 	clutter_actor_show(circle);
 
 	timeline = clutter_timeline_new_for_duration(400);
@@ -102,8 +102,8 @@ static void menu_cursor_handle(unsigned short type, void *userdata, void *data)
 	clutter_container_add_actor(CLUTTER_CONTAINER(stage), circle);
 
 	/**/
-	clutter_stage_ensure_current(stage);
-	actor = clutter_stage_get_actor_at_pos(stage, xpos * (float)wx, ypos * (float)wy);
+	clutter_stage_ensure_current(CLUTTER_STAGE(stage));
+	actor = clutter_stage_get_actor_at_pos(CLUTTER_STAGE(stage), xpos * (float)wx, ypos * (float)wy);
 
 	while ( actor != NULL )
 	{
@@ -170,7 +170,7 @@ int context_menu_deactivate(void *ctx, void *userdata)
 	na_event_remove(NA_EV_BUTTONPRESS, menu_cursor_handle, NULL);
 
 	stage = clutter_stage_get_default();
-	clutter_container_remove(CLUTTER_CONTAINER(stage), menu);
+	clutter_container_remove(CLUTTER_CONTAINER(stage), menu, NULL);
 
 	return 0;
 }

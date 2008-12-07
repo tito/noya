@@ -436,7 +436,7 @@ static void *context_noya_timer(void *data)
 		*/
 		if ( atomic_read(&c_scene_changed) )
 		{
-			na_event_send(NA_EV_SCENE_UPDATE, NULL);
+			na_event_send(NA_EV_SCENE_UPDATE, NULL, 0);
 			atomic_set(&c_scene_changed, 0);
 		}
 
@@ -482,7 +482,7 @@ static void *context_noya_timer(void *data)
 			bpm.measure++;
 		l_printf("BPM = %u/%u - %u", bpm.measure,
 			bpm.beatinmeasure, bpm.beat);
-		na_event_send(NA_EV_BPM, &bpm);
+		na_event_send(NA_EV_BPM, &bpm, sizeof(na_bpm_t));
 	}
 
 	atomic_set(&c_running_timer, 0);

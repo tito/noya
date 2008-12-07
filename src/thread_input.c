@@ -114,9 +114,9 @@ static int _lo_tuio_object_handler(const char *path, const char *types, lo_arg *
 		/* send new object event
 		 */
 		if ( (o->flags & TUIO_OBJECT_FL_INIT) == TUIO_OBJECT_FL_INIT )
-			na_event_send(NA_EV_OBJECT_SET, o);
+			na_event_send(NA_EV_OBJECT_SET, o, sizeof(tuio_object_t));
 		else
-			na_event_send(NA_EV_OBJECT_NEW, o);
+			na_event_send(NA_EV_OBJECT_NEW, o, sizeof(tuio_object_t));
 
 		o->flags	|= TUIO_OBJECT_FL_INIT;
 		MUTEX_UNLOCK(input);
@@ -177,7 +177,7 @@ static int _lo_tuio_object_handler(const char *path, const char *types, lo_arg *
 				/* send end object event
 				 */
 				o->flags = 0;
-				na_event_send(NA_EV_OBJECT_DEL, (void *)o);
+				na_event_send(NA_EV_OBJECT_DEL, o, sizeof(tuio_object_t));
 			}
 		}
 
@@ -244,9 +244,9 @@ static int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg *
 		/* send cursor new event
 		 */
 		if ( c->flags == TUIO_CURSOR_FL_INIT )
-			na_event_send(NA_EV_CURSOR_NEW, (void *)c);
+			na_event_send(NA_EV_CURSOR_NEW, (void *)c, sizeof(tuio_cursor_t));
 		else
-			na_event_send(NA_EV_CURSOR_SET, (void *)c);
+			na_event_send(NA_EV_CURSOR_SET, (void *)c, sizeof(tuio_cursor_t));
 		MUTEX_UNLOCK(input);
 	}
 
@@ -296,10 +296,10 @@ static int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg *
 
 			/* send click cursor event ! */
 			if ( c->mov < TUIO_CURSOR_THRESHOLD_CLICK )
-				na_event_send(NA_EV_CURSOR_CLICK, (void *)c);
+				na_event_send(NA_EV_CURSOR_CLICK, (void *)c, sizeof(tuio_cursor_t));
 
 			/* send blur cursor event ! */
-			na_event_send(NA_EV_CURSOR_DEL, (void *)c);
+			na_event_send(NA_EV_CURSOR_DEL, (void *)c, sizeof(tuio_cursor_t));
 
 			/* delete cursor
 			 */

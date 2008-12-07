@@ -49,7 +49,7 @@ na_atomic_t						g_clutter_running = {0};
 
 static gboolean renderer_button_handle(ClutterActor *actor, ClutterButtonEvent *event, gpointer data)
 {
-	na_event_send(NA_EV_BUTTONPRESS, event);
+	na_event_send(NA_EV_BUTTONPRESS, event, sizeof(ClutterButtonEvent));
 	return FALSE;
 }
 
@@ -107,14 +107,14 @@ static gboolean renderer_key_handle(ClutterActor *actor, ClutterKeyEvent *event,
 				clutter_stage_fullscreen(CLUTTER_STAGE(stage));
 
 			g_object_get(G_OBJECT(stage), "fullscreen", &is_fullscreen, NULL);
-			na_event_send(NA_EV_WINDOW_UPDATE, NULL);
+			na_event_send(NA_EV_WINDOW_UPDATE, NULL, 0);
 			break;
 		case CLUTTER_q:
 			na_quit();
 			clutter_main_quit();
 			break;
 		default:
-			na_event_send(NA_EV_KEYPRESS, event);
+			na_event_send(NA_EV_KEYPRESS, event, sizeof(ClutterKeyEvent));
 			return TRUE;
 	}
 

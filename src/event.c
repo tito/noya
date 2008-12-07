@@ -20,6 +20,7 @@ typedef struct
 	na_event_list_t		*list;
 	ushort				ev_type;
 	void				*data;
+	uint				datasize;
 } na_clutter_event_t;
 
 void na_event_init_ex(na_event_list_t *list)
@@ -75,11 +76,13 @@ static gboolean na_event_clutter_idle_callback(gpointer data)
 			(*event->callback)(evc->ev_type, event->userdata, evc->data);
 	}
 
+	if ( evc->data != NULL )
+		free(evc->data);
 	free(evc);
 	return FALSE;
 }
 
-void na_event_send_ex(na_event_list_t *list, ushort ev_type, void *data)
+void na_event_send_ex(na_event_list_t *list, ushort ev_type, void *data, uint datasize)
 {
 	na_clutter_event_t *evc;
 
@@ -90,7 +93,21 @@ void na_event_send_ex(na_event_list_t *list, ushort ev_type, void *data)
 	bzero(evc, sizeof(na_clutter_event_t));
 	evc->list		= list;
 	evc->ev_type	= ev_type;
-	evc->data		= data;
+
+	/* make a copy of data
+	 */
+	if ( data )
+	{
+		evc->data		= malloc(datasize);
+		if ( evc->data == NULL )
+		{
+			free(evc);
+			return;
+		}
+
+		evc->datasize	= datasize;
+		bcopy(data, evc->data, datasize);
+	}
 
 	clutter_threads_add_idle(na_event_clutter_idle_callback, evc);
 }
@@ -140,11 +157,11 @@ void na_event_observe(ushort ev_type, na_event_callback callback, void *userdata
 	na_event_observe_ex(&na_event_list, ev_type, callback, userdata);
 }
 
-void na_event_send(ushort ev_type, void *data)
+void na_event_send(ushort ev_type, void *data, uint datasize)
 {
 	if ( atomic_read(&event_lock) )
 		return;
-	na_event_send_ex(&na_event_list, ev_type, data);
+	na_event_send_ex(&na_event_list, ev_type, data, datasize);
 }
 
 void na_event_remove(ushort ev_type, na_event_callback callback, void *userdata)

@@ -147,8 +147,8 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 
 	/* send events
 	 */
-	na_event_send_ex(&obj->observers, NA_EV_ACTOR_PREPARE, obj->actor);
-	na_event_send_ex(&obj->observers, NA_EV_AUDIO_PLAY, obj->audio);
+	na_event_send_ex(&obj->observers, NA_EV_ACTOR_PREPARE, obj->actor, sizeof(manager_actor_t));
+	na_event_send_ex(&obj->observers, NA_EV_AUDIO_PLAY, obj->audio, sizeof(na_audio_t));
 
 	/* we want to be played !
 	 */
@@ -222,8 +222,8 @@ void lib_object_unprepare(obj_t *obj)
 {
 	/* send events
 	 */
-	na_event_send_ex(&obj->observers, NA_EV_AUDIO_STOP, obj->audio);
-	na_event_send_ex(&obj->observers, NA_EV_ACTOR_UNPREPARE, obj->actor);
+	na_event_send_ex(&obj->observers, NA_EV_AUDIO_STOP, obj->audio, sizeof(na_audio_t));
+	na_event_send_ex(&obj->observers, NA_EV_ACTOR_UNPREPARE, obj->actor, sizeof(manager_actor_t));
 
 	/* stop audio
 	 */
@@ -298,9 +298,9 @@ void lib_event_observe(obj_t *obj, ushort ev_type, na_event_callback callback, v
 	na_event_observe_ex(&obj->observers, ev_type, callback, userdata);
 
 	if ( ev_type == NA_EV_ACTOR_PREPARE )
-		na_event_send_ex(&obj->observers, NA_EV_ACTOR_PREPARE, obj->actor);
+		na_event_send_ex(&obj->observers, NA_EV_ACTOR_PREPARE, obj->actor, sizeof(manager_actor_t));
 	else if ( ev_type == NA_EV_AUDIO_PLAY )
-		na_event_send_ex(&obj->observers, NA_EV_AUDIO_PLAY, obj->audio);
+		na_event_send_ex(&obj->observers, NA_EV_AUDIO_PLAY, obj->audio, sizeof(na_audio_t));
 }
 
 void lib_event_remove(obj_t *obj, ushort ev_type, na_event_callback callback, void *userdata)
