@@ -66,10 +66,11 @@ void na_event_observe_ex(na_event_list_t *list, ushort ev_type, na_event_callbac
 	list->have_changed = 1;
 }
 
-static gboolean na_event_clutter_idle_callback(gpointer data)
+static gboolean na_event_clutter_callback(gpointer data)
 {
 	na_event_t			*event;
 	na_clutter_event_t	*evc	= (na_clutter_event_t *)data;
+
 	for ( event = evc->list->lh_first; event != NULL; event = event->next.le_next )
 	{
 		if ( event->type == evc->ev_type )
@@ -79,6 +80,7 @@ static gboolean na_event_clutter_idle_callback(gpointer data)
 	if ( evc->data != NULL )
 		free(evc->data);
 	free(evc);
+
 	return FALSE;
 }
 
@@ -109,7 +111,7 @@ void na_event_send_ex(na_event_list_t *list, ushort ev_type, void *data, uint da
 		bcopy(data, evc->data, datasize);
 	}
 
-	clutter_threads_add_idle(na_event_clutter_idle_callback, evc);
+	clutter_threads_add_frame_source(42, na_event_clutter_callback, evc);
 }
 
 void na_event_remove_ex(na_event_list_t *list, ushort ev_type, na_event_callback callback, void *userdata)
