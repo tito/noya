@@ -47,8 +47,9 @@
 		THREAD_GLOBAL_UNLOCK;					\
 	} while(0);
 #else
+#define LOG_DECLARE(a)
 #define l_printf(...)
-#define l_errorw(...)
+#define l_errorf(...)
 #endif
 
 typedef atomic_t  na_atomic_t;
