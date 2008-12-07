@@ -34,6 +34,8 @@ typedef struct
 #define OBJ_FL_HIDE_BARGRAPH		0x01
 	unsigned int		flags;
 
+	fftwf_plan			fftpl;
+
 	/* rendering issues
 	 */
 	ClutterActor	*group_cube;
@@ -110,6 +112,9 @@ void lib_object_free(obj_t *obj)
 		free(obj->filename);
 	if ( obj->audio != NULL )
 		na_audio_free(obj->audio);
+
+	if ( obj->fftpl )
+		fftwf_destroy_plan(obj->fftpl);
 
 	free(obj);
 }
@@ -262,8 +267,8 @@ void lib_object_update(obj_t *obj)
 		 */
 		if ( obj->audio->input != NULL && obj->audio->input->data != NULL )
 		{
-			float			v, *tmp;
-			int				n, i;
+			static float			v, *tmp;
+			static int				n, i;
 
 			n = obj->audio->input->size;
 
@@ -281,11 +286,15 @@ void lib_object_update(obj_t *obj)
 
 			/* execute fast fourier plan
 			 */
-			fftwf_plan p1	= fftwf_plan_r2r_1d(n,
-				obj->audio->input->data, bargraph_data,
-				FFTW_R2HC, FFTW_FORWARD | FFTW_PRESERVE_INPUT
-			);
-			fftwf_execute(p1);
+			if ( obj->fftpl == NULL )
+			{
+				obj->fftpl	= fftwf_plan_r2r_1d(n,
+					obj->audio->input->data, bargraph_data,
+					FFTW_R2HC, FFTW_FORWARD | FFTW_PRESERVE_INPUT
+				);
+			}
+
+			fftwf_execute(obj->fftpl);
 
 			/* and ajust bargraph !
 			 */
@@ -296,10 +305,6 @@ void lib_object_update(obj_t *obj)
 					v = 50;
 				clutter_circle_set_width(CLUTTER_CIRCLE(obj->bars[i]), v);
 			}
-
-			/* destroy plan...
-			 */
-			fftwf_destroy_plan(p1);
 		}
 	}
 }
