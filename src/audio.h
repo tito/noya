@@ -93,8 +93,8 @@ typedef struct
 
 /* audio interface
  */
-na_audio_t *na_audio_get_by_filename(char *filename);
-na_audio_t *na_audio_load(char *filename);
+na_audio_t *na_audio_get_by_filename(const char *filename);
+na_audio_t *na_audio_load(const char *filename);
 void na_audio_free(na_audio_t *entry);
 void na_audio_set_loop(na_audio_t *entry, short isloop);
 void na_audio_set_volume(na_audio_t *entry, float volume);

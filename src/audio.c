@@ -49,7 +49,7 @@ static void na_audio_update_output(na_audio_t *audio)
 	}
 }
 
-na_audio_t *na_audio_get_by_filename(char *filename)
+na_audio_t *na_audio_get_by_filename(const char *filename)
 {
 	na_audio_t	*it;
 
@@ -66,7 +66,7 @@ na_audio_t *na_audio_get_by_filename(char *filename)
 	return NULL;
 }
 
-na_audio_t *na_audio_load(char *filename)
+na_audio_t *na_audio_load(const char *filename)
 {
 	int			cfg_frames;
 	na_audio_t	*entry;
