@@ -52,7 +52,9 @@ typedef struct
 
 } obj_t;
 
-obj_t def_obj = {0};
+obj_t			def_obj				= {0};
+static float	*bargraph_data		= NULL;
+static uint		*bargraph_datasize	= 0;
 
 #if 0
 static void *object_resolve_value(obj_t *obj, char *value)
@@ -77,6 +79,9 @@ void lib_init(char **name, int *type, char ***settings)
 
 void lib_exit(void)
 {
+	if ( bargraph_data != NULL )
+		free(bargraph_data), bargraph_data = NULL;
+	bargraph_datasize = 0;
 }
 
 obj_t *lib_object_new(na_scene_t *scene)
@@ -257,21 +262,44 @@ void lib_object_update(obj_t *obj)
 		 */
 		if ( obj->audio->input != NULL && obj->audio->input->data != NULL )
 		{
-			int		n		= obj->audio->input->size,
-					i;
-			float	*out	= malloc(sizeof(float) * n),
-					v;
-			fftwf_plan p1	= fftwf_plan_r2r_1d(n, obj->audio->input->data, out, FFTW_R2HC, FFTW_FORWARD | FFTW_PRESERVE_INPUT);
+			float			v, *tmp;
+			int				n, i;
+
+			n = obj->audio->input->size;
+
+			/* allocate memory
+			 * reajust if we got big sound.
+			 */
+			if ( bargraph_datasize != n )
+			{
+				tmp		= realloc(bargraph_data, sizeof(float) * n);
+				if ( tmp == NULL )
+					return;
+				bargraph_data		= tmp;
+				bargraph_datasize	= n;
+			}
+
+			/* execute fast fourier plan
+			 */
+			fftwf_plan p1	= fftwf_plan_r2r_1d(n,
+				obj->audio->input->data, bargraph_data,
+				FFTW_R2HC, FFTW_FORWARD | FFTW_PRESERVE_INPUT
+			);
 			fftwf_execute(p1);
+
+			/* and ajust bargraph !
+			 */
 			for ( i = 0; i < n && i < BAR_COUNT; i++ )
 			{
-				v = sqrtf(out[i] * out[i]) * 30;
+				v = sqrtf(bargraph_data[i] * bargraph_data[i]) * 30;
 				if ( v > 50 )
 					v = 50;
 				clutter_circle_set_width(CLUTTER_CIRCLE(obj->bars[i]), v);
 			}
+
+			/* destroy plan...
+			 */
 			fftwf_destroy_plan(p1);
-			free(out);
 		}
 	}
 }
