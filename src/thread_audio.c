@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <sys/queue.h>
 #include <assert.h>
+#include <clutter/clutter.h>
 
 #include <portaudio.h>
 #include <sndfile.h>
@@ -23,8 +24,10 @@ pthread_t	thread_audio;
 static na_atomic_t	c_running		= {0};
 static short		c_state			= THREAD_STATE_START;
 static PaStream		*c_stream		= NULL;
-float				g_audio_volume_R = 0;
-float				g_audio_volume_L = 0;
+na_atomic_t			g_audio_volume_R = {0};
+na_atomic_t			g_audio_volume_L = {0};
+
+#define absf(a) (a > 0 ? a : -a)
 
 /* thread functions
  */
@@ -265,18 +268,18 @@ static int audio_output_callback(
 	 */
 	for ( i = 0; i < framesPerBuffer; i++ )
 	{
-		if ( *out > out_L )
-			out_L = *out;
+		if ( absf(*out) > out_L )
+			out_L = absf(*out);
 		out++;
-		if ( *out > out_R )
-			out_R = *out;
+		if ( absf(*out) > out_R )
+			out_R = absf(*out);
 		out++;
 	}
 
-	MUTEX_LOCK(audiovolume);
-	g_audio_volume_L = out_L;
-	g_audio_volume_R = out_R;
-	MUTEX_UNLOCK(audiovolume);
+	/* we don't care if it not sync
+	 */
+	atomic_set(&g_audio_volume_L, CLUTTER_FLOAT_TO_FIXED(out_L));
+	atomic_set(&g_audio_volume_R, CLUTTER_FLOAT_TO_FIXED(out_R));
 
 	return paContinue;
 }

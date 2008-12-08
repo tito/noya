@@ -42,10 +42,10 @@ typedef struct
 
 obj_t def_obj = {0};
 
-ClutterColor beat_background	= { 0xff, 0xff, 0xff, 0x99 };
-ClutterColor beat_backgroundhi	= { 0xff, 0x66, 0x66, 0xaa };
-ClutterColor beat_backgroundhili= { 0x66, 0x66, 0x66, 0xaa };
-ClutterColor beat_border		= { 0xff, 0xff, 0xff, 0xaa };
+ClutterColor beat_backgroundhili	= { 0xff, 0xff, 0xff, 0x99 };
+ClutterColor beat_backgroundhi		= { 0xff, 0x66, 0x66, 0xaa };
+ClutterColor beat_background		= { 0x66, 0x66, 0x66, 0xaa };
+ClutterColor beat_border			= { 0xff, 0xff, 0xff, 0xaa };
 
 void lib_init(char **name, int *type, char ***settings)
 {
@@ -79,7 +79,7 @@ obj_t *lib_object_new(na_scene_t *scene)
 
 	/* default values
 	 */
-	obj->boxsize				= 10;
+	obj->boxsize				= 25;
 	obj->boxmx					= 5;
 	obj->boxdx					= 10;
 	obj->boxdy					= 10;
