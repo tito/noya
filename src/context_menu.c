@@ -104,9 +104,10 @@ static void menu_cursor_handle(unsigned short type, void *userdata, void *data)
 	clutter_stage_ensure_current(CLUTTER_STAGE(stage));
 	actor = clutter_stage_get_actor_at_pos(CLUTTER_STAGE(stage), xpos * (float)wx, ypos * (float)wy);
 
+	/* search button, and do what we must do.
+	 */
 	while ( actor != NULL )
 	{
-		l_printf("found %p", actor);
 		if ( actor == menu_start )
 		{
 			na_ctx_switch(na_ctx_resolve("noya"));
