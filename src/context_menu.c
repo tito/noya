@@ -101,7 +101,6 @@ static void menu_cursor_handle(unsigned short type, void *userdata, void *data)
 
 	clutter_container_add_actor(CLUTTER_CONTAINER(stage), circle);
 
-	/**/
 	clutter_stage_ensure_current(CLUTTER_STAGE(stage));
 	actor = clutter_stage_get_actor_at_pos(CLUTTER_STAGE(stage), xpos * (float)wx, ypos * (float)wy);
 
@@ -121,7 +120,19 @@ static void menu_cursor_handle(unsigned short type, void *userdata, void *data)
 
 		actor = clutter_actor_get_parent(actor);
 	}
-	/**/
+}
+
+static void menu_window_handle(unsigned short type, void *userdata, void *data)
+{
+	ClutterActor	*stage;
+	uint			wx, wy;
+
+	stage = clutter_stage_get_default();
+	clutter_actor_get_size(stage, &wx, &wy);
+	clutter_actor_set_size(CLUTTER_ACTOR(tex_bg), wx, wy);
+	clutter_actor_set_position(menu_start, (wx >> 1), 100);
+	clutter_actor_set_position(menu_options, (wx >> 1), 250);
+	clutter_actor_set_position(menu_quit, (wx >> 1), 400);
 }
 
 int context_menu_activate(void *ctx, void *userdata)
@@ -131,6 +142,7 @@ int context_menu_activate(void *ctx, void *userdata)
 
 	na_event_observe(NA_EV_CURSOR_NEW, menu_cursor_handle, NULL);
 	na_event_observe(NA_EV_BUTTONPRESS, menu_cursor_handle, NULL);
+	na_event_observe(NA_EV_WINDOW_UPDATE, menu_window_handle, NULL);
 
 	stage = clutter_stage_get_default();
 	clutter_stage_set_color(CLUTTER_STAGE(stage), &stage_color);
