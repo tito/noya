@@ -17,11 +17,14 @@
 
 LOG_DECLARE("AUDIO");
 MUTEX_IMPORT(audiosfx);
+MUTEX_DECLARE(audiovolume);
 
 pthread_t	thread_audio;
 static na_atomic_t	c_running		= {0};
 static short		c_state			= THREAD_STATE_START;
 static PaStream		*c_stream		= NULL;
+float				g_audio_volume_R = 0;
+float				g_audio_volume_L = 0;
 
 /* thread functions
  */
@@ -105,11 +108,13 @@ static int audio_output_callback(
 {
 	static na_audio_t	*entries[NA_DEF_SOUNDS_MAX];
 	static int			entries_count;
-	na_audio_t			*entry;
-	float				*out = (float *)outputBuffer;
+	static na_audio_t	*entry;
+	static float		*out;
 	static float		*in_L,
 						*in_R;
-	unsigned long		i, j;
+	static unsigned long i, j;
+	static float		out_L,
+						out_R;
 
 	(void) timeInfo; /* Prevent unused variable warnings. */
 	(void) statusFlags;
@@ -121,7 +126,10 @@ static int audio_output_callback(
 
 	/* initialize values
 	 */
-	entries_count = -1;
+	entries_count	= -1;
+	out				= (float *)outputBuffer;
+	out_L			= 0;
+	out_R			= 0;
 
 	/* check which sound are played
 	 */
@@ -252,6 +260,23 @@ static int audio_output_callback(
 	/* ========================================================= *
 	 * END OF CRITICAL SECTION
 	 * ========================================================= */
+
+	/* save volume output
+	 */
+	for ( i = 0; i < framesPerBuffer; i++ )
+	{
+		if ( *out > out_L )
+			out_L = *out;
+		out++;
+		if ( *out > out_R )
+			out_R = *out;
+		out++;
+	}
+
+	MUTEX_LOCK(audiovolume);
+	g_audio_volume_L = out_L;
+	g_audio_volume_R = out_R;
+	MUTEX_UNLOCK(audiovolume);
 
 	return paContinue;
 }
