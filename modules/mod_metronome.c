@@ -10,6 +10,8 @@
 #include "thread_manager.h"
 #include "event.h"
 
+#include "actors/clutter-round-rectangle.h"
+
 #define MODULE_NAME "mod_metronome"
 
 LOG_DECLARE("MOD_SCENE_METRONOME");
@@ -83,7 +85,7 @@ obj_t *lib_object_new(na_scene_t *scene)
 	obj->boxmx					= 5;
 	obj->boxdx					= 10;
 	obj->boxdy					= 10;
-	obj->boxborderwidth			= 2;
+	obj->boxborderwidth			= 1;
 	obj->beatidx				= -1;
 	obj->beat_background		= beat_background;
 	obj->beat_backgroundhi		= beat_backgroundhi;
@@ -117,12 +119,12 @@ static void metronome_bpm(ushort ev_type, void *userdata, void *object)
 
 	if ( obj->beatidx >= 0 )
 	{
-		clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_background);
-		clutter_rectangle_set_border_color(CLUTTER_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_border);
+		clutter_round_rectangle_set_color(CLUTTER_ROUND_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_background);
+		clutter_round_rectangle_set_border_color(CLUTTER_ROUND_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_border);
 	}
 	obj->beatidx = bpm->beatinmeasure - 1;
-	clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_backgroundhi);
-	clutter_rectangle_set_border_color(CLUTTER_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_borderhi);
+	clutter_round_rectangle_set_color(CLUTTER_ROUND_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_backgroundhi);
+	clutter_round_rectangle_set_border_color(CLUTTER_ROUND_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_borderhi);
 }
 
 /* NOTE: actor is not used with MOD_MODULE
@@ -144,14 +146,14 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 	 */
 	for ( i = 0; i < obj->beatcount; i++ )
 	{
-		obj->beatbox[i] = clutter_rectangle_new();
+		obj->beatbox[i] = clutter_round_rectangle_new();
 		clutter_actor_set_width(obj->beatbox[i], obj->boxsize);
 		clutter_actor_set_height(obj->beatbox[i], obj->boxsize);
 		clutter_actor_set_x(obj->beatbox[i], obj->boxdx + (i *  (obj->boxsize + obj->boxmx)));
 		clutter_actor_set_y(obj->beatbox[i], obj->boxdy);
-		clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->beatbox[i]), &obj->beat_background);
-		clutter_rectangle_set_border_color(CLUTTER_RECTANGLE(obj->beatbox[i]), &obj->beat_border);
-		clutter_rectangle_set_border_width(CLUTTER_RECTANGLE(obj->beatbox[i]), obj->boxborderwidth);
+		clutter_round_rectangle_set_color(CLUTTER_ROUND_RECTANGLE(obj->beatbox[i]), &obj->beat_background);
+		clutter_round_rectangle_set_border_color(CLUTTER_ROUND_RECTANGLE(obj->beatbox[i]), &obj->beat_border);
+		clutter_round_rectangle_set_border_width(CLUTTER_ROUND_RECTANGLE(obj->beatbox[i]), obj->boxborderwidth);
 		clutter_container_add_actor(CLUTTER_CONTAINER(obj->group), obj->beatbox[i]);
 	}
 
