@@ -382,6 +382,10 @@ static void manager_event_bpm(unsigned short type, void *userdata, void *data)
 
 void thread_manager_mod_init(na_module_t *module, void *userdata)
 {
+	char				**k_setting;
+	config_setting_t	*k;
+	char				tmpbuffer[256];
+
 	assert( module != NULL );
 	if ( module->object_new )
 		module->data = (*module->object_new)(userdata);
@@ -389,6 +393,20 @@ void thread_manager_mod_init(na_module_t *module, void *userdata)
 	{
 		l_errorf("failed to initialize static module %s", module->name);
 		return;
+	}
+
+	/* search and inject configuration
+	 * noya.modules.<modulename>.<key> = <value>
+	 */
+	k_setting = module->settings;
+	while ( *k_setting != NULL )
+	{
+		snprintf(tmpbuffer, sizeof(tmpbuffer), "noya.modules.%s.%s",
+			module->name, *k_setting);
+		k = config_lookup(&g_config, tmpbuffer);
+		if ( k != NULL )
+			(*module->object_config)(module->data, *k_setting, k);
+		k_setting++;
 	}
 
 	if ( module->object_prepare )
