@@ -36,16 +36,16 @@ typedef struct
 
 	ClutterColor		beat_background,
 						beat_backgroundhi,
-						beat_backgroundhili,
+						beat_borderhi,
 						beat_border;
 } obj_t;
 
 obj_t def_obj = {0};
 
-ClutterColor beat_backgroundhili	= { 0xff, 0xff, 0xff, 0x99 };
-ClutterColor beat_backgroundhi		= { 0xff, 0x66, 0x66, 0xaa };
-ClutterColor beat_background		= { 0x66, 0x66, 0x66, 0xaa };
-ClutterColor beat_border			= { 0xff, 0xff, 0xff, 0xaa };
+ClutterColor beat_backgroundhi		= { 0x43, 0x85, 0x8d, 0xff };
+ClutterColor beat_background		= { 0x15, 0x19, 0x14, 0xff };
+ClutterColor beat_borderhi			= { 0x71, 0xf3, 0xf7, 0xff };
+ClutterColor beat_border			= { 0x2e, 0x5d, 0x63, 0xff };
 
 void lib_init(char **name, int *type, char ***settings)
 {
@@ -83,11 +83,11 @@ obj_t *lib_object_new(na_scene_t *scene)
 	obj->boxmx					= 5;
 	obj->boxdx					= 10;
 	obj->boxdy					= 10;
-	obj->boxborderwidth			= 0;
+	obj->boxborderwidth			= 2;
 	obj->beatidx				= -1;
 	obj->beat_background		= beat_background;
 	obj->beat_backgroundhi		= beat_backgroundhi;
-	obj->beat_backgroundhili	= beat_backgroundhili;
+	obj->beat_borderhi			= beat_borderhi;
 	obj->beat_border			= beat_border;
 
 	return obj;
@@ -116,12 +116,13 @@ static void metronome_bpm(ushort ev_type, void *userdata, void *object)
 	assert( obj != NULL );
 
 	if ( obj->beatidx >= 0 )
+	{
 		clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_background);
+		clutter_rectangle_set_border_color(CLUTTER_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_border);
+	}
 	obj->beatidx = bpm->beatinmeasure - 1;
-	if ( obj->beatidx == 0 )
-		clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_backgroundhi);
-	else
-		clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_backgroundhili);
+	clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_backgroundhi);
+	clutter_rectangle_set_border_color(CLUTTER_RECTANGLE(obj->beatbox[obj->beatidx]), &obj->beat_borderhi);
 }
 
 /* NOTE: actor is not used with MOD_MODULE
