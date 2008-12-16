@@ -10,6 +10,8 @@
 #include "thread_manager.h"
 #include "event.h"
 
+#include "actors/clutter-round-rectangle.h"
+
 #define MODULE_NAME "mod_volume"
 
 LOG_DECLARE("MOD_SCENE_VOLUME");
@@ -38,20 +40,24 @@ typedef struct
 						boxdy,
 						boxmx,
 						boxmy,
+						boxpx,
+						boxpy,
 						boxborderwidth;
 
 	ClutterColor		vol_background,
+						vol_backgroundlo,
 						vol_backgroundhi,
-						vol_backgroundhili,
+						vol_borderhi,
 						vol_border;
 } obj_t;
 
 obj_t def_obj = {0};
 
-ClutterColor vol_backgroundhili	= { 0xff, 0xff, 0xff, 0x99 };
-ClutterColor vol_backgroundhi	= { 0xff, 0x66, 0x66, 0xaa };
-ClutterColor vol_background		= { 0x66, 0x66, 0x66, 0xaa };
-ClutterColor vol_border			= { 0xff, 0xff, 0xff, 0xaa };
+ClutterColor vol_background			= { 0x43, 0x85, 0x8d, 0xff };
+ClutterColor vol_backgroundlo		= { 0x6f, 0xed, 0xf1, 0xff };
+ClutterColor vol_backgroundhi		= { 0xff, 0xff, 0xff, 0xff };
+ClutterColor vol_borderhi			= { 0x71, 0xf3, 0xf7, 0xff };
+ClutterColor vol_border				= { 0x2e, 0x5d, 0x63, 0xff };
 
 void lib_init(char **name, int *type, char ***settings)
 {
@@ -74,7 +80,7 @@ obj_t *lib_object_new(na_scene_t *scene)
 	bzero(obj, sizeof(obj_t));
 
 	obj->scene		= scene;
-	obj->volcount	= 20;
+	obj->volcount	= 40;
 	obj->volbox		= malloc(obj->volcount * sizeof(ClutterActor *) * 2);
 	if ( obj->volbox == NULL )
 	{
@@ -85,17 +91,20 @@ obj_t *lib_object_new(na_scene_t *scene)
 
 	/* default values
 	 */
-	obj->boxsx					= 10;
-	obj->boxsy					= 10;
-	obj->boxmx					= 2;
-	obj->boxmy					= 5;
+	obj->boxsx					= 4;
+	obj->boxsy					= 8;
+	obj->boxmx					= 1;
+	obj->boxmy					= 1;
 	obj->boxdx					= 140;
 	obj->boxdy					= 10;
+	obj->boxpx					= 4;
+	obj->boxpy					= 4;
 	obj->boxborderwidth			= 0;
 	obj->volidx					= -1;
 	obj->vol_background			= vol_background;
+	obj->vol_backgroundlo		= vol_backgroundlo;
 	obj->vol_backgroundhi		= vol_backgroundhi;
-	obj->vol_backgroundhili		= vol_backgroundhili;
+	obj->vol_borderhi			= vol_borderhi;
 	obj->vol_border				= vol_border;
 
 	return obj;
@@ -131,9 +140,9 @@ static gboolean lib_object_renderer_update(gpointer data)
 		for ( x = 0; x < obj->volcount; x++ )
 		{
 			if ( (y == 0 && out_L > x) || (y == 1 && out_L > x) )
-				clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->volbox[i]), &obj->vol_backgroundhili);
+				clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->volbox[i]), &obj->vol_backgroundhi);
 			else
-				clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->volbox[i]), &obj->vol_background);
+				clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->volbox[i]), &obj->vol_backgroundlo);
 
 			i++;
 		}
@@ -144,7 +153,7 @@ static gboolean lib_object_renderer_update(gpointer data)
  */
 void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 {
-	ClutterActor *stage;
+	ClutterActor *stage, *rec;
 	uint		x, y, i;
 
 	assert( obj != NULL );
@@ -154,6 +163,17 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 	stage = clutter_stage_get_default();
 	obj->group = clutter_group_new();
 	clutter_container_add_actor(CLUTTER_CONTAINER(stage), obj->group);
+
+	rec = clutter_round_rectangle_new();
+	clutter_actor_set_x(rec, obj->boxdx);
+	clutter_actor_set_y(rec, obj->boxdy);
+	clutter_actor_set_width(rec, obj->volcount * obj->boxsx + (obj->volcount - 1) * obj->boxmx + 2 * obj->boxpx);
+	clutter_actor_set_height(rec, 2 * (obj->boxsy) + 2 * obj->boxpy + obj->boxmy);
+	clutter_round_rectangle_set_color(CLUTTER_ROUND_RECTANGLE(rec), &obj->vol_background);
+	clutter_round_rectangle_set_border_color(CLUTTER_ROUND_RECTANGLE(rec), &obj->vol_borderhi);
+	clutter_round_rectangle_set_border_width(CLUTTER_ROUND_RECTANGLE(rec), obj->boxborderwidth);
+	clutter_container_add_actor(CLUTTER_CONTAINER(obj->group), rec);
+
 
 	/* create box
 	 */
@@ -165,8 +185,8 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 			obj->volbox[i] = clutter_rectangle_new();
 			clutter_actor_set_width(obj->volbox[i], obj->boxsx);
 			clutter_actor_set_height(obj->volbox[i], obj->boxsy);
-			clutter_actor_set_x(obj->volbox[i], obj->boxdx + (x * (obj->boxsx + obj->boxmx)));
-			clutter_actor_set_y(obj->volbox[i], obj->boxdy + (y * (obj->boxsy + obj->boxmy)));
+			clutter_actor_set_x(obj->volbox[i], obj->boxdx + obj->boxpx + (x * (obj->boxsx + obj->boxmx)));
+			clutter_actor_set_y(obj->volbox[i], obj->boxdy + obj->boxpy + (y * (obj->boxsy + obj->boxmy)));
 			clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->volbox[i]), &obj->vol_background);
 			clutter_rectangle_set_border_color(CLUTTER_RECTANGLE(obj->volbox[i]), &obj->vol_border);
 			clutter_rectangle_set_border_width(CLUTTER_RECTANGLE(obj->volbox[i]), obj->boxborderwidth);
