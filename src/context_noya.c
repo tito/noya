@@ -399,14 +399,17 @@ void thread_manager_mod_init(na_module_t *module, void *userdata)
 	 * noya.modules.<modulename>.<key> = <value>
 	 */
 	k_setting = module->settings;
-	while ( *k_setting != NULL )
+	if ( k_setting )
 	{
-		snprintf(tmpbuffer, sizeof(tmpbuffer), "noya.modules.%s.%s",
-			module->name, *k_setting);
-		k = config_lookup(&g_config, tmpbuffer);
-		if ( k != NULL )
-			(*module->object_config)(module->data, *k_setting, k);
-		k_setting++;
+		while ( *k_setting != NULL )
+		{
+			snprintf(tmpbuffer, sizeof(tmpbuffer), "noya.modules.%s.%s",
+				module->name, *k_setting);
+			k = config_lookup(&g_config, tmpbuffer);
+			if ( k != NULL )
+				(*module->object_config)(module->data, *k_setting, k);
+			k_setting++;
+		}
 	}
 
 	if ( module->object_prepare )
