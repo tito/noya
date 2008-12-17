@@ -61,6 +61,7 @@ void usage(void)
 {
 	printf("Usage: noya [OPTIONS]...\n");
 	printf("  -h                         Show usage\n");
+	printf("  -c <context>               Switch to <context> at start\n");
 	printf("  -s <name>                  Load a scene\n");
 	printf("  -i <directory>             Import waves from directory\n");
 	printf("  -V                         Show version and quit\n");
@@ -90,10 +91,13 @@ void na_options_read(int argc, char **argv)
 {
 	int opt;
 
-	while ( (opt = getopt(argc, argv, "s:di:V")) != -1 )
+	while ( (opt = getopt(argc, argv, "c:s:di:V")) != -1 )
 	{
 		switch ( opt )
 		{
+			case 'c':
+				g_options.default_context = strdup(optarg);
+				break;
 			case 's':
 				g_options.scene_fn = strdup(optarg);
 				break;

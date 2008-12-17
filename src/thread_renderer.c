@@ -142,6 +142,8 @@ gboolean thread_renderer_switch(gpointer data)
 
 static void *thread_renderer_run(void *arg)
 {
+	na_ctx_t	*ctx;
+
 	THREAD_ENTER;
 
 	while ( 1 )
@@ -216,8 +218,16 @@ static void *thread_renderer_run(void *arg)
 
 				/* set menu context
 				 */
-				assert( na_ctx_resolve("menu") != NULL );
-				na_ctx_switch(na_ctx_resolve("menu"));
+				if ( g_options.default_context != NULL )
+				{
+					ctx = na_ctx_resolve(g_options.default_context);
+					if ( ctx == NULL )
+						l_printf("Context %s not found ! Back to menu", g_options.default_context);
+				}
+				if ( ctx == NULL )
+					ctx = na_ctx_resolve("menu");
+				assert( ctx != NULL );
+				na_ctx_switch(ctx);
 
 				/* context switch
 				 */

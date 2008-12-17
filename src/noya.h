@@ -60,7 +60,9 @@ typedef struct
 {
 	char			*scene_fn;
 	char			*import_dir;
+	char			*default_context;
 } na_options_t;
+
 extern na_options_t g_options;
 
 /* Globals
