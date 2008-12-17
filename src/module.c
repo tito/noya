@@ -113,10 +113,10 @@ void na_modules_init()
 				MODULE_LOAD_DEF(object_free);
 				MODULE_LOAD_DEF(object_prepare);
 				MODULE_LOAD_DEF(object_unprepare);
+				MODULE_LOAD_DEF(object_config);
 
 				if ( module->type & NA_MOD_OBJECT )
 				{
-					MODULE_LOAD_DEF(object_config);
 					MODULE_LOAD_DEF(object_get_control);
 					MODULE_LOAD_DEF(object_update);
 				}
