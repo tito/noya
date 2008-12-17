@@ -17,6 +17,21 @@
 LOG_DECLARE("MOD_SCENE_VOLUME");
 MUTEX_IMPORT(audiovolume);
 
+static char *mod_settings[] =
+{
+	"borderwidth",
+	"count",
+	"sx",
+	"sy",
+	"mx",
+	"my",
+	"dx",
+	"dy",
+	"px",
+	"py",
+	NULL
+};
+
 extern na_atomic_t g_audio_volume_L;
 extern na_atomic_t g_audio_volume_R;
 
@@ -61,9 +76,9 @@ ClutterColor vol_border				= { 0x2e, 0x5d, 0x63, 0xff };
 
 void lib_init(char **name, int *type, char ***settings)
 {
-	*name = strdup(MODULE_NAME);
-	*type = NA_MOD_MODULE;
-	*settings = NULL;
+	*name		= strdup(MODULE_NAME);
+	*type		= NA_MOD_MODULE;
+	*settings	= mod_settings;
 }
 
 void lib_exit(void)
@@ -120,8 +135,39 @@ void lib_object_free(obj_t *obj)
 
 void lib_object_config(obj_t *obj, char *key, config_setting_t *value)
 {
-	/* no config yet.
-	 */
+	int i;
+	if ( strcmp(key, "borderwidth") == 0 )
+		obj->boxborderwidth = config_setting_get_int(value);
+	else if ( strcmp(key, "count") == 0 )
+	{
+		i = config_setting_get_int(value);
+		if ( i > 0 && obj->volcount != i )
+		{
+			obj->volcount	= i;
+			if ( obj->volbox )
+				free(obj->volbox);
+			obj->volbox		= malloc(obj->volcount * sizeof(ClutterActor *) * 2);
+			if ( obj->volbox == NULL )
+				return;
+			bzero(obj->volbox, obj->volcount * sizeof(ClutterActor *));
+		}
+	}
+	else if ( strcmp(key, "sx") == 0 )
+		obj->boxsx = config_setting_get_int(value);
+	else if ( strcmp(key, "sy") == 0 )
+		obj->boxsy = config_setting_get_int(value);
+	else if ( strcmp(key, "mx") == 0 )
+		obj->boxmx = config_setting_get_int(value);
+	else if ( strcmp(key, "my") == 0 )
+		obj->boxmy = config_setting_get_int(value);
+	else if ( strcmp(key, "dx") == 0 )
+		obj->boxdx = config_setting_get_int(value);
+	else if ( strcmp(key, "dy") == 0 )
+		obj->boxdy = config_setting_get_int(value);
+	else if ( strcmp(key, "px") == 0 )
+		obj->boxpx = config_setting_get_int(value);
+	else if ( strcmp(key, "py") == 0 )
+		obj->boxpy = config_setting_get_int(value);
 	return;
 }
 
@@ -139,7 +185,7 @@ static gboolean lib_object_renderer_update(gpointer data)
 	{
 		for ( x = 0; x < obj->volcount; x++ )
 		{
-			if ( (y == 0 && out_L > x) || (y == 1 && out_L > x) )
+			if ( (y == 0 && out_L > x) || (y == 1 && out_R > x) )
 				clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->volbox[i]), &obj->vol_backgroundhi);
 			else
 				clutter_rectangle_set_color(CLUTTER_RECTANGLE(obj->volbox[i]), &obj->vol_backgroundlo);
@@ -147,6 +193,8 @@ static gboolean lib_object_renderer_update(gpointer data)
 			i++;
 		}
 	}
+
+	return TRUE;
 }
 
 /* NOTE: actor is not used with MOD_MODULE
