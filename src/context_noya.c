@@ -44,6 +44,7 @@ static na_ctx_t		s_context;
 static na_atomic_t		c_running		= {0},
 						c_running_timer = {0};
 static na_atomic_t		c_scene_changed	= {0};
+static ClutterColor		stage_color		= { 0x00, 0x00, 0x00, 0xff };
 static ClutterColor		obj_background	= { 0xff, 0xff, 0xff, 0x99 };
 static ClutterColor		obj_border		= { 0xff, 0xff, 0xff, 0xff };
 struct timeval			st_beat;
@@ -513,9 +514,13 @@ static void *context_noya_timer(void *data)
 
 int context_noya_activate(void *ctx, void *userdata)
 {
-	int ret;
+	ClutterActor	*stage;
+	int				ret;
 
 	atomic_set(&c_running, 1);
+
+	stage = clutter_stage_get_default();
+	clutter_stage_set_color(CLUTTER_STAGE(stage), &stage_color);
 
 	c_scene = na_scene_load(g_options.scene_fn);
 	if ( c_scene == NULL )
