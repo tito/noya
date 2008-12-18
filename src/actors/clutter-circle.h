@@ -70,6 +70,12 @@ void clutter_circle_set_width (ClutterCircle *circle,
 void clutter_circle_set_radius (ClutterCircle *circle,
                                 guint          radius);
 
+void
+clutter_circle_get_border_color (ClutterCircle *circle,
+                                    ClutterColor     *color);
+void
+clutter_circle_set_border_color (ClutterCircle   *circle,
+                                    const ClutterColor *color);
 G_END_DECLS
 
 #endif

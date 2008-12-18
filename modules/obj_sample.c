@@ -179,7 +179,7 @@ void lib_object_prepare(obj_t *obj, manager_actor_t *actor)
 	memcpy(&obj_border, &actor->scene_actor->border_color, sizeof(obj_border));
 	ac = clutter_circle_new_with_color(&obj_background);
 	clutter_circle_set_angle_stop(CLUTTER_CIRCLE(ac), 360);
-//	clutter_rectangle_set_border_color((ClutterRectangle *)ac, &obj_border);
+	clutter_circle_set_border_color((ClutterRectangle *)ac, &obj_border);
 //	clutter_rectangle_set_border_width((ClutterRectangle *)ac, actor->scene_actor->border_width);
 	clutter_actor_set_width(ac, actor->scene_actor->width);
 	clutter_actor_set_height(ac, actor->scene_actor->height);

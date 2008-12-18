@@ -17,6 +17,7 @@ enum
   PROP_ANGLE_STOP,
   PROP_WIDTH,
   PROP_RADIUS,
+  PROP_BORDER_COLOR,
 };
 
 #define CLUTTER_CIRCLE_GET_PRIVATE(obj) \
@@ -25,10 +26,12 @@ enum
 struct _ClutterCirclePrivate
 {
   ClutterColor color;
+  ClutterColor border_color;
   ClutterFixed angle_start;
   ClutterFixed angle_stop;
   ClutterFixed width;
   ClutterFixed radius;
+  guint	has_border : 1;
 };
 
 static void
@@ -150,6 +153,21 @@ clutter_circle_paint (ClutterActor *self)
 	/* fill path
 	 */
 	cogl_path_fill();
+
+	if (priv->border_color.red == priv->color.red &&
+			priv->border_color.green == priv->color.green &&
+			priv->border_color.blue == priv->color.blue &&
+			priv->border_color.alpha == priv->color.alpha)
+		return;
+
+	tmp_col.red   = priv->border_color.red;
+	tmp_col.green = priv->border_color.green;
+	tmp_col.blue  = priv->border_color.blue;
+	tmp_col.alpha = clutter_actor_get_paint_opacity (self)
+		* priv->color.alpha
+		/ 255;
+
+	cogl_color (&tmp_col);
 
 	/* and stroke border
 	 */
@@ -313,6 +331,10 @@ clutter_circle_get_property (GObject    *object,
     case PROP_RADIUS:
       g_value_set_uint (value, circle->priv->radius);
 	  break;
+    case PROP_BORDER_COLOR:
+      clutter_circle_set_border_color (circle,
+			  g_value_get_boxed (value));
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -394,7 +416,6 @@ clutter_circle_class_init (ClutterCircleClass *klass)
 													   0, G_MAXUINT,
 													   0,
                                                        CLUTTER_PARAM_READWRITE));
-#if 0
   /**
    * ClutterCircle:border-color:
    *
@@ -409,6 +430,7 @@ clutter_circle_class_init (ClutterCircleClass *klass)
                                                        "The color of the border of the circle",
                                                        CLUTTER_TYPE_COLOR,
                                                        CLUTTER_PARAM_READWRITE));
+#if 0
   /**
    * ClutterCircle:border-width:
    *
@@ -540,18 +562,70 @@ clutter_circle_set_color (ClutterCircle   *circle,
   priv->color.blue = color->blue;
   priv->color.alpha = color->alpha;
 
-#if 0
   /* FIXME - appears to be causing border to always get drawn */
   if (clutter_color_equal (&priv->color, &priv->border_color))
     priv->has_border = FALSE;
   else
     priv->has_border = TRUE;
-#endif
 
   if (CLUTTER_ACTOR_IS_VISIBLE (circle))
     clutter_actor_queue_redraw (CLUTTER_ACTOR (circle));
 
   g_object_notify (G_OBJECT (circle), "color");
   g_object_unref (circle);
+}
+
+void
+clutter_circle_get_border_color (ClutterCircle *circle,
+                                    ClutterColor     *color)
+{
+  ClutterCirclePrivate *priv;
+
+  g_return_if_fail (CLUTTER_IS_CIRCLE (circle));
+  g_return_if_fail (color != NULL);
+
+  priv = circle->priv;
+
+  color->red = priv->border_color.red;
+  color->green = priv->border_color.green;
+  color->blue = priv->border_color.blue;
+  color->alpha = priv->border_color.alpha;
+}
+
+void
+clutter_circle_set_border_color (ClutterCircle   *circle,
+                                    const ClutterColor *color)
+{
+  ClutterCirclePrivate *priv;
+
+  g_return_if_fail (CLUTTER_IS_CIRCLE (circle));
+  g_return_if_fail (color != NULL);
+
+  priv = circle->priv;
+
+  if (priv->border_color.red != color->red ||
+      priv->border_color.green != color->green ||
+      priv->border_color.blue != color->blue ||
+      priv->border_color.alpha != color->alpha)
+    {
+      g_object_ref (circle);
+
+      priv->border_color.red = color->red;
+      priv->border_color.green = color->green;
+      priv->border_color.blue = color->blue;
+      priv->border_color.alpha = color->alpha;
+
+      if (clutter_color_equal (&priv->color, &priv->border_color))
+        priv->has_border = FALSE;
+      else
+        priv->has_border = TRUE;
+
+      if (CLUTTER_ACTOR_IS_VISIBLE (CLUTTER_ACTOR (circle)))
+        clutter_actor_queue_redraw (CLUTTER_ACTOR (circle));
+
+      g_object_notify (G_OBJECT (circle), "border-color");
+      g_object_notify (G_OBJECT (circle), "has-border");
+      g_object_unref (circle);
+    }
 }
 
