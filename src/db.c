@@ -394,6 +394,14 @@ void na_db_import_directory(char *directory, int *stat_ok, int *stat_exist, int 
 	SF_INFO			sinfo;
 	char			*sql = NULL;
 
+	int		i;
+	char	*tag		=	NULL;
+	char	*title		=	NULL;
+	char	*tone		=	NULL;
+	char	*bpm		=	NULL;
+	char	*long_title	=	NULL;
+	regexp_t *infos;
+
 
 	p_dir = opendir(directory);
 	if ( p_dir == NULL )
@@ -443,12 +451,6 @@ void na_db_import_directory(char *directory, int *stat_ok, int *stat_exist, int 
 			continue;
 		}
 
-		int		i;
-		char	*tag	=	NULL;
-		char	*title	=	NULL;
-		char	*tone	=	NULL;
-		char	*bpm	=	NULL;
-		regexp_t *infos;
 		infos = na_db_extract_info_from_title(p_dirent->d_name);
 		if ( infos == NULL )
 		{
@@ -478,11 +480,19 @@ void na_db_import_directory(char *directory, int *stat_ok, int *stat_exist, int 
 			}
 		}
 
+		if ( tag != NULL )
+		{
+			if ( tone != NULL )
+				asprintf(&long_title,"%s (%s)[%s]", title, tag, tone);
+			else
+				asprintf(&long_title,"%s (%s)", title, tag);
+		}
+
 		sql = sqlite3_mprintf(
 				"INSERT INTO sounds (id, filename, title, bpm, tone, tag, channels, samplerate, frames, is_imported)"
 				"VALUES ((SELECT MAX(id) FROM sounds) + 1, %Q, %Q, %Q, %Q, %Q, %d, %d, %d, 1)",
 				dl_name,
-				title ? title : "NULL",
+				long_title ? long_title : (title ? title : "NULL"),
 				bpm ? bpm : "NULL",
 				tone ? tone : "NULL",
 				tag ? tag : "NULL",
