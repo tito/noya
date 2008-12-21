@@ -225,7 +225,7 @@ static int _lo_tuio_cursor_handler(const char *path, const char *types, lo_arg *
 
 	/* cursor set
 	 */
-	if ( strcmp("set", (char *)argv[0]) == 0 && argc == 7 )
+	if ( strcmp("set", (char *)argv[0]) == 0 && argc >= 7 )
 	{
 		MUTEX_LOCK(input);
 		c = _tuio_cursor_get_by_id(argv[1]->i32);
