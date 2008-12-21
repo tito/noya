@@ -66,8 +66,8 @@ typedef struct
 } regexp_t;
 
 regexp_t		g_patterns[] = {
-	/* Example of Title : "TID 11syn trancemotion_var_e 138bpm.wav" */
 	{
+	/* Example of Title : "TID 11syn trancemotion_var_e 138bpm.wav" */
 		"^TID\\s+([0-9]+)([a-z]+)\\s+([^.]+)_([a-gA-G]#?)\\s+([0-9]+)[bB][pP][mM]\.[wW][aA][vV]$",
 		{
 			{REGEXP_TYPE_REF	, NULL },	//11
@@ -79,13 +79,25 @@ regexp_t		g_patterns[] = {
 		},
 	},
 	{
-		"^TID\\s+([0-9]+)([a-z]+)\\s+([^.]+)_([a-gA-G]#?)\\s+([0-9]+)[bB][pP][mM]\.[wW][aA][vV]$",
+    /* Example of Title : "drt130TTE17010dance1" */
+		"^drt([0-9]{3})([A-Z]{3})([0-9]{5})([^\.]+)\.[wW][aA][vV]$",
 		{
-			{REGEXP_TYPE_REF	, NULL },	//11
-			{REGEXP_TYPE_TAG	, NULL },	//syn
-			{REGEXP_TYPE_TITLE	, NULL },	//trancemotion_var
-			{REGEXP_TYPE_TONE	, NULL },	//e
-			{REGEXP_TYPE_BPM	, NULL },	//138
+			{REGEXP_TYPE_BPM	, NULL },	//130
+			{REGEXP_TYPE_TAG	, NULL },	//TTE
+			{REGEXP_TYPE_REF	, NULL },	//17010
+			{REGEXP_TYPE_TITLE	, NULL },	//dance1
+			{REGEXP_TYPE_NONE	, NULL }	//
+		},
+	},
+	{
+    /* Hardtechno vs Schranz : */
+    /* Example of Title : "02shk120_ultradyne_s HvS.wav" */
+		"^([0-9]{2})([a-z]{3})([0-9]{3})_([^\s]\+)\\s+HvS\.[wW][aA][vV]$",
+		{
+			{REGEXP_TYPE_REF	, NULL },	//02
+			{REGEXP_TYPE_TAG	, NULL },	//shk
+			{REGEXP_TYPE_BPM	, NULL },	//120
+			{REGEXP_TYPE_TITLE	, NULL },	//ultradyne_s
 			{REGEXP_TYPE_NONE	, NULL }	//
 		},
 	},
