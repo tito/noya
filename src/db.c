@@ -226,6 +226,48 @@ char *na_db_get_filename_from_title(char *title)
 	return str;
 }
 
+int na_db_get_filename_by_bpm_and_tone(int bpm, char *tone, int *count, char ***titles, char ***filenames)
+{
+	int rows, columns, y;
+	char **result, *sql;
+
+	if ( g_db == NULL )
+		return 0;
+
+	*count		= 0;
+	*titles		= NULL;
+	*filenames	= NULL;
+
+	sql = sqlite3_mprintf("SELECT filename, title FROM sounds WHERE bpm = %d AND tone = %Q", bpm, tone);
+	if ( sqlite3_get_table(g_db->sq_hdl, sql, &result, &rows, &columns, NULL) != SQLITE_OK )
+	{
+		sqlite3_free(sql);
+		return -1;
+	}
+
+	if ( rows >= 1 && columns == 2 )
+	{
+		*titles = malloc(rows * sizeof(char *));
+		if ( *titles == NULL )
+			return -1;
+		*filenames = malloc(rows * sizeof(char *));
+		if ( *filenames == NULL )
+			return -1;
+
+		for ( y = 0; y < rows; y++ )
+		{
+			(*filenames)[y]	= strdup(result[2 + y * 2]);
+			(*titles)[y]	= strdup(result[2 + y * 2 + 1]);
+		}
+		*count = rows;
+	}
+
+	sqlite3_free(sql);
+	sqlite3_free_table(result);
+
+	return 0;
+}
+
 void na_db_import_directory(char *directory, int *stat_ok, int *stat_exist, int *stat_err)
 {
 	char			dl_name[2048];
