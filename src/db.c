@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,6 +7,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <regex.h>
+#include <sys/queue.h>
 
 #include <portaudio.h>
 #include <sndfile.h>
@@ -28,9 +30,12 @@
 	"frames integer,"					\
 	"bpm integer, "						\
 	"tone text, "						\
+	"tag text, "						\
 	"score integer, "					\
 	"is_imported integer, "				\
 	"is_reviewed integer); "
+
+#define SIZEOF_RETURNS		6
 
 LOG_DECLARE("DB");
 
@@ -39,6 +44,116 @@ static na_db_t	*g_db	= NULL;
 na_db_t *na_db_open(char *filename);
 void na_db_close(na_db_t *db);
 int na_db_initialize(na_db_t *db);
+
+/* Structures used to do things and other things */
+typedef struct
+{
+	unsigned int					type;
+#define REGEXP_TYPE_NONE			0x0000
+#define REGEXP_TYPE_REF				0x0001
+#define REGEXP_TYPE_TAG				0x0002
+#define REGEXP_TYPE_TITLE			0x0003
+#define REGEXP_TYPE_TONE			0x0004
+#define REGEXP_TYPE_BPM				0x0005
+	char							*output;
+} regexp_extract_t;
+
+typedef struct
+{
+	char				*regexp;
+	regexp_extract_t	returns[SIZEOF_RETURNS];
+
+} regexp_t;
+
+regexp_t		g_patterns[] = {
+	/* Example of Title : "TID 11syn trancemotion_var_e 138bpm.wav" */
+	{
+		"^TID\\s+([0-9]+)([a-z]+)\\s+([^.]+)_([a-gA-G]#?)\\s+([0-9]+)[bB][pP][mM]\.[wW][aA][vV]$",
+		{
+			{REGEXP_TYPE_REF	, NULL },	//11
+			{REGEXP_TYPE_TAG	, NULL },	//syn
+			{REGEXP_TYPE_TITLE	, NULL },	//trancemotion_var
+			{REGEXP_TYPE_TONE	, NULL },	//e
+			{REGEXP_TYPE_BPM	, NULL },	//138
+			{REGEXP_TYPE_NONE	, NULL }	//
+		},
+	},
+	{
+		"^TID\\s+([0-9]+)([a-z]+)\\s+([^.]+)_([a-gA-G]#?)\\s+([0-9]+)[bB][pP][mM]\.[wW][aA][vV]$",
+		{
+			{REGEXP_TYPE_REF	, NULL },	//11
+			{REGEXP_TYPE_TAG	, NULL },	//syn
+			{REGEXP_TYPE_TITLE	, NULL },	//trancemotion_var
+			{REGEXP_TYPE_TONE	, NULL },	//e
+			{REGEXP_TYPE_BPM	, NULL },	//138
+			{REGEXP_TYPE_NONE	, NULL }	//
+		},
+	},
+	{
+		"^(.*)\.wav$",
+		{
+			{REGEXP_TYPE_TITLE	, NULL },	//Tout sauf extension.wav
+			{REGEXP_TYPE_NONE	, NULL }	//
+		},
+	},
+	{
+		"^(.*)$",
+		{
+			{REGEXP_TYPE_TITLE	, NULL },	//Tout, tout, absolument tout !
+			{REGEXP_TYPE_NONE	, NULL }	//
+		},
+	},
+};
+
+regexp_t *na_db_extract_info_from_title(char *title)
+{
+	int			i;
+	regexp_t	*r;
+	regex_t		regex;
+	int			ret;
+	size_t		matches_count = SIZEOF_RETURNS + 1;
+	regmatch_t	matches[SIZEOF_RETURNS + 1] = {0};
+	char		errbuf[1023];
+	size_t		errsize;
+
+	for ( r = g_patterns, i = 0; i < sizeof(g_patterns)/sizeof(regexp_t); i++, r++ )
+	{
+		ret = regcomp(&regex, r->regexp, REG_EXTENDED);
+		if ( ret != 0 )
+		{
+			l_errorf("I was unable to compile the regexp. regcomp returned %d.", ret);
+			return NULL;
+		}
+
+		ret = regexec(&regex, title, matches_count, matches, REG_EXTENDED & REG_NEWLINE);
+		if ( ret != 0 )
+		{
+			errsize = regerror(ret, &regex, errbuf, sizeof(errbuf));
+			l_printf("!`%s' doesn't fit regexp `%s'. (err #%d:%s)", title, r->regexp, ret, errbuf);
+			continue;
+		}
+
+		l_printf("+`%s' matches regexp `%s'", title, r->regexp);
+		for ( i = 1; i < matches_count ; i++ )
+		{
+			char *reg_output = NULL;
+
+			if ( matches[i].rm_so == -1 )
+				break;
+
+			asprintf(&reg_output, "%.*s",
+					matches[i].rm_eo - matches[i].rm_so,
+					&title[matches[i].rm_so]);
+			r->returns[i-1].output = reg_output;
+		}
+
+		regfree(&regex);
+
+		return r;
+	}
+
+	return NULL;
+}
 
 /* implements regexp functionality
  * code taken from trackerd (thanks a lot guys !) */
@@ -59,7 +174,7 @@ static void sqlite3_regexp(sqlite3_context *context, int argc, sqlite3_value **a
 
 	if (ret != 0)
 	{
-		sqlite3_result_error(context, "error compiling regular expression", -1);
+		sqlite3_result_error(context, "OMG! error compiling regular expression", -1);
 		return;
 	}
 
@@ -267,7 +382,7 @@ void na_db_import_directory(char *directory, int *stat_ok, int *stat_exist, int 
 		if ( !S_ISREG(s.st_mode) )
 			continue;
 
-		/* search him in database
+		/* search it in database
 		 */
 		id = na_db_filename_to_id(dl_name);
 		if ( id != 0 )
@@ -286,20 +401,53 @@ void na_db_import_directory(char *directory, int *stat_ok, int *stat_exist, int 
 			continue;
 		}
 
+		int		i;
+		char	*tag	=	NULL;
+		char	*title	=	NULL;
+		char	*tone	=	NULL;
+		char	*bpm	=	NULL;
+		regexp_t *infos;
+		infos = na_db_extract_info_from_title(p_dirent->d_name);
+		if ( infos == NULL )
+		{
+			l_printf("'%s': My mother told me NOT to put that junk into the database.",p_dirent->d_name);
+			continue;
+		}
+
+		for ( i = 0; i < SIZEOF_RETURNS; i++ )
+		{
+			switch ( infos->returns[i].type )
+			{
+				case REGEXP_TYPE_TAG:
+					/* This tag will be the first one assigned to this sample */
+					tag = infos->returns[i].output;
+					break;
+				case REGEXP_TYPE_TITLE:
+					title = infos->returns[i].output;
+					break;
+				case REGEXP_TYPE_TONE:
+					tone = infos->returns[i].output;
+					break;
+				case REGEXP_TYPE_BPM:
+					bpm = infos->returns[i].output;
+					break;
+				case REGEXP_TYPE_NONE:
+					break;
+			}
+		}
+
 		sql = sqlite3_mprintf(
-			"INSERT INTO sounds (id, filename, title, bpm, tone, channels, samplerate, frames, is_imported)"
-			"VALUES ((SELECT MAX(id) FROM sounds) + 1, %Q, %Q, "
-			"REGEXP(\"([1-9][0-9]+)bpm\", \"%s\"), "
-			"REGEXP(\"_([abcdefgABCDEFG]#?) \", \"%s\"), "
-			"%d, %d, %d, 1)",
-			dl_name,
-			p_dirent->d_name,
-			p_dirent->d_name,
-			p_dirent->d_name,
-			sinfo.channels,
-			sinfo.samplerate,
-			sinfo.frames
-		);
+				"INSERT INTO sounds (id, filename, title, bpm, tone, tag, channels, samplerate, frames, is_imported)"
+				"VALUES ((SELECT MAX(id) FROM sounds) + 1, %Q, %Q, %Q, %Q, %Q, %d, %d, %d, 1)",
+				dl_name,
+				title ? title : "NULL",
+				bpm ? bpm : "NULL",
+				tone ? tone : "NULL",
+				tag ? tag : "NULL",
+				sinfo.channels,
+				sinfo.samplerate,
+				sinfo.frames
+				);
 
 		sf_close(sfp), sfp = NULL;
 
