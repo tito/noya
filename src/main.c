@@ -63,6 +63,7 @@ void usage(void)
 {
 	printf("Usage: noya [OPTIONS]...\n");
 	printf("  -h                         Show usage\n");
+	printf("  -f                         Run in fullscreen\n");
 	printf("  -c <context>               Switch to <context> at start\n");
 	printf("  -s <name>                  Load a scene\n");
 	printf("  -i <directory>             Import waves from directory\n");
@@ -93,7 +94,7 @@ void na_options_read(int argc, char **argv)
 {
 	int opt;
 
-	while ( (opt = getopt(argc, argv, "c:s:di:V")) != -1 )
+	while ( (opt = getopt(argc, argv, "c:s:di:Vf")) != -1 )
 	{
 		switch ( opt )
 		{
@@ -105,6 +106,9 @@ void na_options_read(int argc, char **argv)
 				break;
 			case 'i':
 				g_options.import_dir = strdup(optarg);
+				break;
+			case 'f':
+				g_options.fullscreen = 1;
 				break;
 			case 'V':
 				exit(-1);

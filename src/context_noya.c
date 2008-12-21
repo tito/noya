@@ -28,23 +28,14 @@ MUTEX_IMPORT(context);
 
 static na_ctx_t		s_context;
 
-static na_atomic_t		c_running		= {0},
-						c_running_timer = {0};
+static na_atomic_t		c_running		= {0};
 static na_atomic_t		c_scene_changed	= {0};
 static ClutterColor		stage_color		= { 0x00, 0x00, 0x00, 0xff };
 static ClutterColor		obj_background	= { 0xff, 0xff, 0xff, 0x99 };
 static ClutterColor		obj_border		= { 0xff, 0xff, 0xff, 0xff };
-struct timeval			st_beat;
-double					t_lastbeat		= 0,
-						t_beat			= 0,
-						t_beatinterval	= 0,
-						t_current		= 0;
-long					t_bpm			= 0;
-static na_bpm_t			bpm				= {0};
 na_scene_t				*c_scene		= NULL;
 manager_actor_list_t	manager_actors_list;
 manager_cursor_list_t	manager_cursors_list;
-static pthread_t		thread_timer;
 
 
 manager_actor_list_t *na_manager_get_actors(void)
@@ -302,66 +293,6 @@ static void manager_event_cursor_set(unsigned short type, void *userdata, void *
 	clutter_actor_set_position(it->actor, o->xpos * (float)wx, o->ypos * (float)wy);
 }
 
-static void manager_event_bpm(unsigned short type, void *userdata, void *data)
-{
-	na_bpm_t			*bpm	= (na_bpm_t *)data;
-	na_audio_t			*entry;
-
-	assert( bpm != NULL );
-
-	for ( entry = na_audio_entries.lh_first; entry != NULL; entry = entry->next.le_next )
-	{
-		if ( !(atomic_read(&entry->flags) & NA_AUDIO_FL_USED) )
-			continue;
-		if ( !(atomic_read(&entry->flags) & NA_AUDIO_FL_LOADED) )
-			continue;
-		if ( atomic_read(&entry->flags) & NA_AUDIO_FL_FAILED )
-			continue;
-
-		if ( atomic_read(&entry->flags) & NA_AUDIO_FL_WANTPLAY )
-		{
-			/* play audio
-			*/
-			if ( bpm->beatinmeasure == 1 )
-			{
-				if ( !na_audio_is_play(entry) )
-					na_audio_seek(entry, 0);
-				na_audio_play(entry);
-			}
-
-			/* first time, calculate duration
-			 */
-			if ( entry->bpmduration <= 0 )
-				entry->bpmduration = nearbyintf(entry->duration / t_beatinterval);
-
-			/* increment bpm idx
-			*/
-			entry->bpmidx++;
-
-			/* enough data for play ?
-			*/
-			if ( entry->bpmidx < (int)entry->bpmduration )
-				continue;
-
-			/* back to start of sample
-			*/
-			na_audio_seek(entry, 0);
-			entry->bpmidx++;
-
-			/* if it's not a loop, stop it.
-			*/
-			if ( !(atomic_read(&entry->flags) & NA_AUDIO_FL_ISLOOP) )
-				na_audio_stop(entry);
-		}
-
-		if ( atomic_read(&entry->flags) & NA_AUDIO_FL_WANTSTOP )
-		{
-			na_audio_stop(entry);
-			na_audio_seek(entry, 0);
-		}
-	}
-}
-
 void thread_manager_mod_init(na_module_t *module, void *userdata)
 {
 	char				**k_setting;
@@ -415,6 +346,15 @@ static gboolean manager_renderer_update(gpointer data)
 {
 	manager_actor_t	*it;
 
+	/* scene changed, send event
+	*/
+	if ( atomic_read(&c_scene_changed) )
+	{
+		na_event_send(NA_EV_SCENE_UPDATE, NULL, 0);
+		atomic_set(&c_scene_changed, 0);
+	}
+
+
 	if ( !atomic_read(&c_running ) )
 		return FALSE;
 
@@ -427,61 +367,9 @@ static gboolean manager_renderer_update(gpointer data)
 	return TRUE;
 }
 
-static void *context_noya_timer(void *data)
-{
-	atomic_set(&c_running_timer, 1);
-
-	while ( atomic_read(&c_running) )
-	{
-		pthread_testcancel();
-
-		/* scene changed, send event
-		*/
-		if ( atomic_read(&c_scene_changed) )
-		{
-			na_event_send(NA_EV_SCENE_UPDATE, NULL, 0);
-			atomic_set(&c_scene_changed, 0);
-		}
-
-		/* let's do the beat !
-		 */
-		do
-		{
-			rtc_sleep();
-
-			/* get time
-			 */
-			gettimeofday(&st_beat, NULL);
-			t_beat = st_beat.tv_sec + st_beat.tv_usec * 0.000001;
-			t_beatinterval = (float)(60.0f / (float)c_scene->bpm);
-		} while ( t_beat - t_lastbeat < t_beatinterval );
-
-		t_bpm++;
-
-		/* FIXME : how to handle lag ?
-		 */
-		t_lastbeat = t_beat;
-
-		/* send bpm event
-		 */
-		bpm.beat = t_bpm;
-		bpm.beatinmeasure = bpm.beat % c_scene->measure + 1;
-		if ( bpm.beatinmeasure == 1 )
-			bpm.measure++;
-		l_printf("BPM = %u/%u - %u", bpm.measure,
-			bpm.beatinmeasure, bpm.beat);
-		na_event_send(NA_EV_BPM, &bpm, sizeof(na_bpm_t));
-	}
-
-	atomic_set(&c_running_timer, 0);
-
-	return NULL;
-}
-
 int context_noya_activate(void *ctx, void *userdata)
 {
 	ClutterActor	*stage;
-	int				ret;
 
 	atomic_set(&c_running, 1);
 
@@ -493,13 +381,6 @@ int context_noya_activate(void *ctx, void *userdata)
 	{
 		l_errorf("unable to load scene");
 		na_quit();
-		return -1;
-	}
-
-	ret = pthread_create(&thread_timer, NULL, context_noya_timer, NULL);
-	if ( ret )
-	{
-		l_errorf("unable to create TIMER thread");
 		return -1;
 	}
 
@@ -521,8 +402,6 @@ int context_noya_activate(void *ctx, void *userdata)
 	na_event_observe(NA_EV_CURSOR_SET, manager_event_cursor_set, NULL);
 	na_event_observe(NA_EV_CURSOR_DEL, manager_event_cursor_del, NULL);
 
-	na_event_observe(NA_EV_BPM, manager_event_bpm, NULL);
-
 	clutter_threads_add_timeout(25, manager_renderer_update, NULL);
 
 	return 0;
@@ -534,11 +413,6 @@ int context_noya_deactivate(void *ctx, void *userdata)
 
 	atomic_set(&c_running, 0);
 
-	/* stop thread
-	 */
-	while ( atomic_read(&c_running_timer) )
-		usleep(100);
-
 	/* remove events
 	 */
 	na_event_remove(NA_EV_OBJECT_NEW, manager_event_object_new, NULL);
@@ -547,7 +421,6 @@ int context_noya_deactivate(void *ctx, void *userdata)
 	na_event_remove(NA_EV_CURSOR_NEW, manager_event_cursor_new, NULL);
 	na_event_remove(NA_EV_CURSOR_SET, manager_event_cursor_set, NULL);
 	na_event_remove(NA_EV_CURSOR_DEL, manager_event_cursor_del, NULL);
-	na_event_remove(NA_EV_BPM, manager_event_bpm, NULL);
 
 	/* deinitialize modules
 	 */

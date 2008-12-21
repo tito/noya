@@ -180,9 +180,8 @@ static void *thread_renderer_run(void *arg)
 				/* get the stage and set its size and color
 				 */
 				stage = clutter_stage_get_default();
-				clutter_actor_set_size(stage, ui_width, ui_height);
-				//clutter_stage_set_color(CLUTTER_STAGE(stage), &stage_color);
 				clutter_stage_set_title(CLUTTER_STAGE(stage), NA_TITLE);
+				clutter_actor_set_size(stage, ui_width, ui_height);
 
 				/* prepare signals
 				 */
