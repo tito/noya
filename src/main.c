@@ -26,6 +26,8 @@ config_t				g_config		= {0};
 /* contexts import
  */
 void	context_menu_register(void);
+void	context_noya_register(void);
+void	context_marmelade_register(void);
 
 /* services declaration
  */
@@ -130,13 +132,6 @@ void na_options_read(int argc, char **argv)
 		exit(0);
 	}
 
-	/* don't start noya if we don't have scene
-	 */
-	if ( g_options.scene_fn == NULL )
-	{
-		usage();
-		return;
-	}
 }
 
 /* clean options
@@ -187,6 +182,7 @@ int main(int argc, char **argv)
 	l_printf("Register contexts...");
 	context_menu_register();
 	context_noya_register();
+	context_marmelade_register();
 
 	/* start INPUT service
 	 */
