@@ -68,7 +68,8 @@ typedef struct
 regexp_t		g_patterns[] = {
 	{
 	/* Example of Title : "TID 11syn trancemotion_var_e 138bpm.wav" */
-		"^TID\\s+([0-9]+)([a-z]+)\\s+([^.]+)_([a-gA-G]#?)\\s+([0-9]+)[bB][pP][mM]\.[wW][aA][vV]$",
+    /* eg2:               "TID 04bde darkotronic_var_a 141bpm.wav" */
+		"^TID\\s+([0-9]+)([a-z]+)\\s+([^.]+)_([a-gA-G]#?_?[0-9]?)\\s+([0-9]+)[bB][pP][mM]\\.[wW][aA][vV]$",
 		{
 			{REGEXP_TYPE_REF	, NULL },	//11
 			{REGEXP_TYPE_TAG	, NULL },	//syn
@@ -80,7 +81,7 @@ regexp_t		g_patterns[] = {
 	},
 	{
     /* Example of Title : "drt130TTE17010dance1" */
-		"^drt([0-9]{3})([A-Z]{3})([0-9]{5})([^\.]+)\.[wW][aA][vV]$",
+		"^drt([0-9]{3})([A-Z]{3})([0-9]{5})([^\\.]+)\\.[wW][aA][vV]$",
 		{
 			{REGEXP_TYPE_BPM	, NULL },	//130
 			{REGEXP_TYPE_TAG	, NULL },	//TTE
@@ -89,10 +90,25 @@ regexp_t		g_patterns[] = {
 			{REGEXP_TYPE_NONE	, NULL }	//
 		},
 	},
-	{
     /* Hardtechno vs Schranz : */
+	{
+    /* Example of Title : "02bac145_freeze time_var_g HvS 135.wav" */
+    /* "04sde120_freeze time_s HvS.wav" */
+    /* Warning: here the TONE may also be 'x' or 's' (meaning?) */
+		"^([0-9]{2})([a-z]{3})([0-9]{3})_(.+)_([a-gA-Gsx]#?) HvS(.*)\\.[wW][aA][vV]$",
+		{
+			{REGEXP_TYPE_REF	, NULL },	//02
+			{REGEXP_TYPE_TAG	, NULL },	//shk
+			{REGEXP_TYPE_BPM	, NULL },	//120
+			{REGEXP_TYPE_TITLE	, NULL },	//ultradyne_s
+			{REGEXP_TYPE_TONE	, NULL },   //
+			{REGEXP_TYPE_NONE	, NULL }	//
+		},
+	},
+	{
     /* Example of Title : "02shk120_ultradyne_s HvS.wav" */
-		"^([0-9]{2})([a-z]{3})([0-9]{3})_([^\s]\+)\\s+HvS\.[wW][aA][vV]$",
+    /* 04bde140_orbit_d HvS 135.wav' matches regexp `^(.*).wav$ */
+		"^([0-9]{2})([a-z]{3})([0-9]{3})_([^ ]+) HvS\\.[wW][aA][vV]$",
 		{
 			{REGEXP_TYPE_REF	, NULL },	//02
 			{REGEXP_TYPE_TAG	, NULL },	//shk
@@ -101,6 +117,7 @@ regexp_t		g_patterns[] = {
 			{REGEXP_TYPE_NONE	, NULL }	//
 		},
 	},
+    /*
 	{
 		"^(.*)\.wav$",
 		{
@@ -115,6 +132,7 @@ regexp_t		g_patterns[] = {
 			{REGEXP_TYPE_NONE	, NULL }	//
 		},
 	},
+    */
 };
 
 regexp_t *na_db_extract_info_from_title(char *title)
@@ -140,12 +158,10 @@ regexp_t *na_db_extract_info_from_title(char *title)
 		ret = regexec(&regex, title, matches_count, matches, REG_EXTENDED & REG_NEWLINE);
 		if ( ret != 0 )
 		{
-			errsize = regerror(ret, &regex, errbuf, sizeof(errbuf));
-			l_printf("!`%s' doesn't fit regexp `%s'. (err #%d:%s)", title, r->regexp, ret, errbuf);
 			continue;
 		}
 
-		l_printf("+`%s' matches regexp `%s'", title, r->regexp);
+		/* l_printf("+`%s' matches regexp `%s'", title, r->regexp); */
 		for ( i = 1; i < matches_count ; i++ )
 		{
 			char *reg_output = NULL;
@@ -164,47 +180,13 @@ regexp_t *na_db_extract_info_from_title(char *title)
 		return r;
 	}
 
+    l_printf("!`%s' didn't match any regexp.", title);
+
 	return NULL;
 }
 
 /* implements regexp functionality
  * code taken from trackerd (thanks a lot guys !) */
-static void sqlite3_regexp(sqlite3_context *context, int argc, sqlite3_value **argv)
-{
-	int	ret;
-	regex_t	regex;
-	regmatch_t matches[10];
-	int matches_count = 10;
-
-	if ( argc != 2 )
-	{
-		sqlite3_result_error(context, "Invalid argument count", -1);
-		return;
-	}
-
-	ret = regcomp(&regex, (char *)sqlite3_value_text(argv[0]), REG_EXTENDED);
-
-	if (ret != 0)
-	{
-		sqlite3_result_error(context, "OMG! error compiling regular expression", -1);
-		return;
-	}
-
-	ret = regexec(&regex, (char *)sqlite3_value_text(argv[1]), matches_count, matches, 0);
-	regfree(&regex);
-
-	if ( ret == REG_NOMATCH || matches_count <= 0 )
-	{
-		sqlite3_result_null(context);
-		return;
-	}
-
-	sqlite3_result_text(context,
-		(const char *)(sqlite3_value_text(argv[1]) + matches[1].rm_so),
-		matches[1].rm_eo - matches[1].rm_so, NULL
-	);
-}
-
 na_db_t *na_db_open(char *filename)
 {
 	na_db_t *db;
@@ -228,14 +210,7 @@ na_db_t *na_db_open(char *filename)
 		goto na_db_open_error;
 	}
 
-	ret = sqlite3_create_function(db->sq_hdl, "REGEXP", 2, SQLITE_ANY, NULL, &sqlite3_regexp, NULL, NULL);
-	if ( ret != SQLITE_OK )
-	{
-		l_errorf("unable to create function REGEXP: %s", sqlite3_errmsg(db->sq_hdl));
-		goto na_db_open_error;
-	}
-
-	if ( na_db_initialize(db) != 0 )
+    if ( na_db_initialize(db) != 0 )
 	{
 		l_errorf("unable to initialize database %s", filename);
 		goto na_db_open_error;
@@ -411,6 +386,7 @@ void na_db_import_directory(char *directory, int *stat_ok, int *stat_exist, int 
 	char	*title		=	NULL;
 	char	*tone		=	NULL;
 	char	*bpm		=	NULL;
+	char	*ref		=	NULL;
 	char	*long_title	=	NULL;
 	regexp_t *infos;
 
@@ -481,6 +457,9 @@ void na_db_import_directory(char *directory, int *stat_ok, int *stat_exist, int 
 				case REGEXP_TYPE_TITLE:
 					title = infos->returns[i].output;
 					break;
+				case REGEXP_TYPE_REF:
+					ref = infos->returns[i].output;
+					break;
 				case REGEXP_TYPE_TONE:
 					tone = infos->returns[i].output;
 					break;
@@ -492,13 +471,26 @@ void na_db_import_directory(char *directory, int *stat_ok, int *stat_exist, int 
 			}
 		}
 
-		if ( tag != NULL )
-		{
-			if ( tone != NULL )
-				asprintf(&long_title,"%s (%s)[%s]", title, tag, tone);
-			else
-				asprintf(&long_title,"%s (%s)", title, tag);
-		}
+        if ( ref != NULL )
+        {
+                if ( tag != NULL )
+                {
+                    if ( tone != NULL )
+                        asprintf(&long_title,"%s!%s (%s)[%s]", title, ref, tag, tone);
+                    else
+                        asprintf(&long_title,"%s!%s (%s)", title, ref, tag);
+                }
+        }
+        else
+        {
+                if ( tag != NULL )
+                {
+                    if ( tone != NULL )
+                        asprintf(&long_title,"%s (%s)[%s]", title, tag, tone);
+                    else
+                        asprintf(&long_title,"%s (%s)", title, tag);
+                }
+        }
 
 		sql = sqlite3_mprintf(
 				"INSERT INTO sounds (id, filename, title, bpm, tone, tag, channels, samplerate, frames, is_imported)"
