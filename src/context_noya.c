@@ -1,7 +1,3 @@
-/*
- * Note: RTC code is taken from mplayer code, thanks to you guys !
- * http://www.mplayerhq.hu/
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -16,16 +12,6 @@
 #include <fcntl.h>
 #include <math.h>
 
-#ifdef HAVE_RTC
-#ifdef __linux__
-#include <linux/rtc.h>
-#else
-#include <rtc.h>
-#define RTC_IRQP_SET RTCIO_IRQP_SET
-#define RTC_PIE_ON   RTCIO_PIE_ON
-#endif /* __linux__ */
-#endif /* HAVE_RTC */
-
 #include <string.h>
 #include "noya.h"
 #include "event.h"
@@ -35,8 +21,9 @@
 #include "scene.h"
 #include "utils.h"
 #include "context.h"
+#include "rtc.h"
 
-LOG_DECLARE("CTXNOYA");
+LOG_DECLARE("NOYA");
 MUTEX_IMPORT(context);
 
 static na_ctx_t		s_context;
@@ -59,12 +46,6 @@ manager_actor_list_t	manager_actors_list;
 manager_cursor_list_t	manager_cursors_list;
 static pthread_t		thread_timer;
 
-
-#ifdef HAVE_RTC
-static unsigned long	rtc_ts;
-static int				rtc_fd = -1;
-static char				*rtc_device = NULL;
-#endif
 
 manager_actor_list_t *na_manager_get_actors(void)
 {
@@ -466,22 +447,7 @@ static void *context_noya_timer(void *data)
 		 */
 		do
 		{
-			/* RTC sleep first
-			 */
-#ifdef HAVE_RTC
-			if ( rtc_fd >= 0 )
-			{
-				if ( read(rtc_fd, &rtc_ts, sizeof(rtc_ts)) <= 0 )
-					l_errorf("error while reading RTC timer !");
-			}
-			else
-#endif
-			/* Soft sleep
-			 * TODO check mplayer code for soft sleep ?
-			 */
-			{
-				usleep(100);
-			}
+			rtc_sleep();
 
 			/* get time
 			 */
@@ -610,35 +576,6 @@ int context_noya_update(void *ctx, void *userdata)
 
 void context_noya_register()
 {
-#ifdef HAVE_RTC
-	if ( (rtc_fd = open(rtc_device ? rtc_device : "/dev/rtc", O_RDONLY)) < 0 )
-	{
-		l_errorf("RTC timer: unable to open %s", rtc_device ? rtc_device : "/dev/rtc");
-	}
-	else
-	{
-		unsigned long irqp = 1024; /* 512 seemed OK. 128 is jerky. */
-
-		if ( ioctl(rtc_fd, RTC_IRQP_SET, irqp) < 0)
-		{
-			l_errorf("RTC timer: error in RTC_IRQP_SET : %s", strerror(errno));
-			l_errorf("RTC timer: try adding \"echo %lu >" \
-					 "/proc/sys/dev/rtc/max-user-freq\" to your system startup scripts. !", irqp);
-			close(rtc_fd);
-			rtc_fd = -1;
-		}
-		else if ( ioctl(rtc_fd, RTC_PIE_ON, 0) < 0 )
-		{
-			/* variable only by the root */
-			l_errorf("RTC timer: error in ioctl RTC_PIE_ON : %s", strerror(errno));
-			close(rtc_fd);
-			rtc_fd = -1;
-		}
-		else
-			l_printf("RTC timer: activated.");
-	}
-#endif
-
 	bzero(&s_context, sizeof(s_context));
 
 	strncpy(s_context.name, "noya", sizeof(s_context.name));
