@@ -10,12 +10,12 @@ In order to build noya, you need header files and libs of:
  - libsamplerate
  - clutter (>= 0.8)
  - portaudio (>= 0.19)
+ - fftw (>= 3)
+ - sqlite (>= 3)
 
-For Ubuntu Hardy, you can do
+For Ubuntu Intrepid, you can do
 
-apt-get install scons liblo-dev libsndfile-dev libsamplerate-dev libportaudio19-dev libclutter-0.8-dev
-
-(for libportaudio19-dev and libclutter-0.8-dev, make sure you have "deb http://debian.o-hand.com hardy/" in your /etc/apt/sources.list)
+sudo apt-get install scons liblo-dev libsndfile-dev libsamplerate-dev portaudio19-dev libclutter-0.8-dev libsqlite3-dev libfftw3-dev
 
 Building and installation
 -------------------------
