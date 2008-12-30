@@ -6,6 +6,7 @@ Requirements
 ------------
 In order to build noya, you need header files and libs of:
  - scons
+ - liblo
  - libsndfile
  - libsamplerate
  - clutter (>= 0.8)
